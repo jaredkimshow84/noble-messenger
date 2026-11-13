@@ -269,20 +269,117 @@
     var q = (S.roomQuery || '').trim();
     var list = S.rooms.filter(function (r) { return !q || (r.name || '').indexOf(q) > -1; });
     $('#list').innerHTML = header('채팅', { right: '<button class="icon-btn" id="newChat" aria-label="새 대화">' + svg('plus') + '</button>' }) +
-      '<div class="search">' + svg('search') + '<input id="roomQ" placeholder="대화방 검색" value="' + esc(q) + '" aria-label="대화방 검색"></div>' +
-      '<div class="pane-body">' + (list.length ? list.map(function (r) {
+      '<div class="search">' + svg('search') + '<input id="roomQ" placeholder="대화방·메시지 검색" value="' + esc(q) + '" aria-label="대화방·메시지 검색"></div>' +
+      '<div class="pane-body">' + (q && list.length ? '<div class="group-hd">대화방</div>' : '') + (list.length ? list.map(function (r) {
         var grp = r.type === 'group';
         var face = grp ? '<span class="avatar grp">#</span>' : r.type === 'self' ? av(S.me, 'me') : av(S.profiles[r.other_id] || { name: r.name });
         return '<a class="room-item' + (r.pinned ? ' pinned' : '') + '" href="#room/' + r.id + '" data-room="' + r.id + '"' + (S.route.id === r.id ? ' aria-current="true"' : '') + '>' + face +
           '<span class="ri-main"><span class="ri-top"><b>' + (r.pinned ? '<svg class="pin-ico" viewBox="0 0 24 24">' + IC.pin + '</svg>' : '') + esc(r.name) + (grp ? '<small>' + r.member_count + '</small>' : '') + (r.muted ? ' <svg class="mute-ico" viewBox="0 0 24 24">' + IC.mute + '</svg>' : '') + '</b><time>' + (r.last_body != null ? shortTime(r.last_message_at) : '') + '</time></span>' +
           '<span class="ri-bot"><p>' + esc(r.last_body == null ? '새 대화방' : (grp && r.last_sender ? r.last_sender + ': ' : '') + r.last_body) + '</p>' + (r.unread ? '<span class="badge">' + (r.unread > 99 ? '99+' : r.unread) + '</span>' : '') + '</span></span></a>';
-      }).join('') : '<p class="empty">' + (q ? '검색 결과가 없습니다.' : '아직 대화가 없습니다.<br>오른쪽 위 + 버튼으로 대화를 시작하세요.') + '</p>') + '</div>';
+      }).join('') : (q ? '' : '<p class="empty">아직 대화가 없습니다.<br>오른쪽 위 + 버튼으로 대화를 시작하세요.</p>')) +
+      (q ? '<div id="msgResults">' + msgResultsHtml(q) + '</div>' : '') + '</div>';
     $('#newChat').onclick = newChatSheet;
     $$('[data-room]').forEach(function (a) {
       a.addEventListener('contextmenu', function (e) { e.preventDefault(); roomQuickSheet(S.rooms.find(function (x) { return x.id === a.getAttribute('data-room'); })); });
       longPress(a, function () { roomQuickSheet(S.rooms.find(function (x) { return x.id === a.getAttribute('data-room'); })); });
     });
     var qi = $('#roomQ'); qi.oninput = function () { S.roomQuery = qi.value; var pos = qi.selectionStart; renderRoomList(); var n = $('#roomQ'); n.focus(); n.setSelectionRange(pos, pos); };
+    if (q.length >= 2 && (!S.msgSearch || S.msgSearch.q !== q)) searchAllMessages(q);
+    wireMsgResults();
+  }
+
+  /* ---------- 메시지 검색 ---------- */
+  function likePat(q) { return '%' + q.replace(/[\\%_]/g, function (c) { return '\\' + c; }) + '%'; }
+  function hl(text, q) {
+    var h = esc(text); if (!q) return h;
+    return h.replace(new RegExp(reRx(esc(q)), 'gi'), function (x) { return '<mark>' + x + '</mark>'; });
+  }
+  function around(body, q) {
+    body = (body || '').replace(/\s+/g, ' ');
+    var i = body.toLowerCase().indexOf(q.toLowerCase());
+    if (i < 0 || body.length <= 70) return body.slice(0, 90);
+    var st = Math.max(0, i - 24); return (st ? '…' : '') + body.slice(st, st + 90);
+  }
+  function visibleHit(m) {
+    var r = S.rooms.find(function (x) { return x.id === m.room_id; });
+    return r && (!r.cleared_at || m.created_at > r.cleared_at);
+  }
+  var searchTimer = null;
+  function searchAllMessages(q) {
+    clearTimeout(searchTimer);
+    S.msgSearch = { q: q, rows: null };
+    searchTimer = setTimeout(function () {
+      sb.from('messages').select('id, room_id, sender_id, body, created_at').ilike('body', likePat(q)).eq('deleted', false)
+        .order('created_at', { ascending: false }).limit(60).then(function (r) {
+          if (!S.msgSearch || S.msgSearch.q !== q) return;
+          S.msgSearch.rows = (r.data || []).filter(visibleHit);
+          var box = $('#msgResults'); if (box) { box.innerHTML = msgResultsHtml(q); wireMsgResults(); }
+        });
+    }, 300);
+  }
+  function msgResultsHtml(q) {
+    if (q.length < 2) return '<p class="muted small" style="padding:12px 16px">메시지는 두 글자 이상 입력하면 검색됩니다.</p>';
+    var ms = S.msgSearch && S.msgSearch.q === q ? S.msgSearch.rows : null;
+    if (!ms) return '<div class="group-hd">메시지</div><p class="muted small" style="padding:12px 16px">검색 중…</p>';
+    if (!ms.length) return '<div class="group-hd">메시지</div><p class="muted small" style="padding:12px 16px">"' + esc(q) + '"이(가) 들어간 메시지가 없습니다.</p>';
+    return '<div class="group-hd">메시지 ' + ms.length + (ms.length >= 60 ? '+' : '') + '건</div>' + ms.map(function (m) {
+      var r = S.rooms.find(function (x) { return x.id === m.room_id; }) || {}, p = S.profiles[m.sender_id] || { name: '(퇴사자)' };
+      return '<button class="hit" data-hit="' + m.id + '">' + av(p, 'sm') + '<span class="hit-main"><span class="hit-top"><b>' + esc(r.name || '') + '</b><time>' + shortTime(m.created_at) + '</time></span>' +
+        '<span class="hit-body"><em>' + esc(p.name) + '</em> ' + hl(around(m.body, q), q) + '</span></span></button>';
+    }).join('');
+  }
+  function wireMsgResults() {
+    $$('[data-hit]').forEach(function (b) {
+      b.onclick = function () {
+        var m = (S.msgSearch.rows || []).find(function (x) { return x.id === +b.getAttribute('data-hit'); }); if (!m) return;
+        S.pendingJump = m;
+        if (S.room && S.room.id === m.room_id && $('#msgs')) { S.pendingJump = null; S.searchQ = (S.roomQuery || '').trim(); renderMessages(false); jumpToMsg(m); }
+        else location.hash = '#room/' + m.room_id;
+      };
+    });
+  }
+  /* 오래된 메시지도 찾아가기: 그 메시지 주변을 불러와서 이동 */
+  function jumpToMsg(m) {
+    if (S.messages.some(function (x) { return x.id === m.id; })) { jumpTo(m.id, S.searchQ); return; }
+    var rid = S.room.id, cl = S.room.info && S.room.info.cleared_at;
+    var bq = sb.from('messages').select('*').eq('room_id', rid).lt('created_at', m.created_at); if (cl) bq = bq.gt('created_at', cl);
+    Promise.all([
+      bq.order('created_at', { ascending: false }).limit(20),
+      sb.from('messages').select('*').eq('room_id', rid).gte('created_at', m.created_at).order('created_at', { ascending: true }).limit(1000)
+    ]).then(function (res) {
+      if (!S.room || S.room.id !== rid) return;
+      S.messages = (res[0].data || []).reverse().concat(res[1].data || []); S.hasOlder = (res[0].data || []).length === 20;
+      renderMessages(false); setTimeout(function () { jumpTo(m.id, S.searchQ); }, 60);
+    });
+  }
+  function roomSearchBar() {
+    var bar = $('#roomSearch'); if (!bar) return;
+    if (!bar.hidden) { bar.hidden = true; S.searchQ = ''; renderMessages(false); return; }
+    bar.hidden = false;
+    bar.innerHTML = '<div class="rs-in">' + svg('search') + '<input id="rsQ" placeholder="이 대화방에서 검색 (두 글자 이상)" aria-label="대화방 안에서 검색"><button type="button" id="rsX" aria-label="검색 닫기">' + svg('x') + '</button></div><div class="rs-list" id="rsList" hidden></div>';
+    var inp = $('#rsQ'), list = $('#rsList'), t = null;
+    inp.focus();
+    $('#rsX').onclick = function () { bar.hidden = true; S.searchQ = ''; renderMessages(false); };
+    inp.addEventListener('keydown', function (e) { if (e.key === 'Escape') { $('#rsX').click(); } if (e.key === 'Enter') { e.preventDefault(); run(); } });
+    inp.addEventListener('input', function () { clearTimeout(t); t = setTimeout(run, 350); });
+    function run() {
+      var q = inp.value.trim(); S.searchQ = q;
+      if (q.length < 2) { list.hidden = true; renderMessages(false); return; }
+      var rid = S.room.id, cl = S.room.info && S.room.info.cleared_at;
+      var qq = sb.from('messages').select('id, room_id, sender_id, body, created_at').eq('room_id', rid).eq('deleted', false).ilike('body', likePat(q));
+      if (cl) qq = qq.gt('created_at', cl);
+      qq.order('created_at', { ascending: false }).limit(100).then(function (r) {
+        if (!S.room || S.room.id !== rid || S.searchQ !== q) return;
+        var rows = r.data || [];
+        list.hidden = false;
+        list.innerHTML = rows.length ? '<p class="rs-count">' + rows.length + (rows.length >= 100 ? '+' : '') + '건</p>' + rows.map(function (m) {
+          var p = S.profiles[m.sender_id] || { name: '(퇴사자)' };
+          return '<button data-rs="' + m.id + '"><b>' + esc(p.name) + '</b><time>' + shortTime(m.created_at) + ' ' + hm(m.created_at) + '</time><span>' + hl(around(m.body, q), q) + '</span></button>';
+        }).join('') : '<p class="rs-count">검색 결과가 없습니다.</p>';
+        $$('[data-rs]', list).forEach(function (b) { b.onclick = function () { var m = rows.find(function (x) { return x.id === +b.getAttribute('data-rs'); }); list.hidden = true; jumpToMsg(m); }; });
+        renderMessages(false);
+      });
+    }
   }
 
   function others() { return Object.keys(S.profiles).map(function (k) { return S.profiles[k]; }).filter(function (p) { return p.active && p.id !== S.me.id; }); }
@@ -331,14 +428,15 @@
     S.room = { id: id, info: info }; S.messages = []; S.members = {}; S.hasOlder = false;
     $('#main').style.justifyContent = '';
     var title = roomTitle(info);
-    var right = (DESKTOP.matches && !S.solo ? '<button class="icon-btn" id="popOut" aria-label="새 창으로 열기" title="새 창으로 열기">' + svg('pop') + '</button>' : '') +
+    var right = '<button class="icon-btn" id="roomSearchBtn" aria-label="대화 내용 검색" title="대화 내용 검색">' + svg('search') + '</button>' + (DESKTOP.matches && !S.solo ? '<button class="icon-btn" id="popOut" aria-label="새 창으로 열기" title="새 창으로 열기">' + svg('pop') + '</button>' : '') +
       '<button class="icon-btn" id="roomMenu" aria-label="대화방 메뉴">' + svg('more') + '</button>';
-    $('#main').innerHTML = '<div class="chat">' + header(title, { back: '#chats', right: right }) + '<div id="roomNotice"></div>' +
+    $('#main').innerHTML = '<div class="chat">' + header(title, { back: '#chats', right: right }) + '<div id="roomNotice"></div><div class="room-search" id="roomSearch" hidden></div>' +
       '<div class="msgs" id="msgs" aria-live="polite"><p class="empty">불러오는 중…</p></div><div class="uploading" id="upl" hidden></div>' +
       '<div class="reply-bar" id="replyBar" hidden></div><div class="mention-box" id="mentionBox" hidden></div>' +
       '<form class="composer" id="composer"><label class="icon-btn" aria-label="파일 첨부" title="사진·파일 첨부">' + svg('clip') + '<input type="file" id="fileIn" multiple hidden></label>' +
       '<textarea id="txt" rows="1" placeholder="메시지 입력" aria-label="메시지 입력"></textarea><button class="send" id="sendBtn" aria-label="보내기" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20l18-8L3 4l2 7 9 1-9 1z"/></svg></button></form></div>';
     $('#roomMenu').onclick = roomMenu;
+    $('#roomSearchBtn').onclick = roomSearchBar; S.searchQ = '';
     var po = $('#popOut'); if (po) po.onclick = function () {
       window.open(location.href.split('#')[0] + '#room/' + id + '/solo', 'noble-room-' + id, 'popup,width=460,height=760');
     };
@@ -390,6 +488,7 @@
       S.messages = res[1].data.reverse(); S.hasOlder = res[1].data.length === 60;
       if (!info) { loadRooms().then(function () { S.room.info = S.rooms.find(function (r) { return r.id === id; }); var h = $('#main .pane-hd h1'); if (h && S.room.info) h.innerHTML = esc(S.room.info.name); }); }
       renderMessages(true); markRead();
+      if (S.pendingJump && S.pendingJump.room_id === id) { var pj = S.pendingJump; S.pendingJump = null; S.searchQ = (S.roomQuery || '').trim(); renderMessages(false); setTimeout(function () { jumpToMsg(pj); }, 80); }
     }).catch(function (e) { $('#msgs').innerHTML = '<p class="empty">' + esc(errMsg(e)) + '</p>'; });
     if (window.matchMedia('(min-width:861px)').matches) setTimeout(function () { txt.focus(); }, 50);
   }
@@ -477,7 +576,9 @@
   /* @언급 · 답장 · 공감 · 대화방 공지 */
   function roomPeople() { return Object.keys(S.members).map(function (u) { return S.profiles[u]; }).filter(Boolean); }
   function fmtBody(body) {
-    var h = linkify(body), names = roomPeople().map(function (p) { return esc(p.name); }).filter(Boolean);
+    var h = linkify(body);
+    if (S.searchQ && S.searchQ.length >= 2) h = h.replace(new RegExp('(' + reRx(esc(S.searchQ)) + ')(?![^<]*>)', 'gi'), '<mark>$1</mark>');
+    var names = roomPeople().map(function (p) { return esc(p.name); }).filter(Boolean);
     names.push('모두');
     names.sort(function (a, b) { return b.length - a.length; });
     return h.replace(new RegExp('@(' + names.map(reRx).join('|') + ')', 'g'), '<span class="mention">@$1</span>');
@@ -528,7 +629,7 @@
       if (r.data && r.data.length) renderMessages(false);
     });
   }
-  function jumpTo(id) {
+  function jumpTo(id, q) {
     var el = $('.msg[data-id="' + id + '"]');
     if (!el) { toast('이전 메시지입니다. 위로 올려 \'이전 메시지 보기\'를 눌러 주세요.'); return; }
     el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.classList.add('flash'); setTimeout(function () { el.classList.remove('flash'); }, 1600);

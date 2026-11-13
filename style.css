@@ -291,3 +291,27 @@ textarea.input{min-height:110px;resize:vertical}
 .snd-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .snd-row select{width:auto;min-width:120px;height:40px}
 .snd-row input[type=range]{flex:1;min-width:120px;accent-color:var(--gold)}
+/* 검색 */
+mark{background:#ffe27a;color:inherit;border-radius:3px;padding:0 1px}
+.msg.mine .bubble mark{background:var(--gold);color:#1b1404}
+.hit{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;padding:10px 16px;border-bottom:1px solid #f1f3f7}
+.hit:hover{background:#f8fafc}
+.hit-main{flex:1;min-width:0}
+.hit-top{display:flex;justify-content:space-between;gap:8px}
+.hit-top b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hit-top time{font-size:12px;color:var(--muted);flex:0 0 auto}
+.hit-body{display:block;font-size:13.5px;color:var(--body);margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hit-body em{font-style:normal;color:var(--muted)}
+.room-search{position:relative;background:#fff;border-bottom:1px solid var(--line);padding:8px 12px;z-index:5}
+.rs-in{display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:10px;padding:0 6px 0 12px}
+.rs-in>svg{width:17px;height:17px;flex:0 0 auto;fill:none;stroke:var(--muted);stroke-width:2}
+.rs-in input{flex:1;height:40px;border:0;background:transparent;font-size:15px;outline:none}
+.rs-in button{width:32px;height:32px;border-radius:8px;display:grid;place-items:center}
+.rs-in button svg{width:16px;height:16px;fill:none;stroke:var(--muted);stroke-width:2.2}
+.rs-list{position:absolute;left:12px;right:12px;top:calc(100% - 2px);max-height:min(420px,55vh);overflow-y:auto;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 40px rgba(13,36,64,.18)}
+.rs-count{font-size:12.5px;color:var(--muted);padding:8px 14px;border-bottom:1px solid #f1f3f7}
+.rs-list button{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;width:100%;text-align:left;padding:9px 14px;border-bottom:1px solid #f1f3f7}
+.rs-list button:hover{background:#f6f8fb}
+.rs-list b{font-size:13.5px}
+.rs-list time{font-size:12px;color:var(--muted);justify-self:end}
+.rs-list span{grid-column:1/-1;font-size:13.5px;color:var(--body)}
