@@ -275,7 +275,7 @@
     var q = (S.roomQuery || '').trim();
     var list = S.rooms.filter(function (r) { return !q || (r.name || '').indexOf(q) > -1; });
     $('#list').innerHTML = header('채팅', { right: '<button class="icon-btn" id="newChat" aria-label="새 대화">' + svg('plus') + '</button>' }) +
-      '<div class="search">' + svg('search') + '<input id="roomQ" placeholder="대화방·메시지 검색" value="' + esc(q) + '" aria-label="대화방·메시지 검색"></div>' +
+      '<div class="search">' + svg('search') + '<input id="roomQ" placeholder="대화방·메시지 검색" value="' + esc(q) + '" aria-label="대화방·메시지 검색"></div><div id="pushAsk"></div>' +
       '<div class="pane-body">' + (q && list.length ? '<div class="group-hd">대화방</div>' : '') + (list.length ? list.map(function (r) {
         var grp = r.type === 'group';
         var face = grp ? '<span class="avatar grp">#</span>' : r.type === 'self' ? av(S.me, 'me') : av(S.profiles[r.other_id] || { name: r.name });
@@ -291,6 +291,7 @@
     });
     var qi = $('#roomQ'); qi.oninput = function () { S.roomQuery = qi.value; var pos = qi.selectionStart; renderRoomList(); var n = $('#roomQ'); n.focus(); n.setSelectionRange(pos, pos); };
     if (q.length >= 2 && (!S.msgSearch || S.msgSearch.q !== q)) searchAllMessages(q);
+    renderPushAsk();
     wireMsgResults();
   }
 
@@ -1419,7 +1420,22 @@
   /* 이 기기에 알림(Windows 알림 / 휴대폰 알림)이 켜져 있으면 화면 안 팝업 대신 시스템 알림을 사용 */
   function checkPush() {
     if (!pushSupported() || Notification.permission !== 'granted') { S.pushOn = false; return Promise.resolve(); }
-    return navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) { S.pushOn = !!sub; }).catch(function () { S.pushOn = false; });
+    return navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
+      if (sub) { S.pushOn = true; return; }
+      // 권한은 허용돼 있는데 구독이 없으면 자동으로 다시 켬
+      return subscribePush().catch(function () { S.pushOn = false; });
+    }).catch(function () { S.pushOn = false; }).then(function () { if (S.route.tab === 'chats') renderPushAsk(); });
+  }
+  /* 알림이 꺼진 PC에는 채팅 목록 위에 '알림 켜기' 안내 표시 */
+  function renderPushAsk() {
+    var box = $('#pushAsk'); if (!box) return;
+    if (S.pushOn || !pushSupported() || lsGet('noble-pushask-hide') === '1') { box.innerHTML = ''; return; }
+    var denied = Notification.permission === 'denied';
+    box.innerHTML = '<div class="push-ask">' + svg('bell') + '<div><b>PC 알림이 꺼져 있습니다</b><p>' +
+      (denied ? '주소창 왼쪽 <b>자물쇠(또는 설정) 아이콘 → 알림 → 허용</b>으로 바꾼 뒤 새로고침해 주세요.' : '켜면 새 메시지가 채팅창 위가 아니라 <b>화면 오른쪽 아래(시계 위)</b>에 뜹니다.') + '</p></div>' +
+      (denied ? '' : '<button class="btn btn-gold sm" id="pushAskOn">알림 켜기</button>') + '<button class="pa-x" id="pushAskX" aria-label="닫기">' + svg('x') + '</button></div>';
+    var on = $('#pushAskOn'); if (on) on.onclick = function () { on.disabled = true; subscribePush().then(function () { toast('알림을 켰습니다'); renderPushAsk(); }).catch(function (e) { toast(esc(errMsg(e))); renderPushAsk(); }); };
+    $('#pushAskX').onclick = function () { lsSet('noble-pushask-hide', '1'); box.innerHTML = ''; };
   }
   function subscribePush() {
     return Notification.requestPermission().then(function (perm) {
