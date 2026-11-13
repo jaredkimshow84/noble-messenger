@@ -84,6 +84,25 @@
   function fontSize() { var v = lsGet('noble-font'); return v === 'l' || v === 'xl' ? v : ''; }
   function applyFont(v) { var h = document.documentElement; h.classList.remove('fs-l', 'fs-xl'); if (v) h.classList.add('fs-' + v); }
   applyFont(fontSize());
+  /* 글씨체 (이 기기에 저장) */
+  var FACES = {
+    pretendard: ['프리텐다드 (기본)', '"Pretendard"', ''],
+    malgun: ['맑은 고딕', '"Malgun Gothic","맑은 고딕"', ''],
+    nanum: ['나눔고딕', '"Nanum Gothic"', 'Nanum+Gothic:wght@400;700;800'],
+    noto: ['본고딕', '"Noto Sans KR"', 'Noto+Sans+KR:wght@400;500;700;800'],
+    gowun: ['고운돋움 (부드러운)', '"Gowun Dodum"', 'Gowun+Dodum']
+  };
+  function fontFace() { var v = lsGet('noble-face'); return FACES[v] ? v : 'pretendard'; }
+  function applyFace(k) {
+    var f = FACES[k] || FACES.pretendard;
+    if (f[2] && !document.getElementById('gf-' + k)) {
+      var l = document.createElement('link'); l.id = 'gf-' + k; l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family=' + f[2] + '&display=swap'; document.head.appendChild(l);
+    }
+    document.documentElement.style.setProperty('--font', f[1] + ',"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif');
+  }
+  if (fontFace() !== 'pretendard') applyFace(fontFace());
+  function applyFaceLink(k) { var f = FACES[k]; if (f[2] && !document.getElementById('gf-' + k)) { var l = document.createElement('link'); l.id = 'gf-' + k; l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=' + f[2] + '&display=swap'; document.head.appendChild(l); } }
   function soundOn() { return lsGet('noble-sound') !== 'off'; }
   function soundKind() { var k = lsGet('noble-sound-kind'); return SOUNDS[k] ? k : 'ding'; }
   function soundVol() { var v = parseFloat(lsGet('noble-sound-vol')); return isNaN(v) ? 0.6 : v; }
@@ -1344,7 +1363,8 @@
       '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px"><label class="btn btn-gold sm" style="cursor:pointer">' + svg('camera').replace('<svg', '<svg style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2"') + ' 프로필 사진 변경<input type="file" id="avIn" accept="image/*" hidden></label>' +
       (me.avatar_url ? '<button class="btn btn-line sm" id="avDel">기본 이미지로</button>' : '') + '</div></div></div></section>' +
       '<section class="card"><h3>글자 크기</h3><div class="fs-seg">' + FS.map(function (f, i) { return '<button data-fs="' + f[0] + '"' + (fontSize() === f[0] ? ' aria-pressed="true"' : '') + ' style="font-size:' + (15 + i * 3) + 'px">' + f[1] + '</button>'; }).join('') + '</div>' +
-      '<div class="fs-prev"><div class="bubble" style="max-width:100%">글자 크기 미리보기입니다. 대화·목록·공지 글자가 모두 바뀝니다.</div></div><p class="muted small" style="margin-top:8px">이 기기에만 적용됩니다.</p></section>' +
+      '<h3 style="margin-top:16px">글씨체</h3><div class="face-list">' + Object.keys(FACES).map(function (k) { return '<button data-face="' + k + '"' + (fontFace() === k ? ' aria-pressed="true"' : '') + ' style="font-family:' + FACES[k][1].replace(/"/g, '&quot;') + ',sans-serif">' + FACES[k][0] + '<span>가나다 ABC 123</span></button>'; }).join('') + '</div>' +
+      '<div class="fs-prev"><div class="bubble" style="max-width:100%">미리보기입니다. 오늘 오후 3시 회의 있습니다. 확인 부탁드립니다.</div></div><p class="muted small" style="margin-top:8px">이 기기에만 적용됩니다.</p></section>' +
       '<section class="card"><h3>메시지 알림음</h3><p class="muted small" style="margin-bottom:10px">메신저가 켜져 있을 때 새 메시지가 오면 소리로 알려 줍니다. (이 기기에만 적용)<br>※ 아래 <b>알림 켜기</b>를 한 기기는 Windows·휴대폰 알림음이 대신 울립니다.</p>' +
       '<label class="switch-row"><input type="checkbox" id="sndOn"' + (soundOn() ? ' checked' : '') + '> 알림음 켜기</label>' +
       '<div class="snd-row"><select class="input" id="sndKind" aria-label="알림음 종류">' + Object.keys(SOUNDS).map(function (k) { return '<option value="' + k + '"' + (k === soundKind() ? ' selected' : '') + '>' + SOUNDS[k][0] + '</option>'; }).join('') + '</select>' +
@@ -1358,6 +1378,8 @@
       '<section class="card"><button class="btn btn-line block" id="logout">로그아웃</button></section>' +
       '<p class="muted small" style="text-align:center;padding:4px 16px 24px">노블 메신저 · 노블365의원 · 노블경희한의원</p></div>';
     renderPushBox();
+    Object.keys(FACES).forEach(function (k) { if (FACES[k][2]) applyFaceLink(k); });
+    $$('[data-face]').forEach(function (b) { b.onclick = function () { var k = b.getAttribute('data-face'); lsSet('noble-face', k); applyFace(k); $$('[data-face]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); }; });
     $$('[data-fs]').forEach(function (b) { b.onclick = function () { lsSet('noble-font', b.getAttribute('data-fs')); applyFont(b.getAttribute('data-fs')); $$('[data-fs]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); }; });
     $('#sndOn').onchange = function () { lsSet('noble-sound', this.checked ? 'on' : 'off'); if (this.checked) playSound(null, true); };
     $('#sndKind').onchange = function () { lsSet('noble-sound-kind', this.value); playSound(this.value, true); };

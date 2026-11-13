@@ -456,3 +456,8 @@ html.fs-xl .poll-hd b,html.fs-xl .popt{font-size:19.5px}
 .push-ask .btn{align-self:center;flex:0 0 auto}
 .pa-x{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex:0 0 auto}
 .pa-x svg{width:14px;height:14px;fill:none;stroke:var(--muted);stroke-width:2.2}
+/* 글씨체 선택 */
+.face-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:10px}
+.face-list button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 12px;border:2px solid var(--line);border-radius:12px;background:#fff;text-align:left;font-weight:700;color:var(--navy)}
+.face-list button span{font-weight:400;color:var(--muted);font-size:13px}
+.face-list button[aria-pressed=true]{border-color:var(--gold);background:var(--gold-soft)}
