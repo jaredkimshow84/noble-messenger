@@ -104,7 +104,7 @@
       '<div class="field"><label for="jc">소속</label><select class="input" id="jc"><option>노블365의원</option><option>노블경희한의원</option><option>공통</option></select></div></div>' +
       '<div class="row2"><div class="field"><label for="jd">부서</label><input class="input" id="jd" placeholder="예: 원무, 간호"></div>' +
       '<div class="field"><label for="jt">직책 <span class="muted">(선택)</span></label><input class="input" id="jt" placeholder="예: 실장"></div></div>' +
-      '<div class="field"><label for="ji">사용할 아이디</label><input class="input" id="ji" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="영문 소문자·숫자 3자 이상 (예: hong01)"></div>' +
+      '<div class="field"><label for="ji">사용할 아이디 <span class="muted">(메일주소 아님)</span></label><input class="input" id="ji" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="영문 소문자·숫자 3자 이상 (예: hong01) · @ 넣지 마세요"></div>' +
       '<div class="row2"><div class="field"><label for="jp">비밀번호</label><input class="input" id="jp" type="password" autocomplete="new-password" placeholder="8자 이상"></div>' +
       '<div class="field"><label for="jp2">비밀번호 확인</label><input class="input" id="jp2" type="password" autocomplete="new-password"></div></div>' +
       '<p class="err" id="jerr"></p><button class="btn btn-navy block" id="jbtn">가입 신청</button>' +
@@ -115,7 +115,7 @@
         login_id: $('#ji').value.trim().toLowerCase(), password: $('#jp').value };
       var er = $('#jerr');
       if (!body.name) { er.textContent = '이름을 입력해 주세요.'; return; }
-      if (!/^[a-z0-9._-]{3,30}$/.test(body.login_id)) { er.textContent = '아이디는 영문 소문자·숫자 3자 이상으로 입력해 주세요.'; return; }
+      if (!/^[a-z0-9._-]{3,30}$/.test(body.login_id)) { er.textContent = /@/.test(body.login_id) ? '아이디는 메일주소가 아닙니다. @ 없이 영문 소문자·숫자로 정해 주세요. (예: hong01)' : '아이디는 영문 소문자·숫자 3자 이상으로 입력해 주세요.'; return; }
       if (body.password.length < 8) { er.textContent = '비밀번호는 8자 이상이어야 합니다.'; return; }
       if (body.password !== $('#jp2').value) { er.textContent = '두 비밀번호가 다릅니다.'; return; }
       $('#jbtn').disabled = true; $('#jbtn').textContent = '신청 중…'; er.textContent = '';
