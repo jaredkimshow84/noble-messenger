@@ -315,3 +315,101 @@ mark{background:#ffe27a;color:inherit;border-radius:3px;padding:0 1px}
 .rs-list b{font-size:13.5px}
 .rs-list time{font-size:12px;color:var(--muted);justify-self:end}
 .rs-list span{grid-column:1/-1;font-size:13.5px;color:var(--body)}
+
+/* 글자 크기 (설정 → 글자 크기) */
+html.fs-l body{font-size:17.5px}
+html.fs-l .bubble{font-size:17.5px}
+html.fs-l .msg .who{font-size:15px}
+html.fs-l .meta{font-size:14px}
+html.fs-l .day{font-size:15px}
+html.fs-l .ri-top b{font-size:18px}
+html.fs-l .ri-bot p{font-size:16.5px}
+html.fs-l .ri-top time{font-size:14.5px}
+html.fs-l .composer textarea{font-size:18.5px}
+html.fs-l .quote b{font-size:15px}
+html.fs-l .quote{font-size:15px}
+html.fs-l .file-msg b{font-size:16.5px}
+html.fs-l .file-msg span{font-size:14.5px}
+html.fs-l .notice-item b{font-size:18px}
+html.fs-l .notice-item p{font-size:16px}
+html.fs-l .doc .doc-body{font-size:18px}
+html.fs-l .doc h2{font-size:22.5px}
+html.fs-l .person b{font-size:17.5px}
+html.fs-l .person span{font-size:15.5px}
+html.fs-l .req-top b{font-size:17.5px}
+html.fs-l .req p{font-size:16px}
+html.fs-l .pm-txt b{font-size:16px}
+html.fs-l .pm-txt p{font-size:16.5px}
+html.fs-l .toast{font-size:16.5px}
+html.fs-l .hit-top b{font-size:16.5px}
+html.fs-l .hit-body{font-size:16px}
+html.fs-l .rs-list span{font-size:16px}
+html.fs-l .rs-list b{font-size:16px}
+html.fs-l .rn-body{font-size:16.5px}
+html.fs-l .reply-bar{font-size:15.5px}
+html.fs-l .mention-box b{font-size:17px}
+html.fs-l .search input{font-size:17.5px}
+html.fs-l .rs-in input{font-size:17.5px}
+html.fs-l .input,html.fs-l select.input,html.fs-l textarea.input{font-size:17.5px}
+html.fs-l .field label{font-size:16px}
+html.fs-l .btn{font-size:17.5px}
+html.fs-l .btn.sm{font-size:16px}
+html.fs-l .small{font-size:15.5px}
+html.fs-l .empty{font-size:17px}
+html.fs-l .group-hd{font-size:15px}
+html.fs-l .card h3{font-size:18.5px}
+html.fs-l .pane-hd h1{font-size:22.5px}
+html.fs-l .sheet-hd h2{font-size:20.5px}
+html.fs-l .react b{font-size:14.5px}
+html.fs-l .chips span{font-size:15.5px}
+html.fs-l .seg button{font-size:16.5px}
+html.fs-xl body{font-size:20px}
+html.fs-xl .bubble{font-size:20px}
+html.fs-xl .msg .who{font-size:17.5px}
+html.fs-xl .meta{font-size:16.5px}
+html.fs-xl .day{font-size:17.5px}
+html.fs-xl .ri-top b{font-size:20.5px}
+html.fs-xl .ri-bot p{font-size:19px}
+html.fs-xl .ri-top time{font-size:17px}
+html.fs-xl .composer textarea{font-size:21px}
+html.fs-xl .quote b{font-size:17.5px}
+html.fs-xl .quote{font-size:17.5px}
+html.fs-xl .file-msg b{font-size:19px}
+html.fs-xl .file-msg span{font-size:17px}
+html.fs-xl .notice-item b{font-size:20.5px}
+html.fs-xl .notice-item p{font-size:18.5px}
+html.fs-xl .doc .doc-body{font-size:20.5px}
+html.fs-xl .doc h2{font-size:25px}
+html.fs-xl .person b{font-size:20px}
+html.fs-xl .person span{font-size:18px}
+html.fs-xl .req-top b{font-size:20px}
+html.fs-xl .req p{font-size:18.5px}
+html.fs-xl .pm-txt b{font-size:18.5px}
+html.fs-xl .pm-txt p{font-size:19px}
+html.fs-xl .toast{font-size:19px}
+html.fs-xl .hit-top b{font-size:19px}
+html.fs-xl .hit-body{font-size:18.5px}
+html.fs-xl .rs-list span{font-size:18.5px}
+html.fs-xl .rs-list b{font-size:18.5px}
+html.fs-xl .rn-body{font-size:19px}
+html.fs-xl .reply-bar{font-size:18px}
+html.fs-xl .mention-box b{font-size:19.5px}
+html.fs-xl .search input{font-size:20px}
+html.fs-xl .rs-in input{font-size:20px}
+html.fs-xl .input,html.fs-xl select.input,html.fs-xl textarea.input{font-size:20px}
+html.fs-xl .field label{font-size:18.5px}
+html.fs-xl .btn{font-size:20px}
+html.fs-xl .btn.sm{font-size:18.5px}
+html.fs-xl .small{font-size:18px}
+html.fs-xl .empty{font-size:19.5px}
+html.fs-xl .group-hd{font-size:17.5px}
+html.fs-xl .card h3{font-size:21px}
+html.fs-xl .pane-hd h1{font-size:25px}
+html.fs-xl .sheet-hd h2{font-size:23px}
+html.fs-xl .react b{font-size:17px}
+html.fs-xl .chips span{font-size:18px}
+html.fs-xl .seg button{font-size:19px}
+html.fs-l .bubble,html.fs-xl .bubble{line-height:1.55}
+html.fs-xl .tab span:not(.badge){font-size:12.5px}
+.fs-seg{display:flex;gap:6px;margin-bottom:10px}.fs-seg button{flex:1;min-height:52px;border-radius:12px;border:2px solid var(--line);background:#fff;font-weight:800;color:var(--navy)}.fs-seg button[aria-pressed=true]{border-color:var(--gold);background:var(--gold-soft)}
+.fs-prev{background:var(--bg);border-radius:12px;padding:12px}

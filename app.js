@@ -78,6 +78,11 @@
     try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch (e) {}
   }
   ['pointerdown', 'keydown', 'touchstart'].forEach(function (ev) { document.addEventListener(ev, unlockAudio, { passive: true }); });
+  /* 글자 크기 (이 기기에 저장) */
+  var FS = [['', '보통'], ['l', '크게'], ['xl', '아주 크게']];
+  function fontSize() { var v = lsGet('noble-font'); return v === 'l' || v === 'xl' ? v : ''; }
+  function applyFont(v) { var h = document.documentElement; h.classList.remove('fs-l', 'fs-xl'); if (v) h.classList.add('fs-' + v); }
+  applyFont(fontSize());
   function soundOn() { return lsGet('noble-sound') !== 'off'; }
   function soundKind() { var k = lsGet('noble-sound-kind'); return SOUNDS[k] ? k : 'ding'; }
   function soundVol() { var v = parseFloat(lsGet('noble-sound-vol')); return isNaN(v) ? 0.6 : v; }
@@ -1226,6 +1231,8 @@
       '<section class="card" style="margin-top:16px"><div style="display:flex;gap:14px;align-items:center">' + av(me, 'xl') + '<div style="min-width:0"><b style="font-size:17px">' + esc(me.name) + '</b><br><span class="muted small">' + esc(personLabel(me) || '') + ' · 아이디 ' + esc(me.login_id) + '</span>' +
       '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px"><label class="btn btn-gold sm" style="cursor:pointer">' + svg('camera').replace('<svg', '<svg style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2"') + ' 프로필 사진 변경<input type="file" id="avIn" accept="image/*" hidden></label>' +
       (me.avatar_url ? '<button class="btn btn-line sm" id="avDel">기본 이미지로</button>' : '') + '</div></div></div></section>' +
+      '<section class="card"><h3>글자 크기</h3><div class="fs-seg">' + FS.map(function (f, i) { return '<button data-fs="' + f[0] + '"' + (fontSize() === f[0] ? ' aria-pressed="true"' : '') + ' style="font-size:' + (15 + i * 3) + 'px">' + f[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="fs-prev"><div class="bubble" style="max-width:100%">글자 크기 미리보기입니다. 대화·목록·공지 글자가 모두 바뀝니다.</div></div><p class="muted small" style="margin-top:8px">이 기기에만 적용됩니다.</p></section>' +
       '<section class="card"><h3>메시지 알림음</h3><p class="muted small" style="margin-bottom:10px">메신저가 켜져 있을 때 새 메시지가 오면 소리로 알려 줍니다. (이 기기에만 적용)</p>' +
       '<label class="switch-row"><input type="checkbox" id="sndOn"' + (soundOn() ? ' checked' : '') + '> 알림음 켜기</label>' +
       '<div class="snd-row"><select class="input" id="sndKind" aria-label="알림음 종류">' + Object.keys(SOUNDS).map(function (k) { return '<option value="' + k + '"' + (k === soundKind() ? ' selected' : '') + '>' + SOUNDS[k][0] + '</option>'; }).join('') + '</select>' +
@@ -1239,6 +1246,7 @@
       '<section class="card"><button class="btn btn-line block" id="logout">로그아웃</button></section>' +
       '<p class="muted small" style="text-align:center;padding:4px 16px 24px">노블 메신저 · 노블365의원 · 노블경희한의원</p></div>';
     renderPushBox();
+    $$('[data-fs]').forEach(function (b) { b.onclick = function () { lsSet('noble-font', b.getAttribute('data-fs')); applyFont(b.getAttribute('data-fs')); $$('[data-fs]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); }; });
     $('#sndOn').onchange = function () { lsSet('noble-sound', this.checked ? 'on' : 'off'); if (this.checked) playSound(null, true); };
     $('#sndKind').onchange = function () { lsSet('noble-sound-kind', this.value); playSound(this.value, true); };
     $('#sndVol').onchange = function () { lsSet('noble-sound-vol', this.value); playSound(null, true); };
