@@ -413,3 +413,37 @@ html.fs-l .bubble,html.fs-xl .bubble{line-height:1.55}
 html.fs-xl .tab span:not(.badge){font-size:12.5px}
 .fs-seg{display:flex;gap:6px;margin-bottom:10px}.fs-seg button{flex:1;min-height:52px;border-radius:12px;border:2px solid var(--line);background:#fff;font-weight:800;color:var(--navy)}.fs-seg button[aria-pressed=true]{border-color:var(--gold);background:var(--gold-soft)}
 .fs-prev{background:var(--bg);border-radius:12px;padding:12px}
+/* 투표 */
+.poll{width:min(340px,72vw);background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 2px 8px rgba(13,36,64,.05);color:var(--ink);text-align:left}
+.poll-hd{display:flex;gap:8px;align-items:flex-start}
+.poll-hd svg{width:20px;height:20px;flex:0 0 auto;fill:none;stroke:var(--gold-d);stroke-width:2.2;stroke-linecap:round;margin-top:1px}
+.poll-hd b{font-size:15.5px;line-height:1.4}
+.poll-sub{font-size:12.5px;color:var(--muted);margin:4px 0 10px 28px}
+.poll-opts{display:grid;gap:6px}
+.popt{position:relative;display:flex;align-items:center;gap:8px;width:100%;min-height:42px;padding:8px 12px;border:1.5px solid var(--line);border-radius:11px;background:#fff;text-align:left;overflow:hidden;font-size:14.5px}
+.popt:not(:disabled):hover{border-color:var(--navy)}
+.popt:disabled{cursor:default}
+.popt.on{border-color:var(--gold)}
+.pbar{position:absolute;left:0;top:0;bottom:0;background:var(--gold-soft);z-index:0;transition:width .3s}
+.popt.on .pbar{background:#f1e2b6}
+.pchk,.ptxt,.pcnt{position:relative;z-index:1}
+.pchk{width:20px;height:20px;border-radius:6px;border:1.5px solid #b7c0cc;display:grid;place-items:center;flex:0 0 auto;background:#fff}
+.popt.on .pchk{background:var(--navy);border-color:var(--navy)}
+.pchk svg{width:13px;height:13px;fill:none;stroke:var(--gold);stroke-width:3}
+.ptxt{flex:1;min-width:0}
+.pcnt{font-weight:800;color:var(--navy);font-size:13.5px}
+.popt.win .ptxt{font-weight:800}
+.poll-ft{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+.poll-btns{display:flex;gap:6px;flex-wrap:wrap}
+.poll-btns .btn.sm{min-height:30px;padding:0 10px;font-size:12.5px}
+.poll.closed{opacity:.92}
+.pset{display:grid;gap:8px;margin:4px 0 12px}
+.pset label{display:flex;gap:8px;align-items:center;font-size:14.5px}
+.pset input[type=checkbox]{width:19px;height:19px;accent-color:var(--navy)}
+.popt-in{display:flex;gap:6px;margin-bottom:6px}
+.popt-in button{width:40px;border-radius:10px;display:grid;place-items:center}
+.popt-in button svg{width:15px;height:15px;fill:none;stroke:var(--muted);stroke-width:2.2}
+.pw{padding:10px 0;border-bottom:1px solid var(--line)}
+.pw p{font-size:14px;margin-top:3px}
+html.fs-l .poll-hd b,html.fs-l .popt{font-size:17px}
+html.fs-xl .poll-hd b,html.fs-xl .popt{font-size:19.5px}
