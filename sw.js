@@ -1,5 +1,5 @@
 /* 노블 메신저 – 서비스 워커 (휴대폰 알림, 앱 설치) */
-const CACHE = 'noble-msg-v7';
+const CACHE = 'noble-msg-v8';
 const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'config.js', 'vendor/supabase-2.118.0.js', 'icons/icon-192.png', 'logo.svg'];
 
 self.addEventListener('install', (e) => {
@@ -24,8 +24,9 @@ self.addEventListener('push', (e) => {
   try { d = e.data ? e.data.json() : {}; } catch (_) { d = { title: '노블 메신저', body: e.data ? e.data.text() : '' }; }
   e.waitUntil((async () => {
     const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    // 앱을 보고 있는 중이면 화면 안에서 알려주므로 휴대폰 알림은 생략
-    if (wins.some((w) => w.visibilityState === 'visible' && w.focused)) return;
+    // 지금 그 대화방을 보고 있는 경우에만 생략 → 그 외에는 항상 PC 오른쪽 아래(시계 위) / 휴대폰 알림으로 표시
+    const hash = (u) => { const i = u.indexOf('#'); return i < 0 ? '' : u.slice(i); };
+    if (d.url && wins.some((w) => w.visibilityState === 'visible' && w.focused && hash(w.url).indexOf(d.url) === 0)) return;
     await self.registration.showNotification(d.title || '노블 메신저', {
       body: d.body || '', tag: d.tag, renotify: true,
       icon: 'icons/icon-192.png', badge: 'icons/badge-96.png', data: { url: d.url || '' }

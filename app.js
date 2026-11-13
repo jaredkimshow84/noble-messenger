@@ -199,7 +199,7 @@
         }
         if (/^#join/.test(location.hash)) location.hash = '#chats';
         renderShell();
-        subscribeRealtime();
+        subscribeRealtime(); checkPush();
         return Promise.all([loadRooms(), loadNotices(), loadPending()]).then(function () { route(); });
       });
     }).catch(function (e) { renderLogin(errMsg(e)); });
@@ -1233,7 +1233,7 @@
       (me.avatar_url ? '<button class="btn btn-line sm" id="avDel">기본 이미지로</button>' : '') + '</div></div></div></section>' +
       '<section class="card"><h3>글자 크기</h3><div class="fs-seg">' + FS.map(function (f, i) { return '<button data-fs="' + f[0] + '"' + (fontSize() === f[0] ? ' aria-pressed="true"' : '') + ' style="font-size:' + (15 + i * 3) + 'px">' + f[1] + '</button>'; }).join('') + '</div>' +
       '<div class="fs-prev"><div class="bubble" style="max-width:100%">글자 크기 미리보기입니다. 대화·목록·공지 글자가 모두 바뀝니다.</div></div><p class="muted small" style="margin-top:8px">이 기기에만 적용됩니다.</p></section>' +
-      '<section class="card"><h3>메시지 알림음</h3><p class="muted small" style="margin-bottom:10px">메신저가 켜져 있을 때 새 메시지가 오면 소리로 알려 줍니다. (이 기기에만 적용)</p>' +
+      '<section class="card"><h3>메시지 알림음</h3><p class="muted small" style="margin-bottom:10px">메신저가 켜져 있을 때 새 메시지가 오면 소리로 알려 줍니다. (이 기기에만 적용)<br>※ 아래 <b>알림 켜기</b>를 한 기기는 Windows·휴대폰 알림음이 대신 울립니다.</p>' +
       '<label class="switch-row"><input type="checkbox" id="sndOn"' + (soundOn() ? ' checked' : '') + '> 알림음 켜기</label>' +
       '<div class="snd-row"><select class="input" id="sndKind" aria-label="알림음 종류">' + Object.keys(SOUNDS).map(function (k) { return '<option value="' + k + '"' + (k === soundKind() ? ' selected' : '') + '>' + SOUNDS[k][0] + '</option>'; }).join('') + '</select>' +
       '<span class="small muted">크기</span><input type="range" id="sndVol" min="0.1" max="1" step="0.1" value="' + soundVol() + '" aria-label="소리 크기"><button class="btn btn-line sm" id="sndTest">미리 듣기</button></div></section>' +
@@ -1305,6 +1305,11 @@
     });
   }
   function b64ToU8(b) { var p = '='.repeat((4 - b.length % 4) % 4), s = atob((b + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(s, function (c) { return c.charCodeAt(0); }); }
+  /* 이 기기에 알림(Windows 알림 / 휴대폰 알림)이 켜져 있으면 화면 안 팝업 대신 시스템 알림을 사용 */
+  function checkPush() {
+    if (!pushSupported() || Notification.permission !== 'granted') { S.pushOn = false; return Promise.resolve(); }
+    return navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) { S.pushOn = !!sub; }).catch(function () { S.pushOn = false; });
+  }
   function subscribePush() {
     return Notification.requestPermission().then(function (perm) {
       if (perm !== 'granted') throw new Error('알림 권한이 허용되지 않았습니다.');
@@ -1316,7 +1321,7 @@
       var j = sub.toJSON();
       return sb.from('push_subscriptions').delete().eq('endpoint', j.endpoint).then(function () {
         return sb.from('push_subscriptions').insert({ user_id: S.me.id, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth });
-      }).then(function (r) { if (r.error) throw r.error; });
+      }).then(function (r) { if (r.error) throw r.error; S.pushOn = true; });
     });
   }
   function unsubscribePush() {
@@ -1324,6 +1329,7 @@
     return navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
       if (!sub) return;
       var ep = sub.endpoint;
+      S.pushOn = false;
       return sub.unsubscribe().then(function () { return sb.from('push_subscriptions').delete().eq('endpoint', ep); });
     }).catch(function () {});
   }
@@ -1337,10 +1343,10 @@
         if (m.sender_id !== S.me.id && !S.solo) {
           var rr = S.rooms.find(function (x) { return x.id === m.room_id; });
           var ment = (m.mentions || []).indexOf(S.me.id) > -1, viewing = S.room && m.room_id === S.room.id && document.visibilityState === 'visible' && document.hasFocus();
-          if ((!rr || !rr.muted || ment) && !viewing) playSound();
+          if ((!rr || !rr.muted || ment) && !viewing && !S.pushOn) playSound();
         }
         if (S.room && m.room_id === S.room.id) { addMessage(m); if (m.sender_id !== S.me.id) markRead(); }
-        else if (m.sender_id !== S.me.id && !S.solo) {
+        else if (m.sender_id !== S.me.id && !S.solo && !S.pushOn) {
           var r = S.rooms.find(function (x) { return x.id === m.room_id; });
           var mention = (m.mentions || []).indexOf(S.me.id) > -1;
           if (!r || !r.muted || mention) {
@@ -1374,7 +1380,7 @@
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notices' }, function (p) {
         loadNotices().then(function () {
-          if (p.eventType === 'INSERT' && p.new.author_id !== S.me.id && !S.solo) playSound();
+          if (p.eventType === 'INSERT' && p.new.author_id !== S.me.id && !S.solo && !S.pushOn) playSound();
           if (p.eventType === 'INSERT' && p.new.author_id !== S.me.id) toast('<b>📢 새 공지</b> ' + esc(p.new.title), function () { location.hash = '#notice/' + p.new.id; });
         });
       })
