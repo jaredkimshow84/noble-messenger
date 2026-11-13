@@ -54,7 +54,7 @@
 
   /* ---------------- 설정 확인 ---------------- */
   if (!CFG.url || !CFG.anonKey) {
-    root.innerHTML = '<div class="login"><div class="login-card"><div class="login-brand"><img src="../images/logo.svg" alt=""><div><b>노블 메신저</b><span>설정이 필요합니다</span></div></div>' +
+    root.innerHTML = '<div class="login"><div class="login-card"><div class="login-brand"><img src="logo.svg" alt=""><div><b>노블 메신저</b><span>설정이 필요합니다</span></div></div>' +
       '<p class="muted">messenger/config.js 파일에 Supabase 주소(url)와 공개 키(anonKey)를 넣으면 사용할 수 있습니다. 설치 가이드를 확인해 주세요.</p></div></div>';
     return;
   }
@@ -72,7 +72,7 @@
   function renderLogin(msg) {
     if (joinCode() && !msg) { renderJoin(); return; }
     root.innerHTML = '<main class="login"><form class="login-card" id="loginForm" novalidate>' +
-      '<div class="login-brand"><img src="../images/logo.svg" alt=""><div><b>노블 메신저</b><span>노블365의원 · 노블경희한의원</span></div></div>' +
+      '<div class="login-brand"><img src="logo.svg" alt=""><div><b>노블 메신저</b><span>노블365의원 · 노블경희한의원</span></div></div>' +
       '<div class="field"><label for="lid">아이디</label><input class="input" id="lid" autocomplete="username" autocapitalize="off" spellcheck="false" required></div>' +
       '<div class="field"><label for="lpw">비밀번호</label><input class="input" id="lpw" type="password" autocomplete="current-password" required></div>' +
       '<p class="err" id="lerr">' + esc(msg || '') + '</p>' +
@@ -94,12 +94,12 @@
   function renderJoin(done) {
     var code = joinCode();
     if (done) {
-      root.innerHTML = '<main class="login"><div class="login-card"><div class="login-brand"><img src="../images/logo.svg" alt=""><div><b>가입 신청 완료</b><span>노블 메신저</span></div></div>' +
+      root.innerHTML = '<main class="login"><div class="login-card"><div class="login-brand"><img src="logo.svg" alt=""><div><b>가입 신청 완료</b><span>노블 메신저</span></div></div>' +
         '<p style="margin-bottom:16px">관리자가 승인하면 바로 로그인할 수 있습니다. 승인까지 잠시 기다려 주세요.</p><a class="btn btn-navy block" href="#">로그인 화면으로</a></div></main>';
       return;
     }
     root.innerHTML = '<main class="login"><form class="login-card" id="joinForm" novalidate>' +
-      '<div class="login-brand"><img src="../images/logo.svg" alt=""><div><b>노블 메신저 가입</b><span>노블365의원 · 노블경희한의원 직원용</span></div></div>' +
+      '<div class="login-brand"><img src="logo.svg" alt=""><div><b>노블 메신저 가입</b><span>노블365의원 · 노블경희한의원 직원용</span></div></div>' +
       '<div class="row2"><div class="field"><label for="jn">이름</label><input class="input" id="jn" autocomplete="name"></div>' +
       '<div class="field"><label for="jc">소속</label><select class="input" id="jc"><option>노블365의원</option><option>노블경희한의원</option><option>공통</option></select></div></div>' +
       '<div class="row2"><div class="field"><label for="jd">부서</label><input class="input" id="jd" placeholder="예: 원무, 간호"></div>' +
@@ -156,7 +156,7 @@
   var TABS = [['chats', '채팅', 'chat'], ['notices', '공지', 'bell'], ['work', '근무신청', 'clock'], ['staff', '직원', 'users'], ['settings', '설정', 'gear']];
   function renderShell() {
     var tabs = TABS.slice(); if (S.me.role === 'admin') tabs.splice(4, 0, ['admin', '관리', 'shield']);
-    root.innerHTML = '<div class="app" id="app"><nav class="rail" aria-label="메뉴"><img class="logo" src="../images/logo.svg" alt="노블">' +
+    root.innerHTML = '<div class="app" id="app"><nav class="rail" aria-label="메뉴"><img class="logo" src="logo.svg" alt="노블">' +
       tabs.map(function (t) { return '<a class="tab" href="#' + t[0] + '" data-tab="' + t[0] + '">' + svg(t[2]) + '<span>' + t[1] + '</span><span class="badge" data-badge="' + t[0] + '" hidden></span></a>'; }).join('') +
       '<div class="spacer"></div></nav>' +
       '<section class="list-pane" id="list"></section><section class="main-pane" id="main"></section></div>';

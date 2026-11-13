@@ -1,6 +1,6 @@
 /* 노블 메신저 – 화면 스타일
    레이아웃: 휴대폰 우선. 넓은 화면에서는 왼쪽 목록 + 오른쪽 대화 2단 */
-@font-face{font-family:"Pretendard";src:url("../fonts/PretendardVariable.subset.woff2") format("woff2-variations");font-weight:45 920;font-display:swap}
+@font-face{font-family:"Pretendard";src:url("PretendardVariable.subset.woff2") format("woff2-variations");font-weight:45 920;font-display:swap}
 :root{
   --navy:#0d2440;--navy-2:#163a64;--gold:#c9a646;--gold-soft:#f7f0dc;--gold-d:#8a6b1c;
   --bg:#f3f5f9;--panel:#ffffff;--ink:#17202c;--body:#3a4555;--muted:#6b7686;--line:#e2e7ee;
