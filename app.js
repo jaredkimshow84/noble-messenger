@@ -334,6 +334,19 @@
   var roomsTimer = null;
   function refreshRooms() { clearTimeout(roomsTimer); roomsTimer = setTimeout(function () { loadRooms().then(function () { if (S.route.tab === 'chats') renderRoomList(); }); }, 250); }
 
+  /* 단체방 사진 = 방 이름 글자 (네모 안에 다 보이게 길이에 따라 글씨 크기 조절) */
+  function grpFace(name) {
+    var n = String(name || '#').replace(/\s+/g, ' ').trim(), len = n.replace(/ /g, '').length;
+    var cls = len <= 2 ? 'g1' : len <= 4 ? 'g2' : len <= 6 ? 'g3' : len <= 9 ? 'g4' : 'g5';
+    var html = esc(n);
+    if (n.indexOf(' ') < 0 && len >= 4) {   // 띄어쓰기 없는 이름은 보기 좋게 두 줄로 나눔 (한글/숫자 경계 우선)
+      var mid = Math.ceil(len / 2), cut = mid, chars = Array.from(n);
+      var kind = function (c) { return /[가-힣]/.test(c) ? 'k' : /[0-9]/.test(c) ? 'd' : 'o'; };
+      [mid, mid - 1, mid + 1].some(function (i) { if (i > 0 && i < chars.length && kind(chars[i - 1]) !== kind(chars[i])) { cut = i; return true; } });
+      html = esc(chars.slice(0, cut).join('')) + '<br>' + esc(chars.slice(cut).join(''));
+    }
+    return '<span class="avatar grp gname ' + cls + '" aria-hidden="true"><span>' + html + '</span></span>';
+  }
   function renderRoomList() {
     unsingle(); $('#main').style.justifyContent = '';
     var q = (S.roomQuery || '').trim();
@@ -342,7 +355,7 @@
       '<div class="search">' + svg('search') + '<input id="roomQ" placeholder="대화방·메시지 검색" value="' + esc(q) + '" aria-label="대화방·메시지 검색"></div><div id="pushAsk"></div>' +
       '<div class="pane-body">' + (q && list.length ? '<div class="group-hd">대화방</div>' : '') + (list.length ? list.map(function (r) {
         var grp = r.type === 'group';
-        var face = grp ? '<span class="avatar grp">#</span>' : r.type === 'self' ? av(S.me, 'me') : av(S.profiles[r.other_id] || { name: r.name });
+        var face = grp ? grpFace(r.name) : r.type === 'self' ? av(S.me, 'me') : av(S.profiles[r.other_id] || { name: r.name });
         return '<a class="room-item' + (r.pinned ? ' pinned' : '') + '" href="#room/' + r.id + '" data-room="' + r.id + '"' + (S.route.id === r.id ? ' aria-current="true"' : '') + '>' + face +
           '<span class="ri-main"><span class="ri-top"><b>' + (r.pinned ? '<svg class="pin-ico" viewBox="0 0 24 24">' + IC.pin + '</svg>' : '') + esc(r.name) + (r.type === 'dm' && pTag(S.profiles[r.other_id]) ? '<span class="who-tag">' + esc(pTag(S.profiles[r.other_id])) + '</span>' : '') + (grp ? '<small>' + r.member_count + '</small>' : '') + (r.muted ? ' <svg class="mute-ico" viewBox="0 0 24 24">' + IC.mute + '</svg>' : '') + '</b><time>' + (r.last_body != null ? shortTime(r.last_message_at) : '') + '</time></span>' +
           '<span class="ri-bot"><p>' + esc(r.last_body == null ? '새 대화방' : (grp && r.last_sender ? r.last_sender + ': ' : '') + r.last_body) + '</p>' + (r.unread ? '<span class="badge">' + (r.unread > 99 ? '99+' : r.unread) + '</span>' : '') + '</span></span></a>';
@@ -519,6 +532,7 @@
     var w = 380, h = Math.min(screen.availHeight - 40, 760);
     var win = window.open(location.href.split('#')[0] + '#room/' + id + '/solo', 'noble-room-' + id,
       'popup,width=' + w + ',height=' + h + ',left=' + Math.max(0, screen.availWidth - w - 420) + ',top=40');
+    if (!win && ND) return;   // PC 프로그램은 프로그램이 직접 창을 열어 줌 (차단 아님)
     if (!win) toast('팝업이 차단되었습니다. 주소창 오른쪽 팝업 차단 아이콘에서 "항상 허용"을 눌러 주세요.');
     else try { win.focus(); } catch (e) {}
   }
@@ -658,7 +672,9 @@
 
   function renderMessages(toBottom) {
     var el = $('#msgs'); if (!el) return;
-    var nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    // 사용자가 맨 아래를 보고 있을 때만 아래로 따라감 (위로 올려 읽는 중이면 절대 끌어내리지 않음)
+    if (toBottom) S.stick = true;
+    var nearBottom = S.stick !== false && el.scrollHeight - el.scrollTop - el.clientHeight < 160;
     var html = S.hasOlder ? '<button class="btn btn-line sm load-older" id="older">이전 메시지 보기</button>' : '';
     if (!S.messages.length) html += '<p class="empty">첫 메시지를 보내 보세요.</p>';
     var prev = null, needUrls = [];
@@ -700,6 +716,14 @@
     var ob = $('#older'); if (ob) ob.onclick = loadOlder;
     if (!el.getAttribute('data-wired')) {
       el.setAttribute('data-wired', '1');
+      // 손가락·마우스로 위로 올리면 '따라가기' 해제, 맨 아래로 다시 내리면 재개
+      var lastTop = el.scrollTop;
+      el.addEventListener('scroll', function () {
+        var dist = el.scrollHeight - el.scrollTop - el.clientHeight;
+        if (el.scrollTop < lastTop - 2 && dist > 40) S.stick = false;
+        else if (dist < 40) S.stick = true;
+        lastTop = el.scrollTop;
+      }, { passive: true });
       el.addEventListener('click', function (e) {
         var pb = e.target.closest('[data-popt],[data-pvote],[data-pclose],[data-pwho],[data-predo]');
         if (pb) { pollClick(pb); return; }
@@ -725,8 +749,8 @@
     }
     fetchReplyTargets();
     fetchPolls(S.messages.filter(function (m) { return m.poll_id && !m.deleted && !S.polls[m.poll_id] && !S.pollLoading[m.poll_id]; }).map(function (m) { return m.poll_id; }));
-    if (toBottom || nearBottom) el.scrollTop = el.scrollHeight;
-    $$('img', el).forEach(function (im) { im.addEventListener('load', function () { if (toBottom || nearBottom) el.scrollTop = el.scrollHeight; }, { once: true }); });
+    if (toBottom || nearBottom) { S.stick = true; el.scrollTop = el.scrollHeight; }
+    $$('img', el).forEach(function (im) { if (!im.complete || !im.getAttribute('src')) im.addEventListener('load', function () { if (S.stick && el.isConnected) el.scrollTop = el.scrollHeight; }, { once: true }); });
     signUrls(needUrls.filter(function (p) { return !cachedUrl(p); }));
   }
 

@@ -569,3 +569,12 @@ html.fs-s .ri-top time{font-size:11px}
 html.fs-s .quote{font-size:12px}
 html.fs-s .room-item{padding-top:10px;padding-bottom:10px}
 @media (hover:hover) and (pointer:fine){html.fs-s .composer textarea{font-size:14px}}
+.msgs{overscroll-behavior-y:contain}
+/* 단체방 사진: 방 이름 글자 */
+.avatar.gname{padding:3px;overflow:hidden}
+.avatar.gname span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;text-align:center;line-height:1.12;word-break:keep-all;overflow-wrap:anywhere;font-weight:800;letter-spacing:-.03em;max-width:100%}
+.avatar.gname.g1 span{font-size:15px}
+.avatar.gname.g2 span{font-size:12.5px;-webkit-line-clamp:2}
+.avatar.gname.g3 span{font-size:10.5px;-webkit-line-clamp:2}
+.avatar.gname.g4 span{font-size:9.5px}
+.avatar.gname.g5 span{font-size:8.5px}
