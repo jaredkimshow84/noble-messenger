@@ -142,7 +142,7 @@
   /* 프로필 사진 크게 보기 */
   document.addEventListener('click', function (e) {
     var a = e.target.closest && e.target.closest('.avatar[data-uid]');
-    if (!a || a.closest('.room-item') || a.closest('.mention-box') || a.closest('.pick') || a.closest('.pv')) return;
+    if (!a || a.closest('.room-item') || a.closest('.mention-box') || a.closest('.pick') || a.closest('.pv') || a.closest('[data-edit]') || a.closest('[data-dm]')) return;
     e.preventDefault(); e.stopPropagation();
     profileView(a.getAttribute('data-uid'));
   }, true);
@@ -153,12 +153,14 @@
     m.innerHTML = '<div class="pv"><button class="pv-x" data-close aria-label="닫기">' + svg('x') + '</button>' +
       (p.avatar_url ? '<img class="pv-img" src="' + esc(p.avatar_url) + '" alt="' + esc(p.name) + ' 프로필 사진">' : '<div class="pv-ini">' + esc(initial(p.name)) + '</div>') +
       '<div class="pv-info"><b>' + esc(p.name) + (p.id === S.me.id ? ' (나)' : '') + '</b><span>' + esc(label || '') + '</span></div>' +
-      '<div class="pv-btns">' + (p.id !== S.me.id ? '<button class="btn btn-gold" id="pvDm">1:1 대화</button>' : '<button class="btn btn-gold" id="pvSet">프로필 사진 바꾸기</button>') + '</div></div>';
+      '<div class="pv-btns">' + (p.id !== S.me.id ? '<button class="btn btn-gold" id="pvDm">1:1 대화</button>' : '<button class="btn btn-gold" id="pvSet">프로필 사진 바꾸기</button>') +
+      (S.me.role === 'admin' ? '<button class="btn btn-line" id="pvEdit">직원 정보 수정</button>' : '') + '</div></div>';
     document.body.appendChild(m);
     m.addEventListener('click', function (e) { if (e.target === m || e.target.closest('[data-close]')) m.remove(); });
     m.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.preventDefault(); m.remove(); } });
     setTimeout(function () { var x = $('.pv-x', m); if (x) x.focus(); }, 30);
     var dm = $('#pvDm', m); if (dm) dm.onclick = function () { m.remove(); sb.rpc('start_dm', { other: uid }).then(function (r) { if (r.error) { toast(esc(errMsg(r.error))); return; } loadRooms().then(function () { location.hash = '#room/' + r.data; }); }); };
+    var pe = $('#pvEdit', m); if (pe) pe.onclick = function () { m.remove(); userSheet(S.profiles[uid]); };
     var st = $('#pvSet', m); if (st) st.onclick = function () { m.remove(); location.hash = '#settings'; };
   }
   function errMsg(e) {
@@ -1439,7 +1441,9 @@
         }).join('');
       }).join('') + '</div>';
     var si = $('#sq'); si.oninput = function () { S.staffQuery = si.value; var pos = si.selectionStart; renderStaff(); var n = $('#sq'); n.focus(); n.setSelectionRange(pos, pos); };
-    $$('[data-dm]').forEach(function (b) { b.onclick = function () { if (b.getAttribute('data-dm') === S.me.id) { openSelf(); return; } sb.rpc('start_dm', { other: b.getAttribute('data-dm') }).then(function (r) { if (r.error) { toast(esc(errMsg(r.error))); return; } loadRooms().then(function () { location.hash = '#room/' + r.data; }); }); }; });
+    // 직원 목록: 누르면 프로필 카드 (1:1 대화 / 관리자는 정보 수정) — 어디를 눌러도 같게
+    $$('[data-dm]').forEach(function (b) { b.onclick = function () { profileView(b.getAttribute('data-dm')); }; });
+    if (false) $$('[data-dm]').forEach(function (b) { b.onclick = function () { if (b.getAttribute('data-dm') === S.me.id) { openSelf(); return; } sb.rpc('start_dm', { other: b.getAttribute('data-dm') }).then(function (r) { if (r.error) { toast(esc(errMsg(r.error))); return; } loadRooms().then(function () { location.hash = '#room/' + r.data; }); }); }; });
   }
 
   /* ================= 관리 (관리자) ================= */
