@@ -126,8 +126,9 @@
   /* PC 설치 프로그램(노블 메신저.exe)과 연결 */
   var ND = window.nobleDesktop || null;
   /* Windows 알림 클릭: 좁은 창이면 그 채팅방을 새 작은 창으로, 넓은 창이면 이 창에서 열기 */
-  if (ND && ND.onOpen) ND.onOpen(function (hash) {
+  if (ND && ND.onOpen) ND.onOpen(function (hash, mode) {
     if (!hash) { if (ND.focusMain) ND.focusMain(); return; }
+    if (mode === 'here') { location.hash = hash; return; }   // 1.0.5+: 프로그램이 '메신저 창에서 열기'로 보냄
     var rm = /^#room\/([^/]+)/.exec(hash);
     if (rm) { openRoomWindow(rm[1]); return; }   // 채팅 알림은 항상 새 작은 창
     if (ND.focusMain) ND.focusMain();
@@ -1564,7 +1565,8 @@
       '<label class="switch-row"><input type="checkbox" id="sndOn"' + (soundOn() ? ' checked' : '') + '> 알림음 켜기</label>' +
       '<div class="snd-row"><select class="input" id="sndKind" aria-label="알림음 종류">' + Object.keys(SOUNDS).map(function (k) { return '<option value="' + k + '"' + (k === soundKind() ? ' selected' : '') + '>' + SOUNDS[k][0] + '</option>'; }).join('') + '</select>' +
       '<span class="small muted">크기</span><input type="range" id="sndVol" min="0.1" max="1" step="0.1" value="' + soundVol() + '" aria-label="소리 크기"><button class="btn btn-line sm" id="sndTest">미리 듣기</button></div></section>' +
-      (ND ? '<section class="card"><h3>PC 프로그램</h3><p class="small">노블 메신저 PC 프로그램 ' + esc(ND.version || '') + ' 사용 중입니다. 새 메시지는 화면 오른쪽 아래(시계 위)에 ' + (ND.toast ? '<b>노블 메신저 알림창</b>' : '<b>Windows 알림</b>') + '으로 표시됩니다.' + (ND.toast ? ' 알림 방식·표시 시간은 트레이 아이콘 오른쪽 클릭 → <b>알림 방식</b>에서 바꿀 수 있습니다.' : '') + '</p><p class="muted small" style="margin-top:6px">창의 X를 누르면 시계 옆 트레이로 숨고 알림은 계속 옵니다. 완전히 끄려면 트레이 아이콘 오른쪽 클릭 → 종료.</p><button class="btn btn-line sm" id="ndTest" style="margin-top:10px">알림 테스트</button><p class="muted small" id="ndTestMsg" style="margin-top:6px"></p></section>'
+      (ND ? '<section class="card"><h3>PC 프로그램</h3><p class="small">노블 메신저 PC 프로그램 ' + esc(ND.version || '') + ' 사용 중입니다. 새 메시지는 화면 오른쪽 아래(시계 위)에 ' + (ND.toast ? '<b>노블 메신저 알림창</b>' : '<b>Windows 알림</b>') + '으로 표시됩니다.' + (ND.toast ? ' 알림 방식·표시 시간은 트레이 아이콘 오른쪽 클릭 → <b>알림 방식</b>에서 바꿀 수 있습니다.' : '') + '</p><p class="muted small" style="margin-top:6px">창의 X를 누르면 시계 옆 트레이로 숨고 알림은 계속 옵니다. 완전히 끄려면 트레이 아이콘 오른쪽 클릭 → 종료.</p>' + (ND.getPref ? '<div class="field" style="margin-top:12px"><label for="ndOpen">알림을 누르면</label><select class="input" id="ndOpen"><option value="auto">자동 (메신저 창이 넓으면 그 창에서, 좁으면 새 창)</option><option value="popup">항상 새 작은 창에서 열기</option><option value="main">항상 메신저 창에서 열기</option></select></div>' +
+        '<div class="field"><label for="ndMode">알림 방식</label><select class="input" id="ndMode"><option value="noble">노블 메신저 알림창 (추천)</option><option value="windows">Windows 알림</option></select></div>' : '') + '<button class="btn btn-line sm" id="ndTest" style="margin-top:10px">알림 테스트</button><p class="muted small" id="ndTestMsg" style="margin-top:6px"></p></section>'
         : '<section class="card"><h3>휴대폰 알림</h3><div id="pushBox"></div></section>') +
       (DESKTOP.matches && !ND ? '<section class="card"><h3>작은 창으로 쓰기</h3><p class="muted small" style="margin-bottom:10px">크롬·엣지는 앱 창을 일정 폭 이하로 줄이지 못하게 막고 있습니다. 아래 버튼을 누르면 <b>카카오워크 크기(폭 380)</b>의 작은 창으로 따로 열립니다. 기존 큰 창은 닫으셔도 됩니다.</p>' +
         '<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-gold sm" data-mini="380">작은 창 (380)</button><button class="btn btn-line sm" data-mini="440">보통 창 (440)</button></div>' +
@@ -1584,6 +1586,13 @@
     $('#sndKind').onchange = function () { lsSet('noble-sound-kind', this.value); playSound(this.value, true); };
     $('#sndVol').onchange = function () { lsSet('noble-sound-vol', this.value); playSound(null, true); };
     $('#sndTest').onclick = function () { playSound($('#sndKind').value, true); };
+    if (ND && ND.getPref) {
+      [['ndOpen', 'openMode'], ['ndMode', 'notifyMode']].forEach(function (x) {
+        var el = $('#' + x[0]); if (!el) return;
+        ND.getPref(x[1]).then(function (v) { if (v) el.value = v; });
+        el.onchange = function () { ND.setPref(x[1], el.value); toast('저장했습니다'); };
+      });
+    }
     var ndt = $('#ndTest'); if (ndt) ndt.onclick = function () {
       deskNotify('노블 메신저 알림 테스트', '이 알림이 화면 오른쪽 아래(시계 위)에 보이면 정상입니다.', '#settings', { name: '알림 테스트', room: '노블 메신저' });
       $('#ndTestMsg').innerHTML = ND.toast ? '알림창이 안 보이면: 트레이 아이콘 오른쪽 클릭 → <b>알림 방식</b> → <b>노블 메신저 알림창</b>이 선택돼 있는지 확인' : '알림이 안 보이면: Windows <b>설정 → 시스템 → 알림</b>에서 알림 켜기 · <b>노블 메신저</b> 켜기 · <b>방해 금지(집중 지원)</b> 끄기';

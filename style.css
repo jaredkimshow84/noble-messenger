@@ -579,3 +579,4 @@ html.fs-s .room-item{padding-top:10px;padding-bottom:10px}
 .avatar.gname.g4 span{font-size:9.5px}
 .avatar.gname.g5 span{font-size:8.5px}
 .pv-btns{gap:8px}
+.msgs{overflow-x:hidden}
