@@ -305,6 +305,17 @@
       (q ? '<div id="msgResults">' + msgResultsHtml(q) + '</div>' : '') + '</div>';
     $('#newChat').onclick = newChatSheet;
     $$('[data-room]').forEach(function (a) {
+      /* PC: 한 번 클릭 = 이 창에서 열기, 더블클릭 = 새 창으로 열기 */
+      if (DESKTOP.matches) {
+        var ct = null;
+        a.addEventListener('click', function (e) {
+          if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+          e.preventDefault();
+          clearTimeout(ct);
+          ct = setTimeout(function () { location.hash = '#room/' + a.getAttribute('data-room'); }, 230);
+        });
+        a.addEventListener('dblclick', function (e) { e.preventDefault(); clearTimeout(ct); openRoomWindow(a.getAttribute('data-room')); });
+      }
       a.addEventListener('contextmenu', function (e) { e.preventDefault(); roomQuickSheet(S.rooms.find(function (x) { return x.id === a.getAttribute('data-room'); })); });
       longPress(a, function () { roomQuickSheet(S.rooms.find(function (x) { return x.id === a.getAttribute('data-room'); })); });
     });
@@ -447,6 +458,14 @@
     el.addEventListener('touchstart', function () { t = setTimeout(function () { t = null; fn(); }, 550); }, { passive: true });
     ['touchend', 'touchmove', 'touchcancel'].forEach(function (ev) { el.addEventListener(ev, function (e) { if (t) { clearTimeout(t); t = null; } else if (ev === 'touchend') e.preventDefault(); }, { passive: ev !== 'touchend' }); });
   }
+  /* 대화방을 좁은 새 창으로 열기 (카카오워크처럼) */
+  function openRoomWindow(id) {
+    var w = 380, h = Math.min(screen.availHeight - 40, 760);
+    var win = window.open(location.href.split('#')[0] + '#room/' + id + '/solo', 'noble-room-' + id,
+      'popup,width=' + w + ',height=' + h + ',left=' + Math.max(0, screen.availWidth - w - 420) + ',top=40');
+    if (!win) toast('팝업이 차단되었습니다. 주소창 오른쪽 팝업 차단 아이콘에서 "항상 허용"을 눌러 주세요.');
+    else try { win.focus(); } catch (e) {}
+  }
   function roomTitle(info) { return info ? esc(info.name) + (info.type === 'group' ? '<small>' + info.member_count + '명</small>' : '') : '대화'; }
   function openRoom(id) {
     if (S.room && S.room.id === id && $('#msgs')) return;
@@ -466,7 +485,7 @@
     $('#roomSearchBtn').onclick = roomSearchBar; S.searchQ = '';
     var pb = $('#pollBtn'); if (pb) pb.onclick = pollCreateSheet;
     var po = $('#popOut'); if (po) po.onclick = function () {
-      window.open(location.href.split('#')[0] + '#room/' + id + '/solo', 'noble-room-' + id, 'popup,width=460,height=760');
+      openRoomWindow(id);
     };
     if (S.solo && info) document.title = info.name + ' · 노블 메신저';
     renderRoomNotice(); applyRoomColor();
@@ -892,7 +911,7 @@
     $('#qLeave', s).onclick = function () { if (!confirmInline(this, r.type === 'group' ? '한 번 더 누르면 나갑니다' : '한 번 더 누르면 삭제됩니다')) return; closeSheet(s); leaveOrHide(r); };
     $('#qPin', s).onclick = function () { closeSheet(s); togglePin(r); };
     $('#qMute', s).onclick = function () { closeSheet(s); toggleMute(r); };
-    var qp = $('#qPop', s); if (qp) qp.onclick = function () { closeSheet(s); window.open(location.href.split('#')[0] + '#room/' + r.id + '/solo', 'noble-room-' + r.id, 'popup,width=460,height=760'); };
+    var qp = $('#qPop', s); if (qp) qp.onclick = function () { closeSheet(s); openRoomWindow(r.id); };
   }
 
   function cachedUrl(p) { var c = S.urlCache[p]; return c && c.exp > Date.now() ? c.url : null; }
