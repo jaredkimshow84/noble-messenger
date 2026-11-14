@@ -337,7 +337,7 @@
         var grp = r.type === 'group';
         var face = grp ? '<span class="avatar grp">#</span>' : r.type === 'self' ? av(S.me, 'me') : av(S.profiles[r.other_id] || { name: r.name });
         return '<a class="room-item' + (r.pinned ? ' pinned' : '') + '" href="#room/' + r.id + '" data-room="' + r.id + '"' + (S.route.id === r.id ? ' aria-current="true"' : '') + '>' + face +
-          '<span class="ri-main"><span class="ri-top"><b>' + (r.pinned ? '<svg class="pin-ico" viewBox="0 0 24 24">' + IC.pin + '</svg>' : '') + esc(r.name) + (grp ? '<small>' + r.member_count + '</small>' : '') + (r.muted ? ' <svg class="mute-ico" viewBox="0 0 24 24">' + IC.mute + '</svg>' : '') + '</b><time>' + (r.last_body != null ? shortTime(r.last_message_at) : '') + '</time></span>' +
+          '<span class="ri-main"><span class="ri-top"><b>' + (r.pinned ? '<svg class="pin-ico" viewBox="0 0 24 24">' + IC.pin + '</svg>' : '') + esc(r.name) + (r.type === 'dm' && pTag(S.profiles[r.other_id]) ? '<span class="who-tag">' + esc(pTag(S.profiles[r.other_id])) + '</span>' : '') + (grp ? '<small>' + r.member_count + '</small>' : '') + (r.muted ? ' <svg class="mute-ico" viewBox="0 0 24 24">' + IC.mute + '</svg>' : '') + '</b><time>' + (r.last_body != null ? shortTime(r.last_message_at) : '') + '</time></span>' +
           '<span class="ri-bot"><p>' + esc(r.last_body == null ? '새 대화방' : (grp && r.last_sender ? r.last_sender + ': ' : '') + r.last_body) + '</p>' + (r.unread ? '<span class="badge">' + (r.unread > 99 ? '99+' : r.unread) + '</span>' : '') + '</span></span></a>';
       }).join('') : (q ? '' : '<p class="empty">아직 대화가 없습니다.<br>오른쪽 위 + 버튼으로 대화를 시작하세요.</p>')) +
       (q ? '<div id="msgResults">' + msgResultsHtml(q) + '</div>' : '') + '</div>';
@@ -457,7 +457,7 @@
         list.hidden = false;
         list.innerHTML = rows.length ? '<p class="rs-count">' + rows.length + (rows.length >= 100 ? '+' : '') + '건</p>' + rows.map(function (m) {
           var p = S.profiles[m.sender_id] || { name: '(퇴사자)' };
-          return '<button data-rs="' + m.id + '"><b>' + esc(p.name) + '</b><time>' + shortTime(m.created_at) + ' ' + hm(m.created_at) + '</time><span>' + hl(around(m.body, q), q) + '</span></button>';
+          return '<button data-rs="' + m.id + '"><b>' + esc(nameTag(p)) + '</b><time>' + shortTime(m.created_at) + ' ' + hm(m.created_at) + '</time><span>' + hl(around(m.body, q), q) + '</span></button>';
         }).join('') : '<p class="rs-count">검색 결과가 없습니다.</p>';
         $$('[data-rs]', list).forEach(function (b) { b.onclick = function () { var m = rows.find(function (x) { return x.id === +b.getAttribute('data-rs'); }); list.hidden = true; jumpToMsg(m); }; });
         renderMessages(false);
@@ -466,6 +466,9 @@
   }
 
   function others() { return Object.keys(S.profiles).map(function (k) { return S.profiles[k]; }).filter(function (p) { return p.active && p.id !== S.me.id; }); }
+  /* 이름 옆 (부서 직위) */
+  function pTag(p) { if (!p) return ''; var t = [p.dept, p.title].filter(function (x) { return x && x !== '공통'; }).join(' '); return t ? '(' + t + ')' : ''; }
+  function nameTag(p) { return p ? (p.name || '') + pTag(p) : ''; }
   function personLabel(p) { return [p.clinic !== '공통' ? p.clinic.replace('노블', '') : '', p.dept, p.title].filter(Boolean).join(' · '); }
 
   function newChatSheet() {
@@ -523,7 +526,7 @@
     setTimeout(function () { if (force && window.outerWidth > 460) toast('이 창은 브라우저가 크기를 바꾸지 못하게 막고 있습니다. 위의 "작은 창 (380)" 버튼을 써 주세요.'); }, 400);
   }
   fitMini(false);
-  function roomTitle(info) { return info ? esc(info.name) + (info.type === 'group' ? '<small>' + info.member_count + '명</small>' : '') : '대화'; }
+  function roomTitle(info) { return info ? esc(info.name) + (info.type === 'dm' && pTag(S.profiles[info.other_id]) ? '<span class="who-tag">' + esc(pTag(S.profiles[info.other_id])) + '</span>' : '') + (info.type === 'group' ? '<small>' + info.member_count + '명</small>' : '') : '대화'; }
   function openRoom(id) {
     if (S.room && S.room.id === id && $('#msgs')) return;
     var info = S.rooms.find(function (r) { return r.id === id; });
@@ -670,7 +673,7 @@
       var un = unreadCount(m);
       html += '<div class="msg' + (mine ? ' mine' : '') + (cont ? ' cont' : '') + '" data-id="' + m.id + '">' +
         (mine ? '' : av(p, 'sm')) +
-        '<div class="col">' + (mine ? '' : '<div class="who">' + esc(p.name) + '</div>') +
+        '<div class="col">' + (mine ? '' : '<div class="who">' + esc(p.name || '') + (pTag(p) ? '<span class="who-tag">' + esc(pTag(p)) + '</span>' : '') + '</div>') +
         '<div class="line"><div class="col" style="gap:4px">' + content + '</div><span class="meta">' + (un ? '<span class="unread">' + un + '</span>' : '') + '<time>' + hm(m.created_at) + '</time></span>' +
         (!m.deleted && m.body && !m.poll_id ? '<button class="copy-btn" data-act="copy" title="복사" aria-label="메시지 복사">' + svg('copy') + '</button>' : '') +
         (!m.deleted ? '<span class="msg-acts"><button data-act="react" title="공감" aria-label="공감">' + svg('smile') + '</button><button data-act="reply" title="답장" aria-label="답장">' + svg('reply') + '</button><button data-act="more" title="더보기" aria-label="더보기">' + svg('more') + '</button></span>' : '') +
@@ -1670,7 +1673,7 @@
           var dview = S.room && m.room_id === S.room.id && document.visibilityState === 'visible' && document.hasFocus();
           if ((!dr || !dr.muted || dmen) && !dview) {
             var dsp = S.profiles[m.sender_id] || {};
-            deskNotify((dr && dr.type === 'group' ? dr.name + ' · ' : '') + (dsp.name || '') + (dmen ? ' (나를 언급)' : ''), m.body ? m.body.slice(0, 120) : '사진·파일을 보냈습니다', '#room/' + m.room_id);
+            deskNotify((dr && dr.type === 'group' ? dr.name + ' · ' : '') + nameTag(dsp) + (dmen ? ' (나를 언급)' : ''), m.body ? m.body.slice(0, 120) : '사진·파일을 보냈습니다', '#room/' + m.room_id);
           }
         }
         if (S.room && m.room_id === S.room.id) { addMessage(m); if (m.sender_id !== S.me.id) markRead(); }
