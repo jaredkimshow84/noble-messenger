@@ -48,7 +48,7 @@
   /* 프로필 사진(없으면 이름 첫 글자) */
   function av(p, cls) {
     p = p || {}; var u = p.avatar_url;
-    return '<span class="avatar' + (cls ? ' ' + cls : '') + (u ? ' ph' : '') + '">' + (u ? '<img src="' + esc(u) + '" alt="" loading="lazy">' : esc(initial(p.name))) + '</span>';
+    return '<span class="avatar' + (cls ? ' ' + cls : '') + (u ? ' ph' : '') + '"' + (p.id ? ' data-uid="' + p.id + '"' : '') + '>' + (u ? '<img src="' + esc(u) + '" alt="" loading="lazy">' : esc(initial(p.name))) + '</span>';
   }
   var DESKTOP = window.matchMedia('(hover:hover) and (pointer:fine)');
   var EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏', '✅'];
@@ -116,6 +116,37 @@
       g.gain.setValueAtTime(0.0001, t0 + n[1]); g.gain.exponentialRampToValueAtTime(vol, t0 + n[1] + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t0 + n[1] + n[2]);
       o.connect(g); g.connect(actx.destination); o.start(t0 + n[1]); o.stop(t0 + n[1] + n[2] + 0.05);
     });
+  }
+  /* PC 설치 프로그램(노블 메신저.exe)과 연결 */
+  var ND = window.nobleDesktop || null;
+  if (ND && ND.onOpen) ND.onOpen(function (hash) { if (hash) location.hash = hash; });
+  function deskNotify(title, body, hash) {
+    if (!ND) return false;
+    ND.notify({ title: title, body: body, hash: hash, silent: soundOn() });
+    return true;
+  }
+
+  /* 프로필 사진 크게 보기 */
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('.avatar[data-uid]');
+    if (!a || a.closest('.room-item') || a.closest('.mention-box') || a.closest('.pick') || a.closest('.pv')) return;
+    e.preventDefault(); e.stopPropagation();
+    profileView(a.getAttribute('data-uid'));
+  }, true);
+  function profileView(uid) {
+    var p = S.profiles[uid]; if (!p) return;
+    var label = [p.clinic, p.dept, p.title].filter(function (x) { return x && x !== '공통'; }).join(' · ');
+    var m = document.createElement('div'); m.className = 'modal pv-modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', p.name + ' 프로필');
+    m.innerHTML = '<div class="pv"><button class="pv-x" data-close aria-label="닫기">' + svg('x') + '</button>' +
+      (p.avatar_url ? '<img class="pv-img" src="' + esc(p.avatar_url) + '" alt="' + esc(p.name) + ' 프로필 사진">' : '<div class="pv-ini">' + esc(initial(p.name)) + '</div>') +
+      '<div class="pv-info"><b>' + esc(p.name) + (p.id === S.me.id ? ' (나)' : '') + '</b><span>' + esc(label || '') + '</span></div>' +
+      '<div class="pv-btns">' + (p.id !== S.me.id ? '<button class="btn btn-gold" id="pvDm">1:1 대화</button>' : '<button class="btn btn-gold" id="pvSet">프로필 사진 바꾸기</button>') + '</div></div>';
+    document.body.appendChild(m);
+    m.addEventListener('click', function (e) { if (e.target === m || e.target.closest('[data-close]')) m.remove(); });
+    m.addEventListener('keydown', function (e) { if (e.key === 'Escape') m.remove(); });
+    setTimeout(function () { var x = $('.pv-x', m); if (x) x.focus(); }, 30);
+    var dm = $('#pvDm', m); if (dm) dm.onclick = function () { m.remove(); sb.rpc('start_dm', { other: uid }).then(function (r) { if (r.error) { toast(esc(errMsg(r.error))); return; } loadRooms().then(function () { location.hash = '#room/' + r.data; }); }); };
+    var st = $('#pvSet', m); if (st) st.onclick = function () { m.remove(); location.hash = '#settings'; };
   }
   function errMsg(e) {
     var m = (e && (e.message || e.error_description || e.error)) || String(e);
@@ -240,6 +271,7 @@
     var signups = S.me.role === 'admin' ? Object.keys(S.profiles).filter(function (k) { return S.profiles[k].pending; }).length : 0;
     var map = { chats: chat, notices: nt, admin: S.pendingCount + signups, work: S.me.role === 'admin' ? S.pendingCount : 0 };
     $$('[data-badge]').forEach(function (b) { var v = map[b.getAttribute('data-badge')] || 0; b.hidden = !v; b.textContent = v > 99 ? '99+' : v; });
+    if (ND && ND.setBadge) ND.setBadge(chat + nt);
     try { if (navigator.setAppBadge) { var tot = chat + nt; tot ? navigator.setAppBadge(tot) : navigator.clearAppBadge(); } } catch (e) {}
   }
 
@@ -468,7 +500,7 @@
   }
   /* 설치한 앱 창을 폭 380으로 맞추기 (설정에서 켰을 때) */
   function fitMini(force) {
-    if (!DESKTOP.matches) return;
+    if (!DESKTOP.matches || ND) return;
     if (!force && lsGet('noble-mini-default') !== '1') return;
     var app = window.matchMedia('(display-mode: standalone)').matches || window.name === 'noble-mini';
     if (!app && !force) return;
@@ -1421,13 +1453,14 @@
       '<label class="switch-row"><input type="checkbox" id="sndOn"' + (soundOn() ? ' checked' : '') + '> 알림음 켜기</label>' +
       '<div class="snd-row"><select class="input" id="sndKind" aria-label="알림음 종류">' + Object.keys(SOUNDS).map(function (k) { return '<option value="' + k + '"' + (k === soundKind() ? ' selected' : '') + '>' + SOUNDS[k][0] + '</option>'; }).join('') + '</select>' +
       '<span class="small muted">크기</span><input type="range" id="sndVol" min="0.1" max="1" step="0.1" value="' + soundVol() + '" aria-label="소리 크기"><button class="btn btn-line sm" id="sndTest">미리 듣기</button></div></section>' +
-      '<section class="card"><h3>휴대폰 알림</h3><div id="pushBox"></div></section>' +
-      (DESKTOP.matches ? '<section class="card"><h3>작은 창으로 쓰기</h3><p class="muted small" style="margin-bottom:10px">크롬·엣지는 앱 창을 일정 폭 이하로 줄이지 못하게 막고 있습니다. 아래 버튼을 누르면 <b>카카오워크 크기(폭 380)</b>의 작은 창으로 따로 열립니다. 기존 큰 창은 닫으셔도 됩니다.</p>' +
+      (ND ? '<section class="card"><h3>PC 프로그램</h3><p class="small">노블 메신저 PC 프로그램 ' + esc(ND.version || '') + ' 사용 중입니다. 새 메시지는 화면 오른쪽 아래 <b>Windows 알림</b>으로 표시됩니다.</p><p class="muted small" style="margin-top:6px">창의 X를 누르면 시계 옆 트레이로 숨고 알림은 계속 옵니다. 완전히 끄려면 트레이 아이콘 오른쪽 클릭 → 종료.</p></section>'
+        : '<section class="card"><h3>휴대폰 알림</h3><div id="pushBox"></div></section>') +
+      (DESKTOP.matches && !ND ? '<section class="card"><h3>작은 창으로 쓰기</h3><p class="muted small" style="margin-bottom:10px">크롬·엣지는 앱 창을 일정 폭 이하로 줄이지 못하게 막고 있습니다. 아래 버튼을 누르면 <b>카카오워크 크기(폭 380)</b>의 작은 창으로 따로 열립니다. 기존 큰 창은 닫으셔도 됩니다.</p>' +
         '<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-gold sm" data-mini="380">작은 창 (380)</button><button class="btn btn-line sm" data-mini="440">보통 창 (440)</button></div>' +
         '<label class="switch-row" style="margin-top:12px"><input type="checkbox" id="miniDef"' + (lsGet('noble-mini-default') === '1' ? ' checked' : '') + '> 메신저를 켤 때 항상 폭 380으로 열기</label></section>' : '') +
-      '<section class="card"><h3>앱으로 설치하기</h3>' + (standalone() ? '<p class="muted">앱으로 설치되어 있습니다. ✓</p>' :
+      (ND ? '' : '<section class="card"><h3>앱으로 설치하기</h3>' + (standalone() ? '<p class="muted">앱으로 설치되어 있습니다. ✓</p>' :
         isIOS() ? '<p>아이폰: Safari 아래쪽 <b>공유 버튼(□↑)</b> → <b>홈 화면에 추가</b> → 추가. 설치한 앱을 열어야 알림을 받을 수 있습니다.</p>' :
-          '<p>안드로이드(크롬): 오른쪽 위 <b>⋮</b> → <b>앱 설치</b> 또는 <b>홈 화면에 추가</b>. PC(크롬·엣지): 주소창 오른쪽 <b>설치</b> 아이콘.</p>') + '</section>' +
+          '<p>안드로이드(크롬): 오른쪽 위 <b>⋮</b> → <b>앱 설치</b> 또는 <b>홈 화면에 추가</b>. PC(크롬·엣지): 주소창 오른쪽 <b>설치</b> 아이콘.</p>') + '</section>') +
       '<section class="card"><h3>비밀번호 변경</h3><form id="pwf" novalidate><div class="field"><label for="p1">새 비밀번호</label><input class="input" type="password" id="p1" autocomplete="new-password" placeholder="8자 이상"></div>' +
       '<div class="field"><label for="p2">새 비밀번호 확인</label><input class="input" type="password" id="p2" autocomplete="new-password"></div><p class="err" id="pe"></p><button class="btn btn-navy">변경하기</button></form></section>' +
       '<section class="card"><button class="btn btn-line block" id="logout">로그아웃</button></section>' +
@@ -1503,6 +1536,7 @@
   function b64ToU8(b) { var p = '='.repeat((4 - b.length % 4) % 4), s = atob((b + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(s, function (c) { return c.charCodeAt(0); }); }
   /* 이 기기에 알림(Windows 알림 / 휴대폰 알림)이 켜져 있으면 화면 안 팝업 대신 시스템 알림을 사용 */
   function checkPush() {
+    if (ND) { S.pushOn = false; return Promise.resolve(); }
     if (!pushSupported() || Notification.permission !== 'granted') { S.pushOn = false; return Promise.resolve(); }
     return navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
       if (sub) { S.pushOn = true; return; }
@@ -1513,6 +1547,7 @@
   /* 알림이 꺼진 PC에는 채팅 목록 위에 '알림 켜기' 안내 표시 */
   function renderPushAsk() {
     var box = $('#pushAsk'); if (!box) return;
+    if (ND) { box.innerHTML = ''; return; }
     if (S.pushOn || !pushSupported() || lsGet('noble-pushask-hide') === '1') { box.innerHTML = ''; return; }
     var denied = Notification.permission === 'denied';
     box.innerHTML = '<div class="push-ask">' + svg('bell') + '<div><b>PC 알림이 꺼져 있습니다</b><p>' +
@@ -1556,8 +1591,16 @@
           var ment = (m.mentions || []).indexOf(S.me.id) > -1, viewing = S.room && m.room_id === S.room.id && document.visibilityState === 'visible' && document.hasFocus();
           if ((!rr || !rr.muted || ment) && !viewing && !S.pushOn) playSound();
         }
+        if (ND && m.sender_id !== S.me.id && !S.solo) {
+          var dr = S.rooms.find(function (x) { return x.id === m.room_id; }), dmen = (m.mentions || []).indexOf(S.me.id) > -1;
+          var dview = S.room && m.room_id === S.room.id && document.visibilityState === 'visible' && document.hasFocus();
+          if ((!dr || !dr.muted || dmen) && !dview) {
+            var dsp = S.profiles[m.sender_id] || {};
+            deskNotify((dr && dr.type === 'group' ? dr.name + ' · ' : '') + (dsp.name || '') + (dmen ? ' (나를 언급)' : ''), m.body ? m.body.slice(0, 120) : '사진·파일을 보냈습니다', '#room/' + m.room_id);
+          }
+        }
         if (S.room && m.room_id === S.room.id) { addMessage(m); if (m.sender_id !== S.me.id) markRead(); }
-        else if (m.sender_id !== S.me.id && !S.solo && !S.pushOn) {
+        else if (m.sender_id !== S.me.id && !S.solo && !S.pushOn && !ND) {
           var r = S.rooms.find(function (x) { return x.id === m.room_id; });
           var mention = (m.mentions || []).indexOf(S.me.id) > -1;
           if (!r || !r.muted || mention) {
@@ -1595,6 +1638,7 @@
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notices' }, function (p) {
         loadNotices().then(function () {
           if (p.eventType === 'INSERT' && p.new.author_id !== S.me.id && !S.solo && !S.pushOn) playSound();
+          if (ND && p.eventType === 'INSERT' && p.new.author_id !== S.me.id && !S.solo) deskNotify('📢 새 공지', p.new.title, '#notice/' + p.new.id);
           if (p.eventType === 'INSERT' && p.new.author_id !== S.me.id) toast('<b>📢 새 공지</b> ' + esc(p.new.title), function () { location.hash = '#notice/' + p.new.id; });
         });
       })

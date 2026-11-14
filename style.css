@@ -528,3 +528,16 @@ html.fs-xl .poll-hd b,html.fs-xl .popt{font-size:19.5px}
 .msg:hover .msg-acts,.msg-acts:focus-within{opacity:1;visibility:visible}
 .msg-acts button{width:26px;height:26px}
 @media (hover:none){.msg-acts{display:none!important}}
+/* 프로필 사진 크게 보기 */
+.avatar[data-uid]{cursor:pointer}
+.room-item .avatar[data-uid],.pick .avatar[data-uid],.mention-box .avatar[data-uid]{cursor:inherit}
+.pv-modal{align-items:center!important;background:rgba(8,16,28,.72)}
+.pv{position:relative;width:min(360px,calc(100vw - 32px));background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,.35);animation:up .18s ease-out}
+.pv-img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;background:#e8edf3}
+.pv-ini{width:100%;aspect-ratio:1/1;display:grid;place-items:center;background:var(--navy);color:var(--gold);font-size:110px;font-weight:800}
+.pv-info{padding:16px 18px 4px}
+.pv-info b{display:block;font-size:20px;color:var(--navy)}
+.pv-info span{display:block;font-size:14px;color:var(--muted);margin-top:2px}
+.pv-btns{padding:12px 18px 18px;display:grid}
+.pv-x{position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.45);display:grid;place-items:center}
+.pv-x svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2.4}
