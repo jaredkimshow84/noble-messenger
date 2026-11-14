@@ -513,6 +513,13 @@
   function openRoom(id) {
     if (S.room && S.room.id === id && $('#msgs')) return;
     var info = S.rooms.find(function (r) { return r.id === id; });
+    // 나갔던(숨긴) 방에 다시 들어오면 목록에 다시 보이게
+    if (!info && !(S.unhid || (S.unhid = {}))[id]) {
+      S.unhid[id] = true;
+      sb.from('room_members').update({ hidden: false }).eq('room_id', id).eq('user_id', S.me.id).eq('hidden', true)
+        .then(function () { return loadRooms(); })
+        .then(function () { if (S.route.id === id) { S.room = null; openRoom(id); } if (!S.solo) refreshRooms(); });
+    }
     S.room = { id: id, info: info }; S.messages = []; S.members = {}; S.hasOlder = false;
     $('#main').style.justifyContent = '';
     var title = roomTitle(info);
@@ -938,14 +945,16 @@
       };
     });
   }
-  function leaveOrHide(r) {
+  /* 1:1·나와의 채팅 나가기 = 목록에서만 숨김 (대화 내용 유지, 다시 대화하면 그대로 보임)
+     clear=true 일 때만 대화 내용까지 지움 */
+  function leaveOrHide(r, clear) {
     if (!r) return;
     var q = r.type === 'group'
       ? sb.from('room_members').delete().eq('room_id', r.id).eq('user_id', S.me.id)
-      : sb.from('room_members').update({ hidden: true, cleared_at: new Date().toISOString() }).eq('room_id', r.id).eq('user_id', S.me.id);
+      : sb.from('room_members').update(clear ? { hidden: true, cleared_at: new Date().toISOString() } : { hidden: true }).eq('room_id', r.id).eq('user_id', S.me.id);
     q.then(function (x) {
       if (x.error) { toast(esc(errMsg(x.error))); return; }
-      toast(r.type === 'group' ? '채팅방에서 나왔습니다' : '채팅방을 삭제했습니다');
+      toast(r.type === 'group' ? '채팅방에서 나왔습니다' : clear ? '대화 내용을 지우고 나왔습니다' : '채팅방에서 나왔습니다 (대화 내용은 남아 있습니다)');
       loadRooms().then(function () { if (S.route.id === r.id) location.hash = '#chats'; else renderRoomList(); });
     });
   }
@@ -956,10 +965,12 @@
       '<button class="btn btn-line" id="qMute">' + (r.muted ? '알림 켜기' : '이 방 알림 끄기') + '</button>' +
       (DESKTOP.matches ? '<button class="btn btn-line" id="qPop">새 창으로 열기</button>' : '') +
       '<button class="btn btn-line" id="qColor">채팅방 배경색 바꾸기</button>' +
-      '<button class="btn btn-danger" id="qLeave">' + (r.type === 'group' ? '채팅방 나가기' : '채팅방 삭제 (대화 내용 지우기)') + '</button>' +
+      '<button class="btn btn-danger" id="qLeave">채팅방 나가기</button>' +
+      (r.type === 'group' ? '' : '<button class="btn btn-line" id="qClear" style="color:#c0392b">대화 내용 지우고 나가기</button>') +
       '<button class="btn btn-line" data-close>닫기</button></div>');
     $('#qColor', s).onclick = function () { closeSheet(s); colorSheet(r); };
-    $('#qLeave', s).onclick = function () { if (!confirmInline(this, r.type === 'group' ? '한 번 더 누르면 나갑니다' : '한 번 더 누르면 삭제됩니다')) return; closeSheet(s); leaveOrHide(r); };
+    $('#qLeave', s).onclick = function () { if (!confirmInline(this, '한 번 더 누르면 나갑니다')) return; closeSheet(s); leaveOrHide(r); };
+    var qc = $('#qClear', s); if (qc) qc.onclick = function () { if (!confirmInline(this, '내 화면의 대화가 지워집니다. 한 번 더 누르세요')) return; closeSheet(s); leaveOrHide(r, true); };
     $('#qPin', s).onclick = function () { closeSheet(s); togglePin(r); };
     $('#qMute', s).onclick = function () { closeSheet(s); toggleMute(r); };
     var qp = $('#qPop', s); if (qp) qp.onclick = function () { closeSheet(s); openRoomWindow(r.id); };
@@ -1073,10 +1084,12 @@
       '<button class="btn btn-line" id="pinBtn">' + (info.pinned ? '상단 고정 해제' : '채팅방 상단 고정') + '</button>' +
       '<button class="btn btn-line" id="muteBtn">' + (info.muted ? '알림 켜기' : '이 방 알림 끄기') + '</button>' +
       '<button class="btn btn-line" id="colorBtn">채팅방 배경색 바꾸기</button>' +
-      '<button class="btn btn-danger" id="leave">' + (grp ? '채팅방 나가기' : '채팅방 삭제 (대화 내용 지우기)') + '</button>' +
+      '<button class="btn btn-danger" id="leave">채팅방 나가기</button>' +
+      (grp ? '' : '<button class="btn btn-line" id="clearLeave" style="color:#c0392b">대화 내용 지우고 나가기</button>') +
       '<button class="btn btn-line" data-close>닫기</button></div>');
     $('#colorBtn', m).onclick = function () { closeSheet(m); colorSheet(S.room.info); };
-    $('#leave', m).onclick = function () { if (!confirmInline(this, grp ? '한 번 더 누르면 나갑니다' : '한 번 더 누르면 삭제됩니다')) return; closeSheet(m); leaveOrHide(S.room.info); };
+    $('#leave', m).onclick = function () { if (!confirmInline(this, '한 번 더 누르면 나갑니다')) return; closeSheet(m); leaveOrHide(S.room.info); };
+    var cl = $('#clearLeave', m); if (cl) cl.onclick = function () { if (!confirmInline(this, '내 화면의 대화가 지워집니다. 한 번 더 누르세요')) return; closeSheet(m); leaveOrHide(S.room.info, true); };
     $('#muteBtn', m).onclick = function () { closeSheet(m); if (S.room.info) toggleMute(S.room.info); };
     $('#pinBtn', m).onclick = function () { closeSheet(m); if (S.room.info) togglePin(S.room.info); };
     if (grp) {
