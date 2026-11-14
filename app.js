@@ -137,7 +137,7 @@
   var S = {
     me: null, profiles: {}, rooms: [], notices: [], noticeReads: {}, pendingCount: 0,
     route: { tab: 'chats', id: null }, room: null, members: {}, messages: [], oldestLoaded: null, hasOlder: false,
-    urlCache: {}, channel: null, solo: false, polls: {}, pollSel: {}, pollLoading: {}, replyTo: null, reacts: {}, replyCache: {}, workTab: 'new', adminMonth: ymd(new Date()).slice(0, 7), adminStatus: '전체', staffQuery: ''
+    urlCache: {}, channel: null, solo: false, polls: {}, pollSel: {}, pollLoading: {}, imgSize: {}, replyTo: null, reacts: {}, replyCache: {}, workTab: 'new', adminMonth: ymd(new Date()).slice(0, 7), adminStatus: '전체', staffQuery: ''
   };
 
   /* ---------------- 로그인 ---------------- */
@@ -574,7 +574,7 @@
       else if (m.file_path) {
         needUrls.push(m.file_path);
         var u = cachedUrl(m.file_path);
-        if ((m.file_type || '').indexOf('image/') === 0) content = '<a class="img-msg" data-path="' + esc(m.file_path) + '" href="' + (u || '#') + '" target="_blank" rel="noopener"><img alt="' + esc(m.file_name || '사진') + '" ' + (u ? 'src="' + u + '"' : '') + ' loading="lazy"></a>';
+        if ((m.file_type || '').indexOf('image/') === 0) content = '<a class="img-msg" data-path="' + esc(m.file_path) + '" href="' + (u || '#') + '" target="_blank" rel="noopener"><img alt="' + esc(m.file_name || '사진') + '" ' + (u ? 'src="' + u + '"' : '') + (S.imgSize[m.file_path] ? ' width="' + S.imgSize[m.file_path][0] + '" height="' + S.imgSize[m.file_path][1] + '"' : '') + ' decoding="async"></a>';
         else content = '<a class="file-msg" data-path="' + esc(m.file_path) + '" data-dl="' + esc(m.file_name || 'file') + '" href="' + (u || '#') + '" target="_blank" rel="noopener">' + svg('file') + '<span style="min-width:0"><b>' + esc(m.file_name || '파일') + '</b><span>' + size(m.file_size) + ' · 열기</span></span></a>';
         if (m.body) content += '<div class="bubble' + (toMe ? ' to-me' : '') + '">' + fmtBody(m.body) + '</div>';
       } else content = '<div class="bubble' + (toMe ? ' to-me' : '') + '">' + fmtBody(m.body) + '</div>';
@@ -590,7 +590,15 @@
         '</div>' + reactsHtml(m.id) + '</div></div>';
       prev = m;
     });
+    /* 이미 불러온 사진은 그대로 옮겨 붙여서 다시 그릴 때 깜빡이거나 겹치지 않게 */
+    var keepImg = {};
+    $$('.img-msg img', el).forEach(function (im) { if (im.complete && im.naturalWidth) keepImg[im.parentNode.getAttribute('data-path')] = im; });
     el.innerHTML = html;
+    $$('.img-msg', el).forEach(function (a) { var k = keepImg[a.getAttribute('data-path')], ni = $('img', a); if (k && ni) a.replaceChild(k, ni); });
+    $$('.img-msg img', el).forEach(function (im) {
+      var rec = function () { if (im.naturalWidth) S.imgSize[im.parentNode.getAttribute('data-path')] = [im.naturalWidth, im.naturalHeight]; };
+      if (im.complete) rec(); else im.addEventListener('load', rec, { once: true });
+    });
     var ob = $('#older'); if (ob) ob.onclick = loadOlder;
     if (!el.getAttribute('data-wired')) {
       el.setAttribute('data-wired', '1');
@@ -914,6 +922,20 @@
     var qp = $('#qPop', s); if (qp) qp.onclick = function () { closeSheet(s); openRoomWindow(r.id); };
   }
 
+  /* 읽음 표시(숫자)만 바꾸기 – 화면 전체를 다시 그리지 않아 사진이 깜빡이지 않음 */
+  var unreadRaf = 0;
+  function updateUnreadCounts() {
+    cancelAnimationFrame(unreadRaf);
+    unreadRaf = requestAnimationFrame(function () {
+      var el = $('#msgs'); if (!el) return;
+      S.messages.forEach(function (m) {
+        var meta = $('.msg[data-id="' + m.id + '"] .meta', el); if (!meta) return;
+        var un = unreadCount(m), sp = $('.unread', meta);
+        if (un) { if (!sp) { sp = document.createElement('span'); sp.className = 'unread'; meta.insertBefore(sp, meta.firstChild); } if (sp.textContent !== String(un)) sp.textContent = un; }
+        else if (sp) sp.remove();
+      });
+    });
+  }
   function cachedUrl(p) { var c = S.urlCache[p]; return c && c.exp > Date.now() ? c.url : null; }
   function signUrls(paths) {
     if (!paths.length) return Promise.resolve();
@@ -1539,7 +1561,7 @@
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'room_members' }, function (p) {
         var row = p.new && p.new.room_id ? p.new : p.old;
-        if (S.room && row && row.room_id === S.room.id && p.eventType === 'UPDATE') { S.members[row.user_id] = p.new; renderMessages(false); }
+        if (S.room && row && row.room_id === S.room.id && p.eventType === 'UPDATE') { S.members[row.user_id] = p.new; updateUnreadCounts(); }
         else if (row && row.user_id === S.me.id && p.eventType !== 'UPDATE') refreshRooms();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'message_reactions' }, function (p) {

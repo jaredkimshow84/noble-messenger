@@ -518,3 +518,7 @@ html.fs-xl .poll-hd b,html.fs-xl .popt{font-size:19.5px}
   .search{margin:8px 10px}
   .msgs{padding:10px 10px 6px}
 }
+/* 사진: 크기를 미리 잡아 두어 다른 말풍선과 겹치지 않게 */
+.img-msg{position:relative;isolation:isolate;line-height:0}
+.img-msg img{width:100%;height:auto;max-height:420px;object-fit:contain;background:#e9edf3}
+.msg{position:relative;z-index:0}
