@@ -461,3 +461,33 @@ html.fs-xl .poll-hd b,html.fs-xl .popt{font-size:19.5px}
 .face-list button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 12px;border:2px solid var(--line);border-radius:12px;background:#fff;text-align:left;font-weight:700;color:var(--navy)}
 .face-list button span{font-weight:400;color:var(--muted);font-size:13px}
 .face-list button[aria-pressed=true]{border-color:var(--gold);background:var(--gold-soft)}
+
+/* ===== 대화 말풍선: 밝은 배경 + 둥근 흰 상자 (카카오워크와 비슷한 느낌) ===== */
+.msgs{background:#f3f4f6}
+.bubble{border-radius:10px;border:1px solid #e3e5e8;background:#fff;color:#1d2129;padding:9px 12px;box-shadow:0 1px 1px rgba(0,0,0,.03)}
+.msg.mine .bubble{background:#fff5c9;color:#1d2129;border-color:#f0e2a0;border-radius:10px}
+.msg.mine .bubble a{color:#3d5a80}
+.msg.mine .mention{color:#2b5797}
+.msg.mine .bubble mark{background:#ffd84d;color:inherit}
+.bubble.to-me{box-shadow:0 0 0 2px #ffe08a}
+.meta{color:#8a9099}
+.meta .unread{color:#b08a00}
+.msg .who{color:#4a5260;font-weight:600}
+/* 답장: 인용 부분과 내 글을 한 상자로 */
+.quote{border:1px solid #e3e5e8;border-bottom:0;border-left:1px solid #e3e5e8;border-radius:10px 10px 0 0;background:#fff;padding:8px 12px 6px;margin-bottom:-4px;max-width:min(520px,72vw)}
+.quote svg{display:none}
+.quote b{color:#7a808a;font-weight:500;font-size:12.5px}
+.quote span span{color:#9aa0a8}
+.quote + .bubble{border-top-left-radius:0;border-top-right-radius:0;border-top:0;padding-top:4px}
+.quote + .bubble::before{content:"↳ ";color:#8a9099}
+.msg.mine .quote{background:#fff5c9;border-color:#f0e2a0}
+/* 어두운 배경 선택 시 */
+.msgs.dark-bg .bubble{background:#fff;color:#1d2129}
+.msgs.dark-bg .msg.mine .bubble{background:#fff5c9;color:#1d2129;border-color:#f0e2a0}
+.msgs.dark-bg .quote{background:#fff}
+.msgs.dark-bg .quote b{color:#7a808a}
+.msgs.dark-bg .msg.mine .quote{background:#fff5c9}
+.line > .col:has(> .quote){align-items:stretch}
+.bubble.to-me{box-shadow:none;background:#fffbea;border-color:#f1d77a}
+.quote:has(+ .bubble.to-me){border-color:#f1d77a}
+.quote:has(+ .bubble.to-me) ~ .bubble.to-me{border-color:#f1d77a}
