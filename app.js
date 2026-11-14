@@ -86,9 +86,9 @@
   }
   ['pointerdown', 'keydown', 'touchstart'].forEach(function (ev) { document.addEventListener(ev, unlockAudio, { passive: true }); });
   /* 글자 크기 (이 기기에 저장) */
-  var FS = [['', '보통'], ['l', '크게'], ['xl', '아주 크게']];
-  function fontSize() { var v = lsGet('noble-font'); return v === 'l' || v === 'xl' ? v : ''; }
-  function applyFont(v) { var h = document.documentElement; h.classList.remove('fs-l', 'fs-xl'); if (v) h.classList.add('fs-' + v); }
+  var FS = [['s', '작게'], ['', '보통'], ['l', '크게'], ['xl', '아주 크게']];
+  function fontSize() { var v = lsGet('noble-font'); return v === 's' || v === 'l' || v === 'xl' ? v : ''; }
+  function applyFont(v) { var h = document.documentElement; h.classList.remove('fs-s', 'fs-l', 'fs-xl'); if (v) h.classList.add('fs-' + v); }
   applyFont(fontSize());
   /* 글씨체 (이 기기에 저장) */
   var FACES = {
@@ -1519,7 +1519,7 @@
       '<section class="card" style="margin-top:16px"><div style="display:flex;gap:14px;align-items:center">' + av(me, 'xl') + '<div style="min-width:0"><b style="font-size:17px">' + esc(me.name) + '</b><br><span class="muted small">' + esc(personLabel(me) || '') + ' · 아이디 ' + esc(me.login_id) + '</span>' +
       '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px"><label class="btn btn-gold sm" style="cursor:pointer">' + svg('camera').replace('<svg', '<svg style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2"') + ' 프로필 사진 변경<input type="file" id="avIn" accept="image/*" hidden></label>' +
       (me.avatar_url ? '<button class="btn btn-line sm" id="avDel">기본 이미지로</button>' : '') + '</div></div></div></section>' +
-      '<section class="card"><h3>글자 크기</h3><div class="fs-seg">' + FS.map(function (f, i) { return '<button data-fs="' + f[0] + '"' + (fontSize() === f[0] ? ' aria-pressed="true"' : '') + ' style="font-size:' + (15 + i * 3) + 'px">' + f[1] + '</button>'; }).join('') + '</div>' +
+      '<section class="card"><h3>글자 크기</h3><div class="fs-seg">' + FS.map(function (f, i) { return '<button data-fs="' + f[0] + '"' + (fontSize() === f[0] ? ' aria-pressed="true"' : '') + ' style="font-size:' + [13, 15, 18, 21][i] + 'px">' + f[1] + '</button>'; }).join('') + '</div>' +
       '<h3 style="margin-top:16px">글씨체</h3><div class="face-list">' + Object.keys(FACES).map(function (k) { return '<button data-face="' + k + '"' + (fontFace() === k ? ' aria-pressed="true"' : '') + ' style="font-family:' + FACES[k][1].replace(/"/g, '&quot;') + ',sans-serif">' + FACES[k][0] + '<span>가나다 ABC 123</span></button>'; }).join('') + '</div>' +
       '<div class="fs-prev"><div class="bubble" style="max-width:100%">미리보기입니다. 오늘 오후 3시 회의 있습니다. 확인 부탁드립니다.</div></div><p class="muted small" style="margin-top:8px">이 기기에만 적용됩니다.</p></section>' +
       '<section class="card"><h3>메시지 알림음</h3><p class="muted small" style="margin-bottom:10px">메신저가 켜져 있을 때 새 메시지가 오면 소리로 알려 줍니다. (이 기기에만 적용)<br>※ 아래 <b>알림 켜기</b>를 한 기기는 Windows·휴대폰 알림음이 대신 울립니다.</p>' +
