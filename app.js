@@ -125,7 +125,14 @@
   }
   /* PC 설치 프로그램(노블 메신저.exe)과 연결 */
   var ND = window.nobleDesktop || null;
-  if (ND && ND.onOpen) ND.onOpen(function (hash) { if (hash) location.hash = hash; });
+  /* Windows 알림 클릭: 좁은 창이면 그 채팅방을 새 작은 창으로, 넓은 창이면 이 창에서 열기 */
+  if (ND && ND.onOpen) ND.onOpen(function (hash) {
+    if (!hash) { if (ND.focusMain) ND.focusMain(); return; }
+    var rm = /^#room\/([^/]+)/.exec(hash);
+    if (rm) { openRoomWindow(rm[1]); return; }   // 채팅 알림은 항상 새 작은 창
+    if (ND.focusMain) ND.focusMain();
+    location.hash = hash;
+  });
   function deskNotify(title, body, hash) {
     if (!ND) return false;
     ND.notify({ title: title, body: body, hash: hash, silent: soundOn() });
@@ -627,7 +634,8 @@
       renderMessages(true); markRead();
       if (S.pendingJump && S.pendingJump.room_id === id) { var pj = S.pendingJump; S.pendingJump = null; S.searchQ = (S.roomQuery || '').trim(); renderMessages(false); setTimeout(function () { jumpToMsg(pj); }, 80); }
     }).catch(function (e) { $('#msgs').innerHTML = '<p class="empty">' + esc(errMsg(e)) + '</p>'; });
-    if (window.matchMedia('(min-width:861px)').matches) setTimeout(function () { txt.focus(); }, 50);
+    // PC: 채팅방을 열면 바로 입력창에 커서 (클릭 없이 바로 글쓰기)
+    if (DESKTOP.matches) { setTimeout(function () { if (!$('.modal')) txt.focus(); }, 50); setTimeout(function () { if (!$('.modal') && document.activeElement === document.body) txt.focus(); }, 600); }
   }
 
   function loadOlder() {
@@ -1738,6 +1746,24 @@
     return m;
   }
   function closeSheet(m) { if (m && m.parentNode) m.remove(); }
+
+  /* PC: 창을 다시 클릭해 앞으로 오면 채팅방 입력창에 커서 */
+  window.addEventListener('focus', function () {
+    if (!DESKTOP.matches || !S.room || $('.modal')) return;
+    setTimeout(function () {
+      var t = $('#txt'), a = document.activeElement;
+      if (t && (!a || a === document.body)) t.focus();
+    }, 30);
+  });
+
+  /* PC: 채팅방에서 아무 데나 보고 있다가 글자를 치면 바로 입력창으로 */
+  document.addEventListener('keydown', function (e) {
+    if (!DESKTOP.matches || !S.room || e.ctrlKey || e.metaKey || e.altKey || $('.modal')) return;
+    if (!(e.key && (e.key.length === 1 || e.key === 'Process'))) return;
+    var a = document.activeElement, t = $('#txt');
+    if (!t || a === t || (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || (a && a.isContentEditable)) return;
+    t.focus();
+  }, true);
 
   /* ESC: 열린 창(시트) 닫기 → 답장 취소 → 방 검색 닫기 → 채팅방 나가기 (새 창이면 창 닫기) */
   document.addEventListener('keydown', function (e) {
