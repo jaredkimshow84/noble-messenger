@@ -506,3 +506,15 @@ html.fs-xl .poll-hd b,html.fs-xl .popt{font-size:19.5px}
 /* 공감·답장 버튼은 마우스를 올렸을 때만 자리를 차지 (좁은 창에서 말풍선이 눌리지 않게) */
 .msg:not(:hover):not(:focus-within) .msg-acts{display:none}
 .line{position:relative}
+/* 아주 좁은 창(380px 안팎)에서 더 촘촘하게 */
+@media (max-width:440px) and (hover:hover) and (pointer:fine){
+  .rail{width:56px}
+  .tab{width:48px;font-size:10.5px}
+  .rail .logo{width:30px}
+  .room-item{padding:10px 12px;gap:10px}
+  .avatar{width:38px;height:38px;border-radius:12px}
+  .pane-hd{padding:10px 12px 8px;min-height:52px}
+  .pane-hd h1{font-size:18px}
+  .search{margin:8px 10px}
+  .msgs{padding:10px 10px 6px}
+}

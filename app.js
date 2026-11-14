@@ -1370,6 +1370,8 @@
       '<div class="snd-row"><select class="input" id="sndKind" aria-label="알림음 종류">' + Object.keys(SOUNDS).map(function (k) { return '<option value="' + k + '"' + (k === soundKind() ? ' selected' : '') + '>' + SOUNDS[k][0] + '</option>'; }).join('') + '</select>' +
       '<span class="small muted">크기</span><input type="range" id="sndVol" min="0.1" max="1" step="0.1" value="' + soundVol() + '" aria-label="소리 크기"><button class="btn btn-line sm" id="sndTest">미리 듣기</button></div></section>' +
       '<section class="card"><h3>휴대폰 알림</h3><div id="pushBox"></div></section>' +
+      (DESKTOP.matches ? '<section class="card"><h3>작은 창으로 쓰기</h3><p class="muted small" style="margin-bottom:10px">크롬·엣지는 앱 창을 일정 폭 이하로 줄이지 못하게 막고 있습니다. 아래 버튼을 누르면 <b>카카오워크 크기(폭 380)</b>의 작은 창으로 따로 열립니다. 기존 큰 창은 닫으셔도 됩니다.</p>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-gold sm" data-mini="380">작은 창 (380)</button><button class="btn btn-line sm" data-mini="440">보통 창 (440)</button></div></section>' : '') +
       '<section class="card"><h3>앱으로 설치하기</h3>' + (standalone() ? '<p class="muted">앱으로 설치되어 있습니다. ✓</p>' :
         isIOS() ? '<p>아이폰: Safari 아래쪽 <b>공유 버튼(□↑)</b> → <b>홈 화면에 추가</b> → 추가. 설치한 앱을 열어야 알림을 받을 수 있습니다.</p>' :
           '<p>안드로이드(크롬): 오른쪽 위 <b>⋮</b> → <b>앱 설치</b> 또는 <b>홈 화면에 추가</b>. PC(크롬·엣지): 주소창 오른쪽 <b>설치</b> 아이콘.</p>') + '</section>' +
@@ -1395,6 +1397,12 @@
       sb.auth.updateUser({ password: a }).then(function (r) { if (r.error) throw r.error; $('#p1').value = $('#p2').value = ''; $('#pe').textContent = ''; toast('비밀번호를 바꿨습니다'); })
         .catch(function (er) { $('#pe').textContent = errMsg(er); });
     });
+    $$('[data-mini]').forEach(function (b) { b.onclick = function () {
+      var w = +b.getAttribute('data-mini'), h = Math.min(screen.availHeight - 40, 820);
+      var win = window.open(location.href.split('#')[0] + '#chats', 'noble-mini', 'popup,width=' + w + ',height=' + h + ',left=' + (screen.availWidth - w - 20) + ',top=20');
+      if (!win) toast('팝업이 차단되었습니다. 주소창 오른쪽 팝업 차단 아이콘에서 허용해 주세요.');
+    }; });
+    try { if (window.name === 'noble-mini' && window.resizeTo) {} } catch (e) {}
     $('#logout').onclick = function () {
       unsubscribePush().then(function () { return sb.auth.signOut(); }).then(function () { S.me = null; if (S.channel) sb.removeChannel(S.channel); location.hash = ''; renderLogin(); });
     };
