@@ -43,7 +43,9 @@
     camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
     poll: '<path d="M5 20V11M12 20V4M19 20v-7"/><path d="M3 20h18"/>',
     copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/>',
-    check: '<path d="M5 12l5 5 9-10"/>'
+    check: '<path d="M5 12l5 5 9-10"/>',
+    at: '<circle cx="12" cy="12" r="3.6"/><path d="M15.6 12v1.4a2.4 2.4 0 0 0 4.8 0V12a8.4 8.4 0 1 0-3.3 6.7"/>',
+    crop: '<path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M2 6h14a2 2 0 0 1 2 2v14"/>'
   };
   /* 프로필 사진(없으면 이름 첫 글자) */
   function av(p, cls) {
@@ -53,6 +55,9 @@
   var DESKTOP = window.matchMedia('(hover:hover) and (pointer:fine)');
   var NARROW = window.matchMedia('(max-width:860px)');
   var EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏', '✅'];
+  var PICK_EMOJIS = ['😀', '😄', '😂', '🤣', '😊', '😍', '🥰', '😘', '😎', '🤔', '😮', '😅', '😢', '😭', '😡', '🥲', '😴', '🤗', '🙄', '😱',
+    '👍', '👎', '👏', '🙏', '💪', '👌', '✌️', '🙌', '👋', '🤝', '❤️', '💙', '💛', '🔥', '⭐', '🎉', '🎂', '☕', '🍚', '🍺',
+    '✅', '❌', '⭕', '❗', '❓', '⚠️', '📌', '📢', '💊', '🏥'];
   function reRx(t) { return t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
   function svg(n) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + IC[n] + '</svg>'; }
   function toast(html, onClick) {
@@ -537,9 +542,14 @@
     $('#main').innerHTML = '<div class="chat">' + header(title, { back: '#chats', right: right }) + '<div id="roomNotice"></div><div class="room-search" id="roomSearch" hidden></div>' +
       '<div class="msgs" id="msgs" aria-live="polite"><p class="empty">불러오는 중…</p></div><div class="uploading" id="upl" hidden></div>' +
       '<div class="reply-bar" id="replyBar" hidden></div><div class="mention-box" id="mentionBox" hidden></div>' +
-      '<form class="composer" id="composer"><label class="icon-btn" aria-label="파일 첨부" title="사진·파일 첨부">' + svg('clip') + '<input type="file" id="fileIn" multiple hidden></label>' +
+      '<div class="emoji-pick" id="emojiPick" hidden></div>' +
+      '<form class="composer kw" id="composer"><textarea id="txt" rows="2" placeholder="메시지를 입력해 보세요." aria-label="메시지 입력"></textarea>' +
+      '<div class="ctools"><label class="icon-btn" aria-label="파일 첨부" title="사진·파일 첨부">' + svg('clip') + '<input type="file" id="fileIn" multiple hidden></label>' +
+      '<button type="button" class="icon-btn" id="emojiBtn" aria-label="이모티콘" title="이모티콘">' + svg('smile') + '</button>' +
+      (info && info.type === 'self' ? '' : '<button type="button" class="icon-btn" id="atBtn" aria-label="멘션(@)" title="멘션 (@이름)">' + svg('at') + '</button>') +
+      '<button type="button" class="icon-btn" id="capBtn" aria-label="화면 캡처" title="화면 캡처해서 보내기">' + svg('crop') + '</button>' +
       (info && info.type === 'self' ? '' : '<button type="button" class="icon-btn" id="pollBtn" aria-label="투표 만들기" title="투표 만들기">' + svg('poll') + '</button>') +
-      '<textarea id="txt" rows="1" placeholder="메시지 입력" aria-label="메시지 입력"></textarea><button class="send" id="sendBtn" aria-label="보내기" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20l18-8L3 4l2 7 9 1-9 1z"/></svg></button></form></div>';
+      '<span class="ct-sp"></span><button class="send" id="sendBtn" aria-label="보내기" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20l18-8L3 4l2 7 9 1-9 1z"/></svg></button></div></form></div>';
     $('#roomMenu').onclick = roomMenu;
     $('#roomSearchBtn').onclick = roomSearchBar; S.searchQ = '';
     var pb = $('#pollBtn'); if (pb) pb.onclick = pollCreateSheet;
@@ -570,6 +580,24 @@
       if (files.length) { e.preventDefault(); uploadFiles(files); }
     });
     $('#composer').addEventListener('submit', function (e) { e.preventDefault(); send(); });
+    function insertAtCaret(t) {
+      var a = txt.selectionStart, b = txt.selectionEnd, v = txt.value;
+      txt.value = v.slice(0, a) + t + v.slice(b); txt.focus(); txt.setSelectionRange(a + t.length, a + t.length); grow();
+    }
+    var ep = $('#emojiPick');
+    $('#emojiBtn').onclick = function () {
+      if (!ep.innerHTML) {
+        ep.innerHTML = PICK_EMOJIS.map(function (e) { return '<button type="button">' + e + '</button>'; }).join('');
+        ep.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; insertAtCaret(b.textContent); });
+      }
+      ep.hidden = !ep.hidden;
+    };
+    if (!S.epWired) { S.epWired = true; document.addEventListener('mousedown', function (e) { var x = $('#emojiPick'); if (x && !x.hidden && !e.target.closest('#emojiPick,#emojiBtn')) x.hidden = true; }); }
+    var atb = $('#atBtn'); if (atb) atb.onclick = function () {
+      var a = txt.selectionStart, v = txt.value, pre = a > 0 && !/\s/.test(v.charAt(a - 1)) ? ' ' : '';
+      insertAtCaret(pre + '@'); mentionCheck(txt);
+    };
+    $('#capBtn').onclick = function () { screenCapture(); };
     $('#fileIn').addEventListener('change', function () { uploadFiles(Array.prototype.slice.call(this.files)); this.value = ''; });
     var msgsEl = $('#msgs');
     msgsEl.addEventListener('dragover', function (e) { e.preventDefault(); });
@@ -1046,6 +1074,26 @@
       c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
       return new Promise(function (res) { c.toBlob(function (b) { res(b && b.size < file.size ? new File([b], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' }) : file); }, 'image/jpeg', 0.82); });
     }).catch(function () { return file; });
+  }
+  /* ---------- 화면 캡처 ---------- */
+  function screenCapture() {
+    if (!S.room) return;
+    if (ND && ND.capture) {
+      toast('캡처할 영역을 마우스로 드래그하세요');
+      ND.capture().then(function (dataUrl) {
+        if (!dataUrl) return;
+        fetch(dataUrl).then(function (r) { return r.blob(); }).then(function (blob) {
+          var t = new Date(), f = new File([blob], '캡처_' + t.getFullYear() + ('0' + (t.getMonth() + 1)).slice(-2) + ('0' + t.getDate()).slice(-2) + '_' + ('0' + t.getHours()).slice(-2) + ('0' + t.getMinutes()).slice(-2) + ('0' + t.getSeconds()).slice(-2) + '.png', { type: 'image/png' });
+          var m = sheet('캡처 보내기', '<img src="' + dataUrl + '" alt="캡처한 화면" style="max-width:100%;max-height:50vh;display:block;margin:0 auto 14px;border:1px solid var(--line);border-radius:8px">' +
+            '<div class="sheet-actions"><button class="btn btn-line" data-close>취소</button><button class="btn btn-navy" id="capSend">보내기</button></div>');
+          var sbtn = $('#capSend', m); sbtn.focus();
+          sbtn.onclick = function () { closeSheet(m); uploadFiles([f]); };
+        });
+      });
+      return;
+    }
+    sheet('화면 캡처', '<p style="line-height:1.7">1. 키보드에서 <b>Windows 키 + Shift + S</b> 를 누릅니다.<br>2. 보낼 영역을 마우스로 드래그합니다.<br>3. 이 채팅방 입력창을 클릭하고 <b>Ctrl + V</b> 를 누르면 바로 전송됩니다.</p>' +
+      '<p class="muted small" style="margin-top:8px">PC 프로그램을 최신 버전으로 설치하면 이 버튼만 눌러도 캡처됩니다.</p><div class="sheet-actions"><button class="btn btn-navy" data-close>확인</button></div>');
   }
   function uploadFiles(files) {
     if (!files.length || !S.room) return;
@@ -1692,12 +1740,18 @@
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape' || e.defaultPrevented || e.isComposing) return;
     var ms = $$('.modal'); if (ms.length) { e.preventDefault(); ms[ms.length - 1].remove(); return; }
+    var epk = $('#emojiPick'); if (epk && !epk.hidden) { e.preventDefault(); epk.hidden = true; return; }
     if (S.replyTo) { e.preventDefault(); setReply(null); return; }
     var rs = $('#roomSearch'); if (rs && !rs.hidden) { e.preventDefault(); var x = $('#rsX'); if (x) x.click(); else rs.hidden = true; return; }
     if (S.route && S.route.tab === 'chats' && S.route.id) {
       e.preventDefault();
       if (S.solo) { window.close(); return; }
       location.hash = '#chats';
+      return;
+    }
+    // PC 프로그램 첫 화면(목록 등)에서 ESC = 창 최소화
+    if (ND && ND.minimize && !S.solo && !$('.sheet') && !(document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName) && document.activeElement.value)) {
+      e.preventDefault(); ND.minimize();
     }
   });
   /* 확인창 대신 버튼을 두 번 누르게 함 */
