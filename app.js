@@ -51,6 +51,7 @@
     return '<span class="avatar' + (cls ? ' ' + cls : '') + (u ? ' ph' : '') + '"' + (p.id ? ' data-uid="' + p.id + '"' : '') + '>' + (u ? '<img src="' + esc(u) + '" alt="" loading="lazy">' : esc(initial(p.name))) + '</span>';
   }
   var DESKTOP = window.matchMedia('(hover:hover) and (pointer:fine)');
+  var NARROW = window.matchMedia('(max-width:860px)');
   var EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏', '✅'];
   function reRx(t) { return t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
   function svg(n) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + IC[n] + '</svg>'; }
@@ -344,10 +345,18 @@
           if (e.ctrlKey || e.metaKey || e.shiftKey) return;
           e.preventDefault();
           clearTimeout(ct);
+          // 좁은 창(목록만 보이는 창): 카카오워크처럼 한 번 클릭은 선택만, 더블클릭해야 새 창으로 열림
+          if (NARROW.matches) {
+            $$('.room-item.sel').forEach(function (x) { x.classList.remove('sel'); });
+            a.classList.add('sel'); S.selRoom = a.getAttribute('data-room'); a.focus();
+            return;
+          }
           ct = setTimeout(function () { location.hash = '#room/' + a.getAttribute('data-room'); }, 230);
         });
         a.addEventListener('dblclick', function (e) { e.preventDefault(); clearTimeout(ct); openRoomWindow(a.getAttribute('data-room')); });
       }
+      if (S.selRoom === a.getAttribute('data-room')) a.classList.add('sel');
+      a.addEventListener('keydown', function (e) { if (e.key === 'Enter' && DESKTOP.matches && NARROW.matches) { e.preventDefault(); openRoomWindow(a.getAttribute('data-room')); } });
       a.addEventListener('contextmenu', function (e) { e.preventDefault(); roomQuickSheet(S.rooms.find(function (x) { return x.id === a.getAttribute('data-room'); })); });
       longPress(a, function () { roomQuickSheet(S.rooms.find(function (x) { return x.id === a.getAttribute('data-room'); })); });
     });
