@@ -133,9 +133,11 @@
     if (ND.focusMain) ND.focusMain();
     location.hash = hash;
   });
-  function deskNotify(title, body, hash) {
+  function deskNotify(title, body, hash, extra) {
     if (!ND) return false;
-    ND.notify({ title: title, body: body, hash: hash, silent: soundOn() });
+    var o = { title: title, body: body, hash: hash, silent: soundOn() };
+    if (extra) Object.keys(extra).forEach(function (k) { o[k] = extra[k]; });
+    ND.notify(o);
     return true;
   }
 
@@ -1562,7 +1564,7 @@
       '<label class="switch-row"><input type="checkbox" id="sndOn"' + (soundOn() ? ' checked' : '') + '> 알림음 켜기</label>' +
       '<div class="snd-row"><select class="input" id="sndKind" aria-label="알림음 종류">' + Object.keys(SOUNDS).map(function (k) { return '<option value="' + k + '"' + (k === soundKind() ? ' selected' : '') + '>' + SOUNDS[k][0] + '</option>'; }).join('') + '</select>' +
       '<span class="small muted">크기</span><input type="range" id="sndVol" min="0.1" max="1" step="0.1" value="' + soundVol() + '" aria-label="소리 크기"><button class="btn btn-line sm" id="sndTest">미리 듣기</button></div></section>' +
-      (ND ? '<section class="card"><h3>PC 프로그램</h3><p class="small">노블 메신저 PC 프로그램 ' + esc(ND.version || '') + ' 사용 중입니다. 새 메시지는 화면 오른쪽 아래 <b>Windows 알림</b>으로 표시됩니다.</p><p class="muted small" style="margin-top:6px">창의 X를 누르면 시계 옆 트레이로 숨고 알림은 계속 옵니다. 완전히 끄려면 트레이 아이콘 오른쪽 클릭 → 종료.</p><button class="btn btn-line sm" id="ndTest" style="margin-top:10px">알림 테스트</button><p class="muted small" id="ndTestMsg" style="margin-top:6px"></p></section>'
+      (ND ? '<section class="card"><h3>PC 프로그램</h3><p class="small">노블 메신저 PC 프로그램 ' + esc(ND.version || '') + ' 사용 중입니다. 새 메시지는 화면 오른쪽 아래(시계 위)에 ' + (ND.toast ? '<b>노블 메신저 알림창</b>' : '<b>Windows 알림</b>') + '으로 표시됩니다.' + (ND.toast ? ' 알림 방식·표시 시간은 트레이 아이콘 오른쪽 클릭 → <b>알림 방식</b>에서 바꿀 수 있습니다.' : '') + '</p><p class="muted small" style="margin-top:6px">창의 X를 누르면 시계 옆 트레이로 숨고 알림은 계속 옵니다. 완전히 끄려면 트레이 아이콘 오른쪽 클릭 → 종료.</p><button class="btn btn-line sm" id="ndTest" style="margin-top:10px">알림 테스트</button><p class="muted small" id="ndTestMsg" style="margin-top:6px"></p></section>'
         : '<section class="card"><h3>휴대폰 알림</h3><div id="pushBox"></div></section>') +
       (DESKTOP.matches && !ND ? '<section class="card"><h3>작은 창으로 쓰기</h3><p class="muted small" style="margin-bottom:10px">크롬·엣지는 앱 창을 일정 폭 이하로 줄이지 못하게 막고 있습니다. 아래 버튼을 누르면 <b>카카오워크 크기(폭 380)</b>의 작은 창으로 따로 열립니다. 기존 큰 창은 닫으셔도 됩니다.</p>' +
         '<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-gold sm" data-mini="380">작은 창 (380)</button><button class="btn btn-line sm" data-mini="440">보통 창 (440)</button></div>' +
@@ -1583,8 +1585,8 @@
     $('#sndVol').onchange = function () { lsSet('noble-sound-vol', this.value); playSound(null, true); };
     $('#sndTest').onclick = function () { playSound($('#sndKind').value, true); };
     var ndt = $('#ndTest'); if (ndt) ndt.onclick = function () {
-      deskNotify('노블 메신저 알림 테스트', '이 알림이 화면 오른쪽 아래에 보이면 정상입니다.', '#settings');
-      $('#ndTestMsg').innerHTML = '알림이 안 보이면: Windows <b>설정 → 시스템 → 알림</b>에서 알림 켜기 · <b>노블 메신저</b> 켜기 · <b>방해 금지(집중 지원)</b> 끄기';
+      deskNotify('노블 메신저 알림 테스트', '이 알림이 화면 오른쪽 아래(시계 위)에 보이면 정상입니다.', '#settings', { name: '알림 테스트', room: '노블 메신저' });
+      $('#ndTestMsg').innerHTML = ND.toast ? '알림창이 안 보이면: 트레이 아이콘 오른쪽 클릭 → <b>알림 방식</b> → <b>노블 메신저 알림창</b>이 선택돼 있는지 확인' : '알림이 안 보이면: Windows <b>설정 → 시스템 → 알림</b>에서 알림 켜기 · <b>노블 메신저</b> 켜기 · <b>방해 금지(집중 지원)</b> 끄기';
     };
     $('#avIn').addEventListener('change', function () { var f = this.files[0]; this.value = ''; if (f) setAvatar(f); });
     var ad = $('#avDel'); if (ad) ad.onclick = function () { setAvatar(null); };
@@ -1709,7 +1711,9 @@
           var dview = S.room && m.room_id === S.room.id && document.visibilityState === 'visible' && document.hasFocus();
           if ((!dr || !dr.muted || dmen) && !dview) {
             var dsp = S.profiles[m.sender_id] || {};
-            deskNotify((dr && dr.type === 'group' ? dr.name + ' · ' : '') + nameTag(dsp) + (dmen ? ' (나를 언급)' : ''), m.body ? m.body.slice(0, 120) : '사진·파일을 보냈습니다', '#room/' + m.room_id);
+            var dgrp = dr && dr.type === 'group';
+            deskNotify((dgrp ? dr.name + ' · ' : '') + nameTag(dsp) + (dmen ? ' (나를 언급)' : ''), m.body ? m.body.slice(0, 120) : (m.poll_id ? '투표를 올렸습니다' : '사진·파일을 보냈습니다'), '#room/' + m.room_id,
+              { name: nameTag(dsp), room: dgrp ? dr.name : '1:1 대화', avatar: dsp.avatar_url || '', group: false, mention: dmen });
           }
         }
         if (S.room && m.room_id === S.room.id) { addMessage(m); if (m.sender_id !== S.me.id) markRead(); }
@@ -1751,7 +1755,7 @@
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notices' }, function (p) {
         loadNotices().then(function () {
           if (p.eventType === 'INSERT' && p.new.author_id !== S.me.id && !S.solo && !S.pushOn) playSound();
-          if (ND && p.eventType === 'INSERT' && p.new.author_id !== S.me.id && !S.solo) deskNotify('📢 새 공지', p.new.title, '#notice/' + p.new.id);
+          if (ND && p.eventType === 'INSERT' && p.new.author_id !== S.me.id && !S.solo) deskNotify('📢 새 공지', p.new.title, '#notice/' + p.new.id, { name: '📢 새 공지', room: '공지사항' });
           if (p.eventType === 'INSERT' && p.new.author_id !== S.me.id) toast('<b>📢 새 공지</b> ' + esc(p.new.title), function () { location.hash = '#notice/' + p.new.id; });
         });
       })
