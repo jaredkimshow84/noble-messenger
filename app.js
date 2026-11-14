@@ -143,7 +143,7 @@
       '<div class="pv-btns">' + (p.id !== S.me.id ? '<button class="btn btn-gold" id="pvDm">1:1 대화</button>' : '<button class="btn btn-gold" id="pvSet">프로필 사진 바꾸기</button>') + '</div></div>';
     document.body.appendChild(m);
     m.addEventListener('click', function (e) { if (e.target === m || e.target.closest('[data-close]')) m.remove(); });
-    m.addEventListener('keydown', function (e) { if (e.key === 'Escape') m.remove(); });
+    m.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.preventDefault(); m.remove(); } });
     setTimeout(function () { var x = $('.pv-x', m); if (x) x.focus(); }, 30);
     var dm = $('#pvDm', m); if (dm) dm.onclick = function () { m.remove(); sb.rpc('start_dm', { other: uid }).then(function (r) { if (r.error) { toast(esc(errMsg(r.error))); return; } loadRooms().then(function () { location.hash = '#room/' + r.data; }); }); };
     var st = $('#pvSet', m); if (st) st.onclick = function () { m.remove(); location.hash = '#settings'; };
@@ -429,7 +429,7 @@
     var inp = $('#rsQ'), list = $('#rsList'), t = null;
     inp.focus();
     $('#rsX').onclick = function () { bar.hidden = true; S.searchQ = ''; renderMessages(false); };
-    inp.addEventListener('keydown', function (e) { if (e.key === 'Escape') { $('#rsX').click(); } if (e.key === 'Enter') { e.preventDefault(); run(); } });
+    inp.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.preventDefault(); $('#rsX').click(); } if (e.key === 'Enter') { e.preventDefault(); run(); } });
     inp.addEventListener('input', function () { clearTimeout(t); t = setTimeout(run, 350); });
     function run() {
       var q = inp.value.trim(); S.searchQ = q;
@@ -543,7 +543,7 @@
         var items = $$('button', mb), cur = items.findIndex(function (b) { return b.classList.contains('on'); });
         if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (items.length) { if (cur > -1) items[cur].classList.remove('on'); cur = (cur + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length; items[cur].classList.add('on'); } return; }
         if ((e.key === 'Enter' || e.key === 'Tab') && items.length) { e.preventDefault(); items[cur > -1 ? cur : 0].click(); return; }
-        if (e.key === 'Escape') { mb.hidden = true; return; }
+        if (e.key === 'Escape' && !mb.hidden) { e.preventDefault(); mb.hidden = true; return; }
       }
       if (e.key !== 'Enter') return;
       if (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -1453,7 +1453,7 @@
       '<label class="switch-row"><input type="checkbox" id="sndOn"' + (soundOn() ? ' checked' : '') + '> 알림음 켜기</label>' +
       '<div class="snd-row"><select class="input" id="sndKind" aria-label="알림음 종류">' + Object.keys(SOUNDS).map(function (k) { return '<option value="' + k + '"' + (k === soundKind() ? ' selected' : '') + '>' + SOUNDS[k][0] + '</option>'; }).join('') + '</select>' +
       '<span class="small muted">크기</span><input type="range" id="sndVol" min="0.1" max="1" step="0.1" value="' + soundVol() + '" aria-label="소리 크기"><button class="btn btn-line sm" id="sndTest">미리 듣기</button></div></section>' +
-      (ND ? '<section class="card"><h3>PC 프로그램</h3><p class="small">노블 메신저 PC 프로그램 ' + esc(ND.version || '') + ' 사용 중입니다. 새 메시지는 화면 오른쪽 아래 <b>Windows 알림</b>으로 표시됩니다.</p><p class="muted small" style="margin-top:6px">창의 X를 누르면 시계 옆 트레이로 숨고 알림은 계속 옵니다. 완전히 끄려면 트레이 아이콘 오른쪽 클릭 → 종료.</p></section>'
+      (ND ? '<section class="card"><h3>PC 프로그램</h3><p class="small">노블 메신저 PC 프로그램 ' + esc(ND.version || '') + ' 사용 중입니다. 새 메시지는 화면 오른쪽 아래 <b>Windows 알림</b>으로 표시됩니다.</p><p class="muted small" style="margin-top:6px">창의 X를 누르면 시계 옆 트레이로 숨고 알림은 계속 옵니다. 완전히 끄려면 트레이 아이콘 오른쪽 클릭 → 종료.</p><button class="btn btn-line sm" id="ndTest" style="margin-top:10px">알림 테스트</button><p class="muted small" id="ndTestMsg" style="margin-top:6px"></p></section>'
         : '<section class="card"><h3>휴대폰 알림</h3><div id="pushBox"></div></section>') +
       (DESKTOP.matches && !ND ? '<section class="card"><h3>작은 창으로 쓰기</h3><p class="muted small" style="margin-bottom:10px">크롬·엣지는 앱 창을 일정 폭 이하로 줄이지 못하게 막고 있습니다. 아래 버튼을 누르면 <b>카카오워크 크기(폭 380)</b>의 작은 창으로 따로 열립니다. 기존 큰 창은 닫으셔도 됩니다.</p>' +
         '<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-gold sm" data-mini="380">작은 창 (380)</button><button class="btn btn-line sm" data-mini="440">보통 창 (440)</button></div>' +
@@ -1473,6 +1473,10 @@
     $('#sndKind').onchange = function () { lsSet('noble-sound-kind', this.value); playSound(this.value, true); };
     $('#sndVol').onchange = function () { lsSet('noble-sound-vol', this.value); playSound(null, true); };
     $('#sndTest').onclick = function () { playSound($('#sndKind').value, true); };
+    var ndt = $('#ndTest'); if (ndt) ndt.onclick = function () {
+      deskNotify('노블 메신저 알림 테스트', '이 알림이 화면 오른쪽 아래에 보이면 정상입니다.', '#settings');
+      $('#ndTestMsg').innerHTML = '알림이 안 보이면: Windows <b>설정 → 시스템 → 알림</b>에서 알림 켜기 · <b>노블 메신저</b> 켜기 · <b>방해 금지(집중 지원)</b> 끄기';
+    };
     $('#avIn').addEventListener('change', function () { var f = this.files[0]; this.value = ''; if (f) setAvatar(f); });
     var ad = $('#avDel'); if (ad) ad.onclick = function () { setAvatar(null); };
     $('#pwf').addEventListener('submit', function (e) {
@@ -1656,11 +1660,24 @@
     m.innerHTML = '<div class="sheet"><div class="sheet-hd"><h2>' + title + '</h2><button class="icon-btn" data-close aria-label="닫기">' + svg('x') + '</button></div>' + body + '</div>';
     document.body.appendChild(m);
     m.addEventListener('click', function (e) { if (e.target === m || e.target.closest('[data-close]')) closeSheet(m); });
-    m.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSheet(m); });
+    m.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.preventDefault(); closeSheet(m); } });
     var f = m.querySelector('input:not([type=checkbox]):not([type=file]),textarea'); setTimeout(function () { if (f) f.focus(); }, 60);
     return m;
   }
   function closeSheet(m) { if (m && m.parentNode) m.remove(); }
+
+  /* ESC: 열린 창(시트) 닫기 → 답장 취소 → 방 검색 닫기 → 채팅방 나가기 (새 창이면 창 닫기) */
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' || e.defaultPrevented || e.isComposing) return;
+    var ms = $$('.modal'); if (ms.length) { e.preventDefault(); ms[ms.length - 1].remove(); return; }
+    if (S.replyTo) { e.preventDefault(); setReply(null); return; }
+    var rs = $('#roomSearch'); if (rs && !rs.hidden) { e.preventDefault(); var x = $('#rsX'); if (x) x.click(); else rs.hidden = true; return; }
+    if (S.route && S.route.tab === 'chats' && S.route.id) {
+      e.preventDefault();
+      if (S.solo) { window.close(); return; }
+      location.hash = '#chats';
+    }
+  });
   /* 확인창 대신 버튼을 두 번 누르게 함 */
   function confirmInline(btn, msg) {
     if (btn.getAttribute('data-armed')) return true;
