@@ -466,6 +466,17 @@
     if (!win) toast('팝업이 차단되었습니다. 주소창 오른쪽 팝업 차단 아이콘에서 "항상 허용"을 눌러 주세요.');
     else try { win.focus(); } catch (e) {}
   }
+  /* 설치한 앱 창을 폭 380으로 맞추기 (설정에서 켰을 때) */
+  function fitMini(force) {
+    if (!DESKTOP.matches) return;
+    if (!force && lsGet('noble-mini-default') !== '1') return;
+    var app = window.matchMedia('(display-mode: standalone)').matches || window.name === 'noble-mini';
+    if (!app && !force) return;
+    var w = 380, h = Math.min(screen.availHeight - 40, 820);
+    try { window.resizeTo(w, h); window.moveTo(screen.availWidth - w - 20, 20); } catch (e) {}
+    setTimeout(function () { if (force && window.outerWidth > 460) toast('이 창은 브라우저가 크기를 바꾸지 못하게 막고 있습니다. 위의 "작은 창 (380)" 버튼을 써 주세요.'); }, 400);
+  }
+  fitMini(false);
   function roomTitle(info) { return info ? esc(info.name) + (info.type === 'group' ? '<small>' + info.member_count + '명</small>' : '') : '대화'; }
   function openRoom(id) {
     if (S.room && S.room.id === id && $('#msgs')) return;
@@ -1412,7 +1423,8 @@
       '<span class="small muted">크기</span><input type="range" id="sndVol" min="0.1" max="1" step="0.1" value="' + soundVol() + '" aria-label="소리 크기"><button class="btn btn-line sm" id="sndTest">미리 듣기</button></div></section>' +
       '<section class="card"><h3>휴대폰 알림</h3><div id="pushBox"></div></section>' +
       (DESKTOP.matches ? '<section class="card"><h3>작은 창으로 쓰기</h3><p class="muted small" style="margin-bottom:10px">크롬·엣지는 앱 창을 일정 폭 이하로 줄이지 못하게 막고 있습니다. 아래 버튼을 누르면 <b>카카오워크 크기(폭 380)</b>의 작은 창으로 따로 열립니다. 기존 큰 창은 닫으셔도 됩니다.</p>' +
-        '<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-gold sm" data-mini="380">작은 창 (380)</button><button class="btn btn-line sm" data-mini="440">보통 창 (440)</button></div></section>' : '') +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-gold sm" data-mini="380">작은 창 (380)</button><button class="btn btn-line sm" data-mini="440">보통 창 (440)</button></div>' +
+        '<label class="switch-row" style="margin-top:12px"><input type="checkbox" id="miniDef"' + (lsGet('noble-mini-default') === '1' ? ' checked' : '') + '> 메신저를 켤 때 항상 폭 380으로 열기</label></section>' : '') +
       '<section class="card"><h3>앱으로 설치하기</h3>' + (standalone() ? '<p class="muted">앱으로 설치되어 있습니다. ✓</p>' :
         isIOS() ? '<p>아이폰: Safari 아래쪽 <b>공유 버튼(□↑)</b> → <b>홈 화면에 추가</b> → 추가. 설치한 앱을 열어야 알림을 받을 수 있습니다.</p>' :
           '<p>안드로이드(크롬): 오른쪽 위 <b>⋮</b> → <b>앱 설치</b> 또는 <b>홈 화면에 추가</b>. PC(크롬·엣지): 주소창 오른쪽 <b>설치</b> 아이콘.</p>') + '</section>' +
@@ -1438,6 +1450,7 @@
       sb.auth.updateUser({ password: a }).then(function (r) { if (r.error) throw r.error; $('#p1').value = $('#p2').value = ''; $('#pe').textContent = ''; toast('비밀번호를 바꿨습니다'); })
         .catch(function (er) { $('#pe').textContent = errMsg(er); });
     });
+    var md = $('#miniDef'); if (md) md.onchange = function () { lsSet('noble-mini-default', this.checked ? '1' : '0'); if (this.checked) fitMini(true); };
     $$('[data-mini]').forEach(function (b) { b.onclick = function () {
       var w = +b.getAttribute('data-mini'), h = Math.min(screen.availHeight - 40, 820);
       var win = window.open(location.href.split('#')[0] + '#chats', 'noble-mini', 'popup,width=' + w + ',height=' + h + ',left=' + (screen.availWidth - w - 20) + ',top=20');
