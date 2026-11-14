@@ -491,3 +491,18 @@ html.fs-xl .poll-hd b,html.fs-xl .popt{font-size:19.5px}
 .bubble.to-me{box-shadow:none;background:#fffbea;border-color:#f1d77a}
 .quote:has(+ .bubble.to-me){border-color:#f1d77a}
 .quote:has(+ .bubble.to-me) ~ .bubble.to-me{border-color:#f1d77a}
+
+/* ===== PC에서 창을 좁게 써도(카카오워크 크기) 왼쪽 세로 메뉴 유지 ===== */
+@media (max-width:860px) and (hover:hover) and (pointer:fine){
+  .app{flex-direction:row}
+  .rail{order:0;width:64px;flex-direction:column;justify-content:flex-start;align-items:center;padding:12px 0;gap:4px;border-top:0}
+  .rail .logo{display:block;width:34px;margin-bottom:8px}
+  .rail .spacer{display:block}
+  .tab{flex:0 0 auto;width:54px;max-width:none;font-size:11px;padding:7px 0 5px}
+  .tab svg{width:22px;height:22px}
+  .app.in-room .rail{display:flex}
+  .pane-hd{padding-top:12px}
+}
+/* 공감·답장 버튼은 마우스를 올렸을 때만 자리를 차지 (좁은 창에서 말풍선이 눌리지 않게) */
+.msg:not(:hover):not(:focus-within) .msg-acts{display:none}
+.line{position:relative}
