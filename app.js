@@ -186,7 +186,7 @@
   var S = {
     me: null, profiles: {}, rooms: [], notices: [], noticeReads: {}, pendingCount: 0,
     route: { tab: 'chats', id: null }, room: null, members: {}, messages: [], oldestLoaded: null, hasOlder: false,
-    urlCache: {}, channel: null, solo: false, polls: {}, pollSel: {}, pollLoading: {}, imgSize: {}, replyTo: null, reacts: {}, replyCache: {}, workTab: 'new', adminMonth: ymd(new Date()).slice(0, 7), adminStatus: '전체', staffQuery: ''
+    urlCache: {}, channel: null, solo: false, polls: {}, pollSel: {}, pollLoading: {}, imgSize: {}, replyTo: null, reacts: {}, replyCache: {}, workTab: 'att', att: null, attMonth: ymd(new Date()).slice(0, 7), attDay: ymd(new Date()), attView: 'mine', adminMonth: ymd(new Date()).slice(0, 7), adminStatus: '전체', staffQuery: ''
   };
 
   /* ---------------- 로그인 ---------------- */
@@ -357,7 +357,7 @@
     var q = (S.roomQuery || '').trim();
     var list = S.rooms.filter(function (r) { return !q || (r.name || '').indexOf(q) > -1; });
     $('#list').innerHTML = header('채팅', { right: '<button class="icon-btn" id="newChat" aria-label="새 대화">' + svg('plus') + '</button>' }) +
-      '<div class="search">' + svg('search') + '<input id="roomQ" placeholder="대화방·메시지 검색" value="' + esc(q) + '" aria-label="대화방·메시지 검색"></div><div id="pushAsk"></div>' +
+      '<div class="search">' + svg('search') + '<input id="roomQ" placeholder="대화방·메시지 검색" value="' + esc(q) + '" aria-label="대화방·메시지 검색"></div><div id="pushAsk"></div><div id="attNudge"></div>' +
       '<div class="pane-body">' + (q && list.length ? '<div class="group-hd">대화방</div>' : '') + (list.length ? list.map(function (r) {
         var grp = r.type === 'group';
         var face = grp ? grpFace(r.name) : r.type === 'self' ? av(S.me, 'me') : av(S.profiles[r.other_id] || { name: r.name });
@@ -393,6 +393,7 @@
     var qi = $('#roomQ'); qi.oninput = function () { S.roomQuery = qi.value; var pos = qi.selectionStart; renderRoomList(); var n = $('#roomQ'); n.focus(); n.setSelectionRange(pos, pos); };
     if (q.length >= 2 && (!S.msgSearch || S.msgSearch.q !== q)) searchAllMessages(q);
     renderPushAsk();
+    if (S.att && (S.att.error || S.att.today === ymd(new Date()))) renderAttNudge(); else if ((S.profiles[S.me.id] || S.me).att_enabled && (DESKTOP.matches || (S.profiles[S.me.id] || S.me).mobile_punch) && !S.attLoading) { S.attLoading = true; attLoad().then(function () { S.attLoading = false; renderAttNudge(); }); }
     wireMsgResults();
   }
 
@@ -1301,14 +1302,241 @@
   function timeKind(k) { var x = KINDS.find(function (y) { return y[0] === k; }); return x ? x[1] : true; }
   function diffMin(a, b) { if (!a || !b) return 0; var p = a.split(':'), q = b.split(':'); var v = (+q[0] * 60 + +q[1]) - (+p[0] * 60 + +p[1]); return v < 0 ? v + 1440 : v; }
 
+  /* ================= 출퇴근 (병원 인터넷 IP에서 PC로) ================= */
+  function attCall(body) {
+    return sb.functions.invoke('attendance', { body: body }).then(function (r) {
+      if (r.error) {
+        var ctx = r.error.context; if (ctx && ctx.json) return ctx.json().then(function (j) { var e = new Error(j.error || r.error.message); e.ip = j.ip; throw e; }, function () { throw r.error; });
+        throw r.error;
+      }
+      if (r.data && r.data.error) throw new Error(r.data.error);
+      return r.data;
+    });
+  }
+  function attLoad() { return attCall({ action: 'status' }).then(function (d) { S.att = d; return d; }).catch(function (e) { S.att = { error: errMsg(e) }; return S.att; }); }
+  function hhmm(x) { if (!x) return ''; var t = d(x); return String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0'); }
+  function minsTxt(n) { if (n == null) return ''; var h = Math.floor(n / 60), m = n % 60; return (h ? h + '시간' : '') + (m || !h ? (h ? ' ' : '') + m + '분' : ''); }
+  function attCalc(r, p) {
+    var o = { work: null, late: null, over: null };
+    if (r.clock_in && r.clock_out) o.work = Math.max(0, Math.round((d(r.clock_out) - d(r.clock_in)) / 60000));
+    var base = function (hm) { var t = new Date(r.work_date + 'T' + hm.slice(0, 5) + ':00'); return t; };
+    if (p && p.work_start && r.clock_in) { var l = Math.round((d(r.clock_in) - base(p.work_start)) / 60000); o.late = l > 0 ? l : 0; }
+    if (p && p.work_end && r.clock_out) { var e = base(p.work_end); if (p.work_start && p.work_end < p.work_start) e = new Date(e.getTime() + 864e5); var v = Math.round((d(r.clock_out) - e) / 60000); o.over = v > 0 ? v : 0; }
+    return o;
+  }
+  var WD = ['일', '월', '화', '수', '목', '금', '토'];
+  function dayLabel(ds) { var t = new Date(ds + 'T00:00:00'); return (t.getMonth() + 1) + '/' + t.getDate() + ' (' + WD[t.getDay()] + ')'; }
+  function renderAtt() {
+    var box = $('#wcontent'); if (!box) return;
+    box.innerHTML = '<p class="muted" style="padding:14px">불러오는 중…</p>';
+    attLoad().then(function (a) {
+      if (!$('#wcontent')) return;
+      if (a.error) { box.innerHTML = '<section class="card"><h3>출퇴근</h3><p class="err">' + esc(a.error) + '</p><p class="muted small">관리자가 출퇴근 기능(attendance)을 아직 설치하지 않았을 수 있습니다.</p></section>'; return; }
+      var views = [];
+      if (a.enabled) views.push(['mine', '내 기록']);
+      if ((a.team || []).length) views.push(['team', '우리 팀 (' + a.team.length + ')']);
+      if (a.manager) views.push(['all', '전체 현황']);
+      if (!views.length) { box.innerHTML = '<section class="card"><h3>출퇴근</h3><p class="muted">출퇴근 대상이 아닙니다. 필요하면 관리자에게 문의해 주세요.</p></section>'; return; }
+      if (!views.some(function (v) { return v[0] === S.attView; })) S.attView = views[0][0];
+      box.innerHTML = (a.enabled ? '<section class="card att-today" id="attToday"></section>' : '') +
+        (views.length > 1 ? '<div class="seg sm" role="group" aria-label="출퇴근 보기">' + views.map(function (v) { return '<button aria-pressed="' + (S.attView === v[0]) + '" data-av="' + v[0] + '">' + v[1] + '</button>'; }).join('') + '</div>' : '') +
+        '<div id="attBody"></div>';
+      $$('[data-av]', box).forEach(function (b) { b.onclick = function () { S.attView = b.getAttribute('data-av'); renderAtt(); }; });
+      if (a.enabled) attTodayCard();
+      if (S.attView === 'all') attAdmin(); else if (S.attView === 'team') attTeam(); else attMine();
+    });
+  }
+  function attCanPunch() { var a = S.att || {}; return DESKTOP.matches || !!a.mobileOk; }
+  function attNetMsg() {
+    var a = S.att || {}, mgr = a.manager;
+    if (a.noIps) return '<p class="att-warn">아직 병원 인터넷 주소가 등록되지 않았습니다. ' + (mgr ? '<b>전체 현황 → 병원 인터넷 주소</b>에서 등록해 주세요.' : '관리자에게 알려 주세요.') + '</p>';
+    if (!a.allowed) return '<p class="att-warn">지금은 병원 인터넷이 아닙니다. ' + (DESKTOP.matches ? '병원 PC에서 눌러 주세요.' : '휴대폰을 <b>병원 와이파이</b>에 연결한 뒤 눌러 주세요.') + (mgr ? ' <span class="muted">(현재 주소 ' + esc(a.ip || '') + ')</span>' : '') + '</p>';
+    return '<p class="muted small" style="margin-top:8px">✓ 병원 인터넷에 연결되어 있습니다</p>';
+  }
+  function attTeam() {
+    var body = $('#attBody'); if (!body) return;
+    var a = S.att || {}, team = a.team || [], ids = team.map(function (t) { return t.id; });
+    body.innerHTML = '<section class="card"><div class="att-hd"><h3>우리 팀 오늘 출퇴근</h3><span class="muted small">' + dayLabel(a.today) + '</span></div><div id="teamList"><p class="muted">불러오는 중…</p></div>' +
+      (attCanPunch() ? attNetMsg() : '<p class="att-warn">팀원 출퇴근은 병원 <b>PC</b>에서 눌러 주세요.</p>') + '</section>' +
+      '<section class="card"><div class="att-hd"><h3>팀원 기록</h3><input class="input sm" type="month" id="teamM" value="' + S.attMonth + '" aria-label="월 선택"></div><div id="teamMonth"></div></section>';
+    $('#teamM').onchange = function () { S.attMonth = this.value; attTeamMonth(ids); };
+    sb.from('attendance').select('*').in('user_id', ids).eq('work_date', a.today).then(function (r) {
+      var l = $('#teamList'); if (!l) return;
+      var by = {}; (r.data || []).forEach(function (x) { by[x.user_id] = x; });
+      var can = attCanPunch() && a.allowed;
+      l.innerHTML = team.map(function (t) {
+        var x = by[t.id] || {}, p = S.profiles[t.id] || t;
+        return '<div class="team-row"><span class="grow"><b>' + esc(p.name) + '</b><br><span class="muted small">출근 ' + (hhmm(x.clock_in) || '--:--') + ' · 퇴근 ' + (hhmm(x.clock_out) || '--:--') + '</span></span>' +
+          (can ? '<button class="btn btn-navy sm" data-tin="' + t.id + '"' + (x.clock_in ? ' disabled' : '') + '>' + (x.clock_in ? '출근 ✓' : '출근') + '</button><button class="btn btn-gold sm" data-tout="' + t.id + '">' + (x.clock_out ? '퇴근 ✓' : '퇴근') + '</button>' : '') + '</div>';
+      }).join('');
+      $$('[data-tin]', l).forEach(function (b) { b.onclick = function () { attPunch('in', b, b.getAttribute('data-tin')); }; });
+      $$('[data-tout]', l).forEach(function (b) { b.onclick = function () { if (b.textContent.indexOf('✓') > -1 && !confirmInline(b, '퇴근 시간을 다시 찍을까요?')) return; attPunch('out', b, b.getAttribute('data-tout')); }; });
+    });
+    attTeamMonth(ids);
+  }
+  function attTeamMonth(ids) {
+    var m = S.attMonth, start = m + '-01', end = ymd(new Date(+m.slice(0, 4), +m.slice(5, 7), 0));
+    sb.from('attendance').select('*').in('user_id', ids).gte('work_date', start).lte('work_date', end).order('work_date', { ascending: false }).then(function (r) {
+      var l = $('#teamMonth'); if (!l) return;
+      var rows = r.data || [];
+      if (!rows.length) { l.innerHTML = '<p class="muted">이 달 기록이 없습니다.</p>'; return; }
+      l.innerHTML = '<table class="att-tbl"><thead><tr><th>날짜</th><th>이름</th><th>출근</th><th>퇴근</th><th>비고</th></tr></thead><tbody>' + rows.map(function (x) {
+        var p = S.profiles[x.user_id] || {}, c = attCalc(x, p);
+        return '<tr><td>' + dayLabel(x.work_date) + '</td><td>' + esc(p.name || '') + '</td><td>' + (hhmm(x.clock_in) || '<span class="miss">없음</span>') + '</td><td>' + (hhmm(x.clock_out) || '<span class="miss">없음</span>') + '</td><td class="small">' +
+          [c.late ? '<span class="late">지각 ' + minsTxt(c.late) + '</span>' : '', c.over ? '<span class="over">연장 ' + minsTxt(c.over) + '</span>' : '', esc(x.note || '')].filter(Boolean).join(' ') + '</td></tr>';
+      }).join('') + '</tbody></table>';
+    });
+  }
+  function attTodayCard() {
+    var c = $('#attToday'); if (!c) return;
+    var a = S.att || {}, r = a.record || {}, pc = attCanPunch();
+    var now = new Date();
+    c.innerHTML = '<div class="att-hd"><h3>오늘 출퇴근</h3><span class="muted small">' + dayLabel(a.today || ymd(now)) + '</span></div>' +
+      '<div class="att-times"><div><span>출근</span><b>' + (r.clock_in ? hhmm(r.clock_in) : '--:--') + '</b></div><div><span>퇴근</span><b>' + (r.clock_out ? hhmm(r.clock_out) : '--:--') + '</b></div></div>' +
+      (pc ? '<div class="att-btns"><button class="btn btn-navy" id="attIn"' + (r.clock_in ? ' disabled' : '') + '>' + (r.clock_in ? '출근 완료' : '출근') + '</button><button class="btn btn-gold" id="attOut"' + (!r.clock_in && !r.clock_out ? '' : '') + '>' + (r.clock_out ? '퇴근 다시 찍기' : '퇴근') + '</button></div>' +
+        attNetMsg()
+        : '<p class="att-warn">출퇴근은 병원 <b>PC</b>에서 눌러 주세요. 휴대폰에서는 기록 확인만 됩니다.</p>');
+    var bi = $('#attIn'), bo = $('#attOut');
+    if (bi) bi.onclick = function () { attPunch('in', bi); };
+    if (bo) bo.onclick = function () { if (r.clock_out && !confirmInline(bo, '다시 찍으면 퇴근 시간이 바뀝니다')) return; attPunch('out', bo); };
+  }
+  function attPunch(kind, btn, target) {
+    if (btn) btn.disabled = true;
+    var body = { action: kind }; if (target) body.user_id = target;
+    var who = target ? esc((S.profiles[target] || {}).name || '') + ' · ' : '';
+    return attCall(body).then(function (res) {
+      var t = hhmm(kind === 'in' ? res.record.clock_in : res.record.clock_out);
+      toast('<b>' + (kind === 'in' ? '출근' : '퇴근') + '</b> ' + who + (res.already ? '이미 출근했습니다 (' + t + ')' : t + ' 기록했습니다') + (res.noIn ? ' · 출근 기록이 없어 관리자에게 수정 요청하세요' : ''));
+      return attLoad().then(function () { if ($('#attToday')) attTodayCard(); renderAttNudge(); if ($('#attList')) attMine(); if ($('#teamList')) attTeam(); });
+    }).catch(function (e) { toast(esc(errMsg(e))); if (btn) btn.disabled = false; });
+  }
+  function attMine() {
+    var body = $('#attBody'); if (!body) return;
+    body.innerHTML = '<section class="card"><div class="att-hd"><h3>내 출퇴근 기록</h3><input class="input sm" type="month" id="attM" value="' + S.attMonth + '" aria-label="월 선택"></div><div id="attList"><p class="muted">불러오는 중…</p></div></section>';
+    $('#attM').onchange = function () { S.attMonth = this.value; attMine(); };
+    var m = S.attMonth, start = m + '-01', end = ymd(new Date(+m.slice(0, 4), +m.slice(5, 7), 0));
+    sb.from('attendance').select('*').eq('user_id', S.me.id).gte('work_date', start).lte('work_date', end).order('work_date', { ascending: false }).then(function (r) {
+      var l = $('#attList'); if (!l) return;
+      if (r.error) { l.innerHTML = '<p class="err">' + esc(errMsg(r.error)) + '</p>'; return; }
+      var rows = r.data || [], tw = 0, to = 0, p = S.profiles[S.me.id] || S.me;
+      if (!rows.length) { l.innerHTML = '<p class="muted">이 달 기록이 없습니다.</p>'; return; }
+      l.innerHTML = '<table class="att-tbl"><thead><tr><th>날짜</th><th>출근</th><th>퇴근</th><th>근무</th><th>비고</th></tr></thead><tbody>' + rows.map(function (x) {
+        var c = attCalc(x, p); tw += c.work || 0; to += c.over || 0;
+        return '<tr><td>' + dayLabel(x.work_date) + '</td><td>' + (hhmm(x.clock_in) || '<span class="miss">없음</span>') + '</td><td>' + (hhmm(x.clock_out) || '<span class="miss">없음</span>') + '</td><td>' + minsTxt(c.work) + '</td><td class="small">' +
+          [c.late ? '<span class="late">지각 ' + minsTxt(c.late) + '</span>' : '', c.over ? '<span class="over">연장 ' + minsTxt(c.over) + '</span>' : '', x.edited_by ? '<span class="muted">관리자 수정</span>' : '', esc(x.note || '')].filter(Boolean).join(' ') + '</td></tr>';
+      }).join('') + '</tbody></table><p class="muted small" style="margin-top:8px">이 달 합계: 근무 ' + minsTxt(tw) + (to ? ' · 연장 ' + minsTxt(to) : '') + ' · 기록이 틀리면 관리자에게 수정을 요청하세요.</p>';
+    });
+  }
+  function attAdmin() {
+    var body = $('#attBody'); if (!body) return;
+    body.innerHTML = '<section class="card"><div class="att-hd"><h3>날짜별 현황</h3><input class="input sm" type="date" id="attD" value="' + S.attDay + '" aria-label="날짜 선택"></div><div id="attDay"><p class="muted">불러오는 중…</p></div></section>' +
+      '<section class="card"><div class="att-hd"><h3>월별 엑셀</h3><input class="input sm" type="month" id="attAM" value="' + S.attMonth + '" aria-label="월 선택"></div><p class="muted small" style="margin-bottom:10px">전 직원의 출근·퇴근·근무시간·지각·연장을 엑셀(CSV)로 받습니다. 급여정리에 그대로 쓰세요.</p><button class="btn btn-gold sm" id="attCsv">' + svg('down').replace('<svg', '<svg style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2"') + ' 출퇴근 엑셀(CSV) 받기</button></section>' +
+      '<section class="card" id="attIps"><h3>병원 인터넷 주소</h3><p class="muted small">불러오는 중…</p></section>';
+    $('#attD').onchange = function () { S.attDay = this.value; attDayList(); };
+    $('#attAM').onchange = function () { S.attMonth = this.value; };
+    $('#attCsv').onclick = attCsv;
+    attDayList(); attIps();
+  }
+  function attDayList() {
+    var day = S.attDay;
+    sb.from('attendance').select('*').eq('work_date', day).then(function (r) {
+      var l = $('#attDay'); if (!l) return;
+      if (r.error) { l.innerHTML = '<p class="err">' + esc(errMsg(r.error)) + '</p>'; return; }
+      var by = {}; (r.data || []).forEach(function (x) { by[x.user_id] = x; });
+      var staff = Object.keys(S.profiles).map(function (k) { return S.profiles[k]; }).filter(function (p) { return p.active && (p.att_enabled || by[p.id]); });
+      var cin = staff.filter(function (p) { return by[p.id] && by[p.id].clock_in; }).length;
+      l.innerHTML = '<p class="small" style="margin-bottom:8px">출근 <b>' + cin + '</b> / ' + staff.length + '명</p><table class="att-tbl"><thead><tr><th>이름</th><th>출근</th><th>퇴근</th><th>비고</th><th></th></tr></thead><tbody>' +
+        staff.sort(function (a, b) { return (a.dept || '').localeCompare(b.dept || '') || a.name.localeCompare(b.name); }).map(function (p) {
+          var x = by[p.id], c = x ? attCalc(x, p) : {};
+          return '<tr><td><b>' + esc(p.name) + '</b> <span class="muted small">' + esc(p.dept || '') + '</span></td><td>' + (x && x.clock_in ? hhmm(x.clock_in) : '<span class="miss">-</span>') + '</td><td>' + (x && x.clock_out ? hhmm(x.clock_out) : '<span class="miss">-</span>') + '</td><td class="small">' +
+            [c.late ? '<span class="late">지각 ' + minsTxt(c.late) + '</span>' : '', c.over ? '<span class="over">연장 ' + minsTxt(c.over) + '</span>' : '', x && x.note ? esc(x.note) : ''].filter(Boolean).join(' ') + '</td><td style="white-space:nowrap"><button class="btn btn-line sm" data-attedit="' + p.id + '">수정</button> <button class="btn btn-line sm" data-attset="' + p.id + '" title="출퇴근 설정">설정</button></td></tr>';
+        }).join('') + '</tbody></table>';
+      $$('[data-attset]', l).forEach(function (b) { b.onclick = function () { attSetSheet(S.profiles[b.getAttribute('data-attset')], attDayList); }; });
+      $$('[data-attedit]', l).forEach(function (b) { b.onclick = function () { attEditSheet(S.profiles[b.getAttribute('data-attedit')], day, by[b.getAttribute('data-attedit')]); }; });
+    });
+  }
+  function attEditSheet(p, day, x) {
+    var m = sheet(esc(p.name) + ' · ' + dayLabel(day), '<div class="row2"><div class="field"><label for="aei">출근</label><input class="input" type="time" id="aei" value="' + (x ? hhmm(x.clock_in) : '') + '"></div>' +
+      '<div class="field"><label for="aeo">퇴근</label><input class="input" type="time" id="aeo" value="' + (x ? hhmm(x.clock_out) : '') + '"></div></div>' +
+      '<div class="field"><label for="aen">메모</label><input class="input" id="aen" maxlength="100" value="' + esc(x ? x.note : '') + '" placeholder="예: 출근 버튼 누락 – 본인 요청"></div>' +
+      '<p class="muted small">퇴근이 출근보다 이르면 다음날 새벽 퇴근으로 처리합니다. 둘 다 비우면 그날 기록을 지웁니다.</p><p class="err" id="aee"></p>' +
+      '<div class="sheet-actions"><button class="btn btn-line" data-close>취소</button><button class="btn btn-navy" id="aeOk">저장</button></div>');
+    $('#aeOk', m).onclick = function () {
+      var i = $('#aei', m).value, o = $('#aeo', m).value;
+      var ci = i ? new Date(day + 'T' + i + ':00') : null, co = o ? new Date(day + 'T' + o + ':00') : null;
+      if (ci && co && co <= ci) co = new Date(co.getTime() + 864e5);
+      var btn = this; btn.disabled = true;
+      sb.rpc('admin_set_attendance', { uid: p.id, d: day, cin: ci && ci.toISOString(), cout: co && co.toISOString(), memo: $('#aen', m).value.trim() }).then(function (r) {
+        if (r.error) throw r.error; closeSheet(m); toast('저장했습니다'); attDayList();
+      }).catch(function (e) { $('#aee', m).textContent = errMsg(e); btn.disabled = false; });
+    };
+  }
+  function attIps() {
+    attCall({ action: 'ip_list' }).then(function (d) {
+      var c = $('#attIps'); if (!c) return;
+      var has = (d.ips || []).some(function (x) { return x.ip === d.ip; });
+      c.innerHTML = '<h3>병원 인터넷 주소</h3><p class="muted small" style="margin-bottom:10px">여기 등록된 주소(병원 인터넷)에서만 출퇴근을 찍을 수 있습니다. 병원 PC에서 <b>지금 이 PC 주소 등록</b>을 누르세요. 두 병원 회선이 다르면 각 병원에서 한 번씩 등록합니다.</p>' +
+        ((d.ips || []).length ? (d.ips || []).map(function (x) { return '<div class="ip-row"><span><b>' + esc(x.ip) + '</b> ' + esc(x.label || '') + (x.ip === d.ip ? ' <span class="pill gold">지금 이 PC</span>' : '') + '</span><button class="btn btn-line sm" data-ipdel="' + esc(x.ip) + '">삭제</button></div>'; }).join('') : '<p class="att-warn">등록된 주소가 없습니다.</p>') +
+        '<p class="small" style="margin:10px 0 6px">지금 이 PC 주소: <b>' + esc(d.ip || '확인 불가') + '</b>' + (has ? ' ✓ 등록됨' : '') + '</p>' +
+        (has ? '' : '<div class="row2"><input class="input" id="ipLabel" placeholder="이름 (예: 노블365의원)" maxlength="40"><button class="btn btn-navy" id="ipAdd">지금 이 PC 주소 등록</button></div>');
+      var ad = $('#ipAdd', c); if (ad) ad.onclick = function () { ad.disabled = true; attCall({ action: 'ip_add', label: $('#ipLabel', c).value.trim() }).then(function () { toast('병원 인터넷 주소를 등록했습니다'); attIps(); attLoad().then(attTodayCard); }).catch(function (e) { toast(esc(errMsg(e))); ad.disabled = false; }); };
+      $$('[data-ipdel]', c).forEach(function (b) { b.onclick = function () { if (!confirmInline(b, '삭제할까요?')) return; attCall({ action: 'ip_del', ip: b.getAttribute('data-ipdel') }).then(function () { attIps(); attLoad().then(attTodayCard); }).catch(function (e) { toast(esc(errMsg(e))); }); }; });
+    }).catch(function (e) { var c = $('#attIps'); if (c) c.innerHTML = '<h3>병원 인터넷 주소</h3><p class="err">' + esc(errMsg(e)) + '</p>'; });
+  }
+  function attCsv() {
+    var m = S.attMonth, start = m + '-01', end = ymd(new Date(+m.slice(0, 4), +m.slice(5, 7), 0));
+    sb.from('attendance').select('*').gte('work_date', start).lte('work_date', end).order('work_date').then(function (r) {
+      if (r.error) { toast(esc(errMsg(r.error))); return; }
+      var lines = [['병원', '부서', '직책', '이름', '날짜', '요일', '출근', '퇴근', '근무(분)', '근무', '지각(분)', '연장(분)', '연장', '비고']];
+      (r.data || []).sort(function (a, b) { var pa = S.profiles[a.user_id] || {}, pb = S.profiles[b.user_id] || {}; return (pa.name || '').localeCompare(pb.name || '') || a.work_date.localeCompare(b.work_date); }).forEach(function (x) {
+        var p = S.profiles[x.user_id] || {}, c = attCalc(x, p);
+        lines.push([p.clinic || '', p.dept || '', p.title || '', p.name || '(퇴사자)', x.work_date, WD[new Date(x.work_date + 'T00:00:00').getDay()], hhmm(x.clock_in), hhmm(x.clock_out), c.work == null ? '' : c.work, minsTxt(c.work), c.late || '', c.over || '', minsTxt(c.over || null), [x.edited_by ? '관리자 수정' : '', x.note || ''].filter(Boolean).join(' ')]);
+      });
+      var csv = '﻿' + lines.map(function (l) { return l.map(function (v) { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(','); }).join('\r\n');
+      var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = '출퇴근_' + m + '.csv'; document.body.appendChild(a); a.click(); a.remove();
+    });
+  }
+  function attSetSheet(p, after) {
+    if (!p) return;
+    var isAdm = S.me.role === 'admin';
+    var leaders = Object.keys(S.profiles).map(function (k) { return S.profiles[k]; }).filter(function (x) { return x.active && x.id !== p.id; }).sort(function (a, b) { return a.name.localeCompare(b.name); });
+    var m = sheet(esc(p.name) + ' · 출퇴근 설정',
+      '<label class="chk-row"><input type="checkbox" id="asEn"' + (p.att_enabled ? ' checked' : '') + '> <b>출퇴근 대상</b> <span class="muted small">(체크한 직원만 출퇴근을 찍습니다)</span></label>' +
+      '<div class="row2"><div class="field"><label for="asWs">기준 출근</label><input class="input" type="time" id="asWs" value="' + esc((p.work_start || '').slice(0, 5)) + '"></div><div class="field"><label for="asWe">기준 퇴근</label><input class="input" type="time" id="asWe" value="' + esc((p.work_end || '').slice(0, 5)) + '"></div></div>' +
+      '<p class="muted small" style="margin:-6px 0 12px">지각·연장 표시 기준 · 비워 두면 계산하지 않습니다</p>' +
+      '<div class="field"><label for="asLd">대신 찍어 주는 팀장</label><select class="input" id="asLd"><option value="">없음 (본인이 찍음)</option>' + leaders.map(function (x) { return '<option value="' + x.id + '"' + (p.att_leader === x.id ? ' selected' : '') + '>' + esc(x.name) + (x.dept ? ' (' + esc(x.dept) + ')' : '') + '</option>'; }).join('') + '</select></div>' +
+      '<label class="chk-row"><input type="checkbox" id="asMb"' + (p.mobile_punch ? ' checked' : '') + '> 스마트폰으로 출퇴근 허용 <span class="muted small">(PC 없는 직원 · 병원 와이파이에서만)</span></label>' +
+      (isAdm ? '<label class="chk-row"><input type="checkbox" id="asMg"' + (p.att_manager ? ' checked' : '') + '> <b>전 직원 출퇴근 관리</b> <span class="muted small">(전체 현황·수정·엑셀)</span></label>' : '') +
+      '<p class="err" id="asErr"></p><div class="sheet-actions"><button class="btn btn-line" data-close>취소</button><button class="btn btn-navy" id="asOk">저장</button></div>');
+    $('#asOk', m).onclick = function () {
+      var btn = this; btn.disabled = true;
+      var mg = $('#asMg', m);
+      sb.rpc('set_att_profile', { uid: p.id, ws: $('#asWs', m).value || null, we: $('#asWe', m).value || null, enabled: $('#asEn', m).checked, mobile: $('#asMb', m).checked, leader: $('#asLd', m).value || null, manager: mg ? mg.checked : !!p.att_manager }).then(function (r) {
+        if (r.error) throw r.error;
+        closeSheet(m); toast('저장했습니다');
+        return reloadProfiles().then(function () { if (after) after(); });
+      }).catch(function (e) { $('#asErr', m).textContent = errMsg(e); btn.disabled = false; });
+    };
+  }
+
+  /* 채팅 목록 위: PC에서 오늘 출근 안 눌렀으면 알려 주기 */
+  function renderAttNudge() {
+    var box = $('#attNudge'); if (!box) return;
+    var a = S.att;
+    if (!a || a.error || !a.enabled || (!DESKTOP.matches && !a.mobileOk) || !a.allowed || (a.record && a.record.clock_in) || lsGet('noble-att-skip') === (a.today || '')) { box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="push-ask att-nudge"><span>오늘 <b>출근</b>을 아직 안 눌렀어요</span><button class="btn btn-navy sm" id="nudgeIn">출근</button><button class="icon-btn" id="nudgeX" aria-label="오늘은 숨기기">' + svg('x') + '</button></div>';
+    $('#nudgeIn').onclick = function () { attPunch('in', this); };
+    $('#nudgeX').onclick = function () { lsSet('noble-att-skip', a.today || ''); box.innerHTML = ''; };
+  }
+
   function renderWork() {
     var admin = S.me.role === 'admin', tab = S.workTab;
     var main = $('#main'); main.style.justifyContent = '';
-    main.innerHTML = header('근무 신청') + '<div class="pane-body" id="wbody">' +
-      '<div class="seg" role="group" aria-label="근무 신청 메뉴"><button aria-pressed="' + (tab === 'new') + '" data-wt="new">신청하기</button><button aria-pressed="' + (tab === 'mine') + '" data-wt="mine">내 신청 내역</button>' +
+    main.innerHTML = header('출퇴근 · 근무 신청') + '<div class="pane-body" id="wbody">' +
+      '<div class="seg" role="group" aria-label="근무 신청 메뉴"><button aria-pressed="' + (tab === 'att') + '" data-wt="att">출퇴근</button><button aria-pressed="' + (tab === 'new') + '" data-wt="new">신청하기</button><button aria-pressed="' + (tab === 'mine') + '" data-wt="mine">내 신청 내역</button>' +
       (admin ? '<button aria-pressed="' + (tab === 'all') + '" data-wt="all">전체 관리' + (S.pendingCount ? ' (' + S.pendingCount + ')' : '') + '</button>' : '') + '</div><div id="wcontent"></div></div>';
     $$('[data-wt]').forEach(function (b) { b.onclick = function () { S.workTab = b.getAttribute('data-wt'); renderWork(); }; });
-    if (tab === 'new') workForm(); else if (tab === 'mine') workList(false); else workList(true);
+    if (tab === 'att') renderAtt(); else if (tab === 'new') workForm(); else if (tab === 'mine') workList(false); else workList(true);
   }
   function workForm() {
     var today = ymd(new Date());
@@ -1515,11 +1743,13 @@
       '<div class="field"><label for="ut">직책</label><input class="input" id="ut" value="' + esc(p.title) + '" placeholder="예: 실장, 팀장"></div></div>' +
       '<datalist id="depts">' + Array.from(new Set(Object.keys(S.profiles).map(function (k) { return S.profiles[k].dept; }).filter(Boolean))).map(function (x) { return '<option value="' + esc(x) + '">'; }).join('') + '</datalist>' +
       '<div class="field"><label for="ur">권한</label><select class="input" id="ur"><option value="staff"' + (p.role === 'staff' ? ' selected' : '') + '>일반 직원</option><option value="admin"' + (p.role === 'admin' ? ' selected' : '') + '>관리자 (계정 관리·공지·근무 승인)</option></select></div>' +
+      (isNew ? '' : '<button type="button" class="btn btn-line" id="uAtt" style="width:100%;margin-bottom:12px">출퇴근 설정 (대상·기준시간·팀장·스마트폰)</button>') +
       '<p class="err" id="ue"></p>' +
       '<div class="sheet-actions"><button class="btn btn-line" data-close>닫기</button><button class="btn btn-navy" id="uOk">' + (isNew ? '계정 만들기' : '저장') + '</button></div>' +
       (isNew ? '' : '<hr style="border:0;border-top:1px solid var(--line);margin:18px 0"><div style="display:grid;gap:8px">' +
         '<div class="row2"><input class="input" id="npw" placeholder="새 비밀번호 (8자 이상)" autocomplete="new-password" aria-label="새 비밀번호"><button class="btn btn-line" id="rpw">비밀번호 초기화</button></div>' +
         (p.id !== S.me.id ? '<button class="btn ' + (p.active ? 'btn-danger' : 'btn-line') + '" id="tog">' + (p.active ? '사용 정지 (퇴사 처리)' : '다시 사용하기') + '</button>' : '') + '</div>'));
+    var ua = $('#uAtt', m); if (ua) ua.onclick = function () { closeSheet(m); attSetSheet(p, renderAdmin); };
     $('#uOk', m).onclick = function () {
       var body = { name: $('#un', m).value.trim(), clinic: $('#uc', m).value, dept: $('#ud', m).value.trim(), title: $('#ut', m).value.trim(), role: $('#ur', m).value };
       if (!body.name) { $('#ue', m).textContent = '이름을 입력해 주세요.'; return; }
