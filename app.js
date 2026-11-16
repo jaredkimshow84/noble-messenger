@@ -1325,7 +1325,7 @@
     return o;
   }
   var WD = ['일', '월', '화', '수', '목', '금', '토'];
-  function dayLabel(ds) { var t = new Date(ds + 'T00:00:00'); return (t.getMonth() + 1) + '/' + t.getDate() + ' (' + WD[t.getDay()] + ')'; }
+  function attDayLbl(ds) { var t = new Date(ds + 'T00:00:00'); return (t.getMonth() + 1) + '/' + t.getDate() + ' (' + WD[t.getDay()] + ')'; }
   function renderAtt() {
     var box = $('#wcontent'); if (!box) return;
     box.innerHTML = '<p class="muted" style="padding:14px">불러오는 중…</p>';
@@ -1356,7 +1356,7 @@
   function attTeam() {
     var body = $('#attBody'); if (!body) return;
     var a = S.att || {}, team = a.team || [], ids = team.map(function (t) { return t.id; });
-    body.innerHTML = '<section class="card"><div class="att-hd"><h3>우리 팀 오늘 출퇴근</h3><span class="muted small">' + dayLabel(a.today) + '</span></div><div id="teamList"><p class="muted">불러오는 중…</p></div>' +
+    body.innerHTML = '<section class="card"><div class="att-hd"><h3>우리 팀 오늘 출퇴근</h3><span class="muted small">' + attDayLbl(a.today) + '</span></div><div id="teamList"><p class="muted">불러오는 중…</p></div>' +
       (attCanPunch() ? attNetMsg() : '<p class="att-warn">팀원 출퇴근은 병원 <b>PC</b>에서 눌러 주세요.</p>') + '</section>' +
       '<section class="card"><div class="att-hd"><h3>팀원 기록</h3><input class="input sm" type="month" id="teamM" value="' + S.attMonth + '" aria-label="월 선택"></div><div id="teamMonth"></div></section>';
     $('#teamM').onchange = function () { S.attMonth = this.value; attTeamMonth(ids); };
@@ -1382,7 +1382,7 @@
       if (!rows.length) { l.innerHTML = '<p class="muted">이 달 기록이 없습니다.</p>'; return; }
       l.innerHTML = '<table class="att-tbl"><thead><tr><th>날짜</th><th>이름</th><th>출근</th><th>퇴근</th><th>비고</th></tr></thead><tbody>' + rows.map(function (x) {
         var p = S.profiles[x.user_id] || {}, c = attCalc(x, p);
-        return '<tr><td>' + dayLabel(x.work_date) + '</td><td>' + esc(p.name || '') + '</td><td>' + (hhmm(x.clock_in) || '<span class="miss">없음</span>') + '</td><td>' + (hhmm(x.clock_out) || '<span class="miss">없음</span>') + '</td><td class="small">' +
+        return '<tr><td>' + attDayLbl(x.work_date) + '</td><td>' + esc(p.name || '') + '</td><td>' + (hhmm(x.clock_in) || '<span class="miss">없음</span>') + '</td><td>' + (hhmm(x.clock_out) || '<span class="miss">없음</span>') + '</td><td class="small">' +
           [c.late ? '<span class="late">지각 ' + minsTxt(c.late) + '</span>' : '', c.over ? '<span class="over">연장 ' + minsTxt(c.over) + '</span>' : '', esc(x.note || '')].filter(Boolean).join(' ') + '</td></tr>';
       }).join('') + '</tbody></table>';
     });
@@ -1391,7 +1391,7 @@
     var c = $('#attToday'); if (!c) return;
     var a = S.att || {}, r = a.record || {}, pc = attCanPunch();
     var now = new Date();
-    c.innerHTML = '<div class="att-hd"><h3>오늘 출퇴근</h3><span class="muted small">' + dayLabel(a.today || ymd(now)) + '</span></div>' +
+    c.innerHTML = '<div class="att-hd"><h3>오늘 출퇴근</h3><span class="muted small">' + attDayLbl(a.today || ymd(now)) + '</span></div>' +
       '<div class="att-times"><div><span>출근</span><b>' + (r.clock_in ? hhmm(r.clock_in) : '--:--') + '</b></div><div><span>퇴근</span><b>' + (r.clock_out ? hhmm(r.clock_out) : '--:--') + '</b></div></div>' +
       (pc ? '<div class="att-btns"><button class="btn btn-navy" id="attIn"' + (r.clock_in ? ' disabled' : '') + '>' + (r.clock_in ? '출근 완료' : '출근') + '</button><button class="btn btn-gold" id="attOut"' + (!r.clock_in && !r.clock_out ? '' : '') + '>' + (r.clock_out ? '퇴근 다시 찍기' : '퇴근') + '</button></div>' +
         attNetMsg()
@@ -1422,7 +1422,7 @@
       if (!rows.length) { l.innerHTML = '<p class="muted">이 달 기록이 없습니다.</p>'; return; }
       l.innerHTML = '<table class="att-tbl"><thead><tr><th>날짜</th><th>출근</th><th>퇴근</th><th>근무</th><th>비고</th></tr></thead><tbody>' + rows.map(function (x) {
         var c = attCalc(x, p); tw += c.work || 0; to += c.over || 0;
-        return '<tr><td>' + dayLabel(x.work_date) + '</td><td>' + (hhmm(x.clock_in) || '<span class="miss">없음</span>') + '</td><td>' + (hhmm(x.clock_out) || '<span class="miss">없음</span>') + '</td><td>' + minsTxt(c.work) + '</td><td class="small">' +
+        return '<tr><td>' + attDayLbl(x.work_date) + '</td><td>' + (hhmm(x.clock_in) || '<span class="miss">없음</span>') + '</td><td>' + (hhmm(x.clock_out) || '<span class="miss">없음</span>') + '</td><td>' + minsTxt(c.work) + '</td><td class="small">' +
           [c.late ? '<span class="late">지각 ' + minsTxt(c.late) + '</span>' : '', c.over ? '<span class="over">연장 ' + minsTxt(c.over) + '</span>' : '', x.edited_by ? '<span class="muted">관리자 수정</span>' : '', esc(x.note || '')].filter(Boolean).join(' ') + '</td></tr>';
       }).join('') + '</tbody></table><p class="muted small" style="margin-top:8px">이 달 합계: 근무 ' + minsTxt(tw) + (to ? ' · 연장 ' + minsTxt(to) : '') + ' · 기록이 틀리면 관리자에게 수정을 요청하세요.</p>';
     });
@@ -1456,7 +1456,7 @@
     });
   }
   function attEditSheet(p, day, x) {
-    var m = sheet(esc(p.name) + ' · ' + dayLabel(day), '<div class="row2"><div class="field"><label for="aei">출근</label><input class="input" type="time" id="aei" value="' + (x ? hhmm(x.clock_in) : '') + '"></div>' +
+    var m = sheet(esc(p.name) + ' · ' + attDayLbl(day), '<div class="row2"><div class="field"><label for="aei">출근</label><input class="input" type="time" id="aei" value="' + (x ? hhmm(x.clock_in) : '') + '"></div>' +
       '<div class="field"><label for="aeo">퇴근</label><input class="input" type="time" id="aeo" value="' + (x ? hhmm(x.clock_out) : '') + '"></div></div>' +
       '<div class="field"><label for="aen">메모</label><input class="input" id="aen" maxlength="100" value="' + esc(x ? x.note : '') + '" placeholder="예: 출근 버튼 누락 – 본인 요청"></div>' +
       '<p class="muted small">퇴근이 출근보다 이르면 다음날 새벽 퇴근으로 처리합니다. 둘 다 비우면 그날 기록을 지웁니다.</p><p class="err" id="aee"></p>' +
