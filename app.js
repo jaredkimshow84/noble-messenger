@@ -186,7 +186,7 @@
   var S = {
     me: null, profiles: {}, rooms: [], notices: [], noticeReads: {}, pendingCount: 0,
     route: { tab: 'chats', id: null }, room: null, members: {}, messages: [], oldestLoaded: null, hasOlder: false,
-    urlCache: {}, channel: null, solo: false, polls: {}, pollSel: {}, pollLoading: {}, imgSize: {}, replyTo: null, reacts: {}, replyCache: {}, workTab: 'att', att: null, attMonth: ymd(new Date()).slice(0, 7), attDay: ymd(new Date()), attView: 'mine', adminMonth: ymd(new Date()).slice(0, 7), adminStatus: '전체', staffQuery: ''
+    urlCache: {}, channel: null, solo: false, polls: {}, pollSel: {}, pollLoading: {}, imgSize: {}, replyTo: null, reacts: {}, replyCache: {}, workTab: 'att', att: null, ipReqs: [], ipHist: [], attWatch: null, attMonth: ymd(new Date()).slice(0, 7), attDay: ymd(new Date()), attView: 'mine', adminMonth: ymd(new Date()).slice(0, 7), adminStatus: '전체', staffQuery: ''
   };
 
   /* ---------------- 로그인 ---------------- */
@@ -269,7 +269,7 @@
         if (/^#join/.test(location.hash)) location.hash = '#chats';
         renderShell();
         subscribeRealtime(); checkPush();
-        return Promise.all([loadRooms(), loadNotices(), loadPending()]).then(function () { route(); });
+        return Promise.all([loadRooms(), loadNotices(), loadPending(), loadIpReqs()]).then(function () { route(); });
       });
     }).catch(function (e) { renderLogin(errMsg(e)); });
   }
@@ -287,7 +287,7 @@
     var chat = S.rooms.reduce(function (a, r) { return a + (r.muted ? 0 : r.unread); }, 0);
     var nt = S.notices.filter(function (n) { return !S.noticeReads[n.id]; }).length;
     var signups = S.me.role === 'admin' ? Object.keys(S.profiles).filter(function (k) { return S.profiles[k].pending; }).length : 0;
-    var map = { chats: chat, notices: nt, admin: S.pendingCount + signups, work: S.me.role === 'admin' ? S.pendingCount : 0 };
+    var map = { chats: chat, notices: nt, admin: S.pendingCount + signups, work: (S.me.role === 'admin' ? S.pendingCount : 0) + (S.ipReqs || []).length };
     $$('[data-badge]').forEach(function (b) { var v = map[b.getAttribute('data-badge')] || 0; b.hidden = !v; b.textContent = v > 99 ? '99+' : v; });
     if (ND && ND.setBadge) ND.setBadge(chat + nt);
     try { if (navigator.setAppBadge) { var tot = chat + nt; tot ? navigator.setAppBadge(tot) : navigator.clearAppBadge(); } } catch (e) {}
@@ -393,7 +393,7 @@
     var qi = $('#roomQ'); qi.oninput = function () { S.roomQuery = qi.value; var pos = qi.selectionStart; renderRoomList(); var n = $('#roomQ'); n.focus(); n.setSelectionRange(pos, pos); };
     if (q.length >= 2 && (!S.msgSearch || S.msgSearch.q !== q)) searchAllMessages(q);
     renderPushAsk();
-    if (S.att && (S.att.error || S.att.today === ymd(new Date()))) renderAttNudge(); else if ((S.profiles[S.me.id] || S.me).att_enabled && (DESKTOP.matches || (S.profiles[S.me.id] || S.me).mobile_punch) && !S.attLoading) { S.attLoading = true; attLoad().then(function () { S.attLoading = false; renderAttNudge(); }); }
+    if (S.att && (S.att.error || S.att.today === ymd(new Date()))) renderAttNudge(); else if ((S.profiles[S.me.id] || S.me).att_enabled && (DESKTOP.matches || (S.profiles[S.me.id] || S.me).mobile_punch) && !S.attLoading) { S.attLoading = true; attLoad().then(function () { S.attLoading = false; renderAttNudge(); }); } else renderAttNudge();
     wireMsgResults();
   }
 
@@ -1335,7 +1335,7 @@
       var views = [];
       if (a.enabled) views.push(['mine', '내 기록']);
       if ((a.team || []).length) views.push(['team', '우리 팀 (' + a.team.length + ')']);
-      if (a.manager) views.push(['all', '전체 현황']);
+      if (a.manager) views.push(['all', '전체 현황' + ((S.ipReqs || []).length ? ' (' + S.ipReqs.length + ')' : '')]);
       if (!views.length) { box.innerHTML = '<section class="card"><h3>출퇴근</h3><p class="muted">출퇴근 대상이 아닙니다. 필요하면 관리자에게 문의해 주세요.</p></section>'; return; }
       if (!views.some(function (v) { return v[0] === S.attView; })) S.attView = views[0][0];
       box.innerHTML = (a.enabled ? '<section class="card att-today" id="attToday"></section>' : '') +
@@ -1350,7 +1350,7 @@
   function attNetMsg() {
     var a = S.att || {}, mgr = a.manager;
     if (a.noIps) return '<p class="att-warn">아직 병원 인터넷 주소가 등록되지 않았습니다. ' + (mgr ? '<b>전체 현황 → 병원 인터넷 주소</b>에서 등록해 주세요.' : '관리자에게 알려 주세요.') + '</p>';
-    if (!a.allowed) return '<p class="att-warn">지금은 병원 인터넷이 아닙니다. ' + (DESKTOP.matches ? '병원 PC에서 눌러 주세요.' : '휴대폰을 <b>병원 와이파이</b>에 연결한 뒤 눌러 주세요.') + (mgr ? ' <span class="muted">(현재 주소 ' + esc(a.ip || '') + ')</span>' : '') + '</p>';
+    if (!a.allowed) return '<p class="att-warn">지금은 병원 인터넷이 아닙니다. ' + (DESKTOP.matches ? '병원 PC에서 눌러 주세요.' : '휴대폰을 <b>병원 와이파이</b>에 연결한 뒤 눌러 주세요.') + (mgr ? ' <span class="muted">(현재 주소 ' + esc(a.ip || '') + ')</span>' : '') + '</p>' + attReqBox();
     return '<p class="muted small" style="margin-top:8px">✓ 병원 인터넷에 연결되어 있습니다</p>';
   }
   function attTeam() {
@@ -1372,6 +1372,7 @@
       $$('[data-tin]', l).forEach(function (b) { b.onclick = function () { attPunch('in', b, b.getAttribute('data-tin')); }; });
       $$('[data-tout]', l).forEach(function (b) { b.onclick = function () { if (b.textContent.indexOf('✓') > -1 && !confirmInline(b, '퇴근 시간을 다시 찍을까요?')) return; attPunch('out', b, b.getAttribute('data-tout')); }; });
     });
+    attBindReq(body);
     attTeamMonth(ids);
   }
   function attTeamMonth(ids) {
@@ -1396,6 +1397,7 @@
       (pc ? '<div class="att-btns"><button class="btn btn-navy" id="attIn"' + (r.clock_in ? ' disabled' : '') + '>' + (r.clock_in ? '출근 완료' : '출근') + '</button><button class="btn btn-gold" id="attOut"' + (!r.clock_in && !r.clock_out ? '' : '') + '>' + (r.clock_out ? '퇴근 다시 찍기' : '퇴근') + '</button></div>' +
         attNetMsg()
         : '<p class="att-warn">출퇴근은 병원 <b>PC</b>에서 눌러 주세요. 휴대폰에서는 기록 확인만 됩니다.</p>');
+    attBindReq(c);
     var bi = $('#attIn'), bo = $('#attOut');
     if (bi) bi.onclick = function () { attPunch('in', bi); };
     if (bo) bo.onclick = function () { if (r.clock_out && !confirmInline(bo, '다시 찍으면 퇴근 시간이 바뀝니다')) return; attPunch('out', bo); };
@@ -1429,12 +1431,14 @@
   }
   function attAdmin() {
     var body = $('#attBody'); if (!body) return;
-    body.innerHTML = '<section class="card"><div class="att-hd"><h3>날짜별 현황</h3><input class="input sm" type="date" id="attD" value="' + S.attDay + '" aria-label="날짜 선택"></div><div id="attDay"><p class="muted">불러오는 중…</p></div></section>' +
+    body.innerHTML = '<section class="card" id="attReqs" hidden></section>' +
+      '<section class="card"><div class="att-hd"><h3>날짜별 현황</h3><input class="input sm" type="date" id="attD" value="' + S.attDay + '" aria-label="날짜 선택"></div><div id="attDay"><p class="muted">불러오는 중…</p></div></section>' +
       '<section class="card"><div class="att-hd"><h3>월별 엑셀</h3><input class="input sm" type="month" id="attAM" value="' + S.attMonth + '" aria-label="월 선택"></div><p class="muted small" style="margin-bottom:10px">전 직원의 출근·퇴근·근무시간·지각·연장을 엑셀(CSV)로 받습니다. 급여정리에 그대로 쓰세요.</p><button class="btn btn-gold sm" id="attCsv">' + svg('down').replace('<svg', '<svg style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2"') + ' 출퇴근 엑셀(CSV) 받기</button></section>' +
       '<section class="card" id="attIps"><h3>병원 인터넷 주소</h3><p class="muted small">불러오는 중…</p></section>';
     $('#attD').onchange = function () { S.attDay = this.value; attDayList(); };
     $('#attAM').onchange = function () { S.attMonth = this.value; };
     $('#attCsv').onclick = attCsv;
+    attReqs(); loadIpReqs();
     attDayList(); attIps();
   }
   function attDayList() {
@@ -1519,21 +1523,148 @@
     };
   }
 
-  /* 채팅 목록 위: PC에서 오늘 출근 안 눌렀으면 알려 주기 */
+  /* 채팅 목록 위: 관리자에게는 '병원 주소 등록 요청', PC에서 오늘 출근 안 눌렀으면 '출근' 알려 주기 */
   function renderAttNudge() {
     var box = $('#attNudge'); if (!box) return;
-    var a = S.att;
-    if (!a || a.error || !a.enabled || (!DESKTOP.matches && !a.mobileOk) || !a.allowed || (a.record && a.record.clock_in) || lsGet('noble-att-skip') === (a.today || '')) { box.innerHTML = ''; return; }
-    box.innerHTML = '<div class="push-ask att-nudge"><span>오늘 <b>출근</b>을 아직 안 눌렀어요</span><button class="btn btn-navy sm" id="nudgeIn">출근</button><button class="icon-btn" id="nudgeX" aria-label="오늘은 숨기기">' + svg('x') + '</button></div>';
-    $('#nudgeIn').onclick = function () { attPunch('in', this); };
-    $('#nudgeX').onclick = function () { lsSet('noble-att-skip', a.today || ''); box.innerHTML = ''; };
+    var a = S.att, html = '', nReq = isAttMgr() ? (S.ipReqs || []).length : 0;
+    if (nReq) html += '<div class="push-ask att-nudge"><span>🛜 병원 주소 등록 요청 <b>' + nReq + '건</b>이 승인을 기다립니다</span><button class="btn btn-navy sm" id="nudgeReq">확인</button></div>';
+    var punch = a && !a.error && a.enabled && (DESKTOP.matches || a.mobileOk) && a.allowed && !(a.record && a.record.clock_in) && lsGet('noble-att-skip') !== (a.today || '');
+    if (punch) html += '<div class="push-ask att-nudge"><span>오늘 <b>출근</b>을 아직 안 눌렀어요</span><button class="btn btn-navy sm" id="nudgeIn">출근</button><button class="icon-btn" id="nudgeX" aria-label="오늘은 숨기기">' + svg('x') + '</button></div>';
+    box.innerHTML = html;
+    if (nReq) $('#nudgeReq').onclick = gotoIpReqs;
+    if (punch) {
+      $('#nudgeIn').onclick = function () { attPunch('in', this); };
+      $('#nudgeX').onclick = function () { lsSet('noble-att-skip', a.today || ''); renderAttNudge(); };
+    }
+  }
+
+  /* ---- 병원 인터넷 주소 등록 요청 (직원이 요청 → 관리자가 승인) ---- */
+  function isAttMgr() { var p = (S.me && S.profiles[S.me.id]) || S.me || {}; return p.role === 'admin' || !!p.att_manager; }
+  function mdhm(x) { var t = d(x); return (t.getMonth() + 1) + '/' + t.getDate() + ' ' + hhmm(x); }
+  function gotoIpReqs() { S.workTab = 'att'; S.attView = 'all'; if (location.hash === '#work') route(); else location.hash = '#work'; }
+
+  /* 직원 화면: 병원 인터넷이 아닐 때 '요청 중' 안내 또는 '요청' 버튼 */
+  function attReqBox() {
+    var a = S.att || {}, q = a.request;
+    if (q) {
+      return '<div class="att-req"><p class="small" style="margin:8px 0 6px">✓ <b>병원 주소 등록을 요청했습니다</b>' + ((q.names || []).length ? ' <span class="muted">(요청: ' + esc((q.names || []).join(', ')) + ')</span>' : '') +
+        '<br>관리자가 승인하면 이 화면에서 바로 출근을 누를 수 있습니다.</p><button class="btn btn-line sm" data-ipchk>승인됐는지 확인</button></div>';
+    }
+    if (a.manager) return '<p class="muted small" style="margin-top:8px">이 PC가 병원이 맞다면 <b>전체 현황 → 병원 인터넷 주소</b>에서 바로 등록할 수 있습니다.</p>';
+    if (!DESKTOP.matches) return '';
+    return '<div class="att-req"><p class="muted small" style="margin:8px 0 6px">' + (a.rejected ? '관리자가 이 주소의 등록을 허용하지 않았습니다. ' : '') + '이 PC가 <b>병원 안</b>에 있는데도 계속 막히면(병원 인터넷 회선이 바뀐 경우), 관리자에게 등록을 요청할 수 있습니다.</p>' +
+      '<button class="btn btn-navy sm" data-ipreq>이 주소를 병원으로 등록 요청</button></div>';
+  }
+  function attBindReq(root) {
+    var r = $('[data-ipreq]', root); if (r) r.onclick = attReqSheet;
+    var c = $('[data-ipchk]', root); if (c) c.onclick = function () { c.disabled = true; attRefresh(true); };
+    attWatchReq();
+  }
+  /* 상태를 다시 읽고, 달라졌으면 화면 갱신 (승인되면 알려 줌) */
+  function attRefresh(manual) {
+    var was = S.att || {};
+    return attCall({ action: 'status' }).then(function (n) {
+      S.att = n;
+      var changed = !!n.allowed !== !!was.allowed || !!n.request !== !!was.request || !!n.rejected !== !!was.rejected;
+      if (n.allowed && !was.allowed) toast('<b>✓ 병원 인터넷으로 승인되었습니다</b> 이제 출근을 누르실 수 있어요');
+      else if (manual && !changed) toast(n.request ? '아직 승인 전입니다. 급하면 관리자에게 알려 주세요.' : '아직 등록되지 않았습니다');
+      if (changed || manual) { if ($('#attToday')) attTodayCard(); if ($('#teamList')) attTeam(); }
+      renderAttNudge();
+    }).catch(function (e) { if (manual) toast(esc(errMsg(e))); });   // 일시적인 오류면 이전 상태를 그대로 둠
+  }
+  /* 요청을 보낸 뒤 승인을 기다리는 동안 30초마다 자동 확인 (화면이 보일 때만) */
+  function attWatchReq() {
+    if (S.attWatch) { clearInterval(S.attWatch); S.attWatch = null; }
+    var a = S.att || {}; if (!a.request || a.allowed) return;
+    S.attWatch = setInterval(function () {
+      var b = S.att || {};
+      if ((!$('#attToday') && !$('#teamList')) || !b.request || b.allowed) { clearInterval(S.attWatch); S.attWatch = null; return; }
+      if (document.visibilityState === 'visible') attRefresh(false);
+    }, 30000);
+  }
+  function attReqSheet() {
+    var a = S.att || {};
+    var m = sheet('병원 인터넷 주소 등록 요청',
+      '<p class="small" style="margin-bottom:10px">지금 쓰는 이 PC가 <b>병원 안</b>에 있는데 출퇴근이 막힐 때만 요청해 주세요. 관리자가 확인하고 승인하면 이 PC에서 바로 출근을 누를 수 있습니다.</p>' +
+      '<p class="att-warn" style="margin:0 0 12px">집·카페 등 병원 밖이라면 요청하지 마세요.</p>' +
+      '<div class="field"><label for="irl">이 PC가 있는 곳 <span class="muted small">(선택)</span></label><input class="input" id="irl" maxlength="40" placeholder="예: 침구실, 3층 원무과"></div>' +
+      '<p class="muted small">접속 주소 ' + esc(a.ip || '확인 불가') + '</p><p class="err" id="ire"></p>' +
+      '<div class="sheet-actions"><button class="btn btn-line" data-close>취소</button><button class="btn btn-navy" id="irOk">요청하기</button></div>');
+    $('#irOk', m).onclick = function () {
+      var btn = this; btn.disabled = true;
+      attCall({ action: 'ip_request', label: $('#irl', m).value.trim() }).then(function (res) {
+        closeSheet(m);
+        if (res.already) toast('이미 병원 인터넷으로 등록된 주소입니다');
+        else {
+          toast('<b>요청했습니다</b> 관리자가 승인하면 바로 출근을 누를 수 있습니다');
+          // 관리자 휴대폰 알림 (push 함수가 이 요청을 지원하면 알림, 아니면 조용히 무시)
+          if (res.created && res.id) sb.functions.invoke('push', { body: { action: 'ip_request', request_id: res.id } }).catch(function () {});
+        }
+        return attRefresh(false);
+      }).catch(function (e) { $('#ire', m).textContent = errMsg(e); btn.disabled = false; });
+    };
+  }
+
+  /* 관리자: 등록 요청 목록 불러오기 (대기 + 최근 처리) */
+  function loadIpReqs() {
+    if (!isAttMgr()) return Promise.resolve();
+    return sb.from('ip_requests').select('*').order('created_at', { ascending: false }).limit(30).then(function (r) {
+      if (r.error) return;   // update-9 를 아직 안 돌린 경우 조용히 건너뜀
+      var rows = r.data || [];
+      S.ipReqs = rows.filter(function (x) { return x.status === 'pending'; }).reverse();   // 오래된 요청 먼저
+      S.ipHist = rows.filter(function (x) { return x.status !== 'pending'; }).slice(0, 5);
+      setBadges(); renderAttNudge();
+      if ($('#attReqs')) attReqs();
+      if (S.route && S.route.tab === 'work' && S.workTab === 'att') {
+        var sg = $$('[data-av="all"]')[0]; if (sg) sg.textContent = '전체 현황' + (S.ipReqs.length ? ' (' + S.ipReqs.length + ')' : '');
+        var wb = $$('[data-wt="att"]')[0]; if (wb) wb.textContent = '출퇴근' + (S.ipReqs.length ? ' (' + S.ipReqs.length + ')' : '');
+      }
+    }).catch(function () {});
+  }
+  function attReqs() {
+    var c = $('#attReqs'); if (!c) return;
+    var P = S.ipReqs || [], H = S.ipHist || [];
+    if (!P.length && !H.length) { c.hidden = true; c.innerHTML = ''; return; }
+    c.hidden = false;
+    var who = function (x) { var n = x.names || []; return esc(n[0] || (S.profiles[x.user_id] || {}).name || '직원') + (n.length > 1 ? ' <span class="muted small">외 ' + (n.length - 1) + '명</span>' : ''); };
+    c.innerHTML = '<h3>병원 주소 등록 요청' + (P.length ? ' (' + P.length + ')' : '') + '</h3>' +
+      (P.length ? '<p class="muted small" style="margin-bottom:4px">병원 안 PC에서 요청한 것이 맞는지 확인한 뒤 승인하세요. 집·카페 주소를 승인하면 병원 밖에서도 출퇴근이 찍힙니다.</p>' +
+        P.map(function (x) {
+          return '<div data-rid="' + x.id + '" style="padding:10px 0;border-bottom:1px solid var(--line)"><div><b>' + who(x) + '</b> <span class="muted small">· ' + mdhm(x.created_at) + ' 요청</span></div>' +
+            '<div class="small" style="margin-top:2px">접속 주소 <b>' + esc(x.ip) + '</b></div>' +
+            '<div style="display:flex;gap:6px;align-items:center;margin-top:6px"><input class="input" data-rlabel maxlength="40" placeholder="이 곳 이름 (예: 침구실)" value="' + esc(x.label || '') + '" aria-label="등록할 이름" style="flex:1;min-width:0">' +
+            '<button class="btn btn-navy sm" data-rok>승인</button><button class="btn btn-line sm" data-rno>거절</button></div></div>';
+        }).join('') : '<p class="muted small">대기 중인 요청이 없습니다.</p>') +
+      (H.length ? '<p class="muted small" style="margin:12px 0 2px">최근 처리</p>' + H.map(function (x) {
+        var by = (S.profiles[x.decided_by] || {}).name || '';
+        return '<div class="ip-row"><span class="small"><span class="pill ' + (x.status === 'approved' ? 'ok' : 'no') + '">' + (x.status === 'approved' ? '승인' : '거절') + '</span> <b>' + esc(x.ip) + '</b> ' + esc(x.label || '') +
+          ' <span class="muted">· 요청 ' + esc((x.names || []).join(', ')) + (by ? ' · ' + esc(by) + ' 처리 ' : ' · ') + (x.decided_at ? mdhm(x.decided_at) : '') + '</span></span></div>';
+      }).join('') : '');
+    $$('[data-rok]', c).forEach(function (b) {
+      b.onclick = function () {
+        var row = b.closest('[data-rid]');
+        if (!confirmInline(b, '한 번 더 누르면 승인')) return;
+        ipDecide(+row.getAttribute('data-rid'), true, $('[data-rlabel]', row).value.trim(), b);
+      };
+    });
+    $$('[data-rno]', c).forEach(function (b) { b.onclick = function () { ipDecide(+b.closest('[data-rid]').getAttribute('data-rid'), false, '', b); }; });
+  }
+  function ipDecide(id, ok, label, btn) {
+    var row = btn.closest('[data-rid]'); if (row) $$('button', row).forEach(function (x) { x.disabled = true; });
+    sb.rpc('decide_ip_request', { req_id: id, do_approve: ok, new_label: label || null }).then(function (r) {
+      if (r.error) throw r.error;
+      toast(r.data === 'approved' ? (ok ? '<b>승인했습니다</b> 이제 그 PC에서 출퇴근을 찍을 수 있습니다' : '이미 승인된 요청입니다') : r.data === 'rejected' ? (ok ? '이미 거절된 요청입니다' : '거절했습니다') : '이미 처리된 요청입니다');
+      return loadIpReqs();
+    }).then(function () { if ($('#attIps')) attIps(); }).catch(function (e) {
+      toast(esc(errMsg(e))); if (row) $$('button', row).forEach(function (x) { x.disabled = false; });
+    });
   }
 
   function renderWork() {
     var admin = S.me.role === 'admin', tab = S.workTab;
     var main = $('#main'); main.style.justifyContent = '';
     main.innerHTML = header('출퇴근 · 근무 신청') + '<div class="pane-body" id="wbody">' +
-      '<div class="seg" role="group" aria-label="근무 신청 메뉴"><button aria-pressed="' + (tab === 'att') + '" data-wt="att">출퇴근</button><button aria-pressed="' + (tab === 'new') + '" data-wt="new">신청하기</button><button aria-pressed="' + (tab === 'mine') + '" data-wt="mine">내 신청 내역</button>' +
+      '<div class="seg" role="group" aria-label="근무 신청 메뉴"><button aria-pressed="' + (tab === 'att') + '" data-wt="att">출퇴근' + ((S.ipReqs || []).length ? ' (' + S.ipReqs.length + ')' : '') + '</button><button aria-pressed="' + (tab === 'new') + '" data-wt="new">신청하기</button><button aria-pressed="' + (tab === 'mine') + '" data-wt="mine">내 신청 내역</button>' +
       (admin ? '<button aria-pressed="' + (tab === 'all') + '" data-wt="all">전체 관리' + (S.pendingCount ? ' (' + S.pendingCount + ')' : '') + '</button>' : '') + '</div><div id="wcontent"></div></div>';
     $$('[data-wt]').forEach(function (b) { b.onclick = function () { S.workTab = b.getAttribute('data-wt'); renderWork(); }; });
     if (tab === 'att') renderAtt(); else if (tab === 'new') workForm(); else if (tab === 'mine') workList(false); else workList(true);
@@ -1996,6 +2127,15 @@
           if (p.eventType === 'INSERT' && p.new.author_id !== S.me.id && !S.solo && !S.pushOn) playSound();
           if (ND && p.eventType === 'INSERT' && p.new.author_id !== S.me.id && !S.solo) deskNotify('📢 새 공지', p.new.title, '#notice/' + p.new.id, { name: '📢 새 공지', room: '공지사항' });
           if (p.eventType === 'INSERT' && p.new.author_id !== S.me.id) toast('<b>📢 새 공지</b> ' + esc(p.new.title), function () { location.hash = '#notice/' + p.new.id; });
+        });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ip_requests' }, function (p) {
+        if (!isAttMgr()) return;
+        loadIpReqs().then(function () {
+          if (p.eventType === 'INSERT' && p.new && p.new.status === 'pending') {
+            if (!S.solo && !S.pushOn) playSound();
+            toast('<b>🛜 병원 주소 등록 요청</b> ' + esc((p.new.names || []).join(', ') + (p.new.label ? ' · ' + p.new.label : '')), gotoIpReqs);
+          }
         });
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'work_requests' }, function (p) {
