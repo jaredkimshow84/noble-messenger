@@ -591,7 +591,18 @@
     if (S.solo && info) document.title = info.name + ' · 노블 메신저';
     renderRoomNotice(); applyRoomColor();
     var txt = $('#txt'), btn = $('#sendBtn');
-    function grow() { txt.style.height = 'auto'; txt.style.height = Math.min(140, txt.scrollHeight) + 'px'; btn.disabled = !txt.value.trim(); }
+    /* 글이 길어지면 입력창이 화면의 절반 정도까지 늘어나 내용 전체가 보임 (그보다 길면 안에서 스크롤) · 보내면 원래 크기로 */
+    function grow() {
+      var ms = $('#msgs'), stick = !!ms && ms.scrollHeight - ms.scrollTop - ms.clientHeight < 60;
+      var vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight || 700;
+      var cap = Math.max(120, Math.floor(vh * (vh < 600 ? 0.4 : 0.55)));
+      txt.style.height = 'auto';
+      var want = txt.scrollHeight;
+      txt.style.height = Math.min(cap, want) + 'px';
+      txt.style.overflowY = want > cap ? 'auto' : 'hidden';
+      if (stick && ms) ms.scrollTop = ms.scrollHeight;   // 아래 대화를 보고 있었다면 입력창이 커져도 마지막 대화가 가려지지 않게
+      btn.disabled = !txt.value.trim();
+    }
     txt.addEventListener('input', function () { grow(); mentionCheck(txt); });
     txt.addEventListener('click', function () { mentionCheck(txt); });
     txt.addEventListener('keydown', function (e) {

@@ -676,3 +676,6 @@ html.fs-xl .q-dt{font-size:18px}
   .q-done{margin:6px 10px 0}
 }
 @media (prefers-reduced-motion:reduce){.q-item{transition:none}}
+/* ===== 입력창 자동 확장: 글이 길어지면 화면의 절반 정도까지 늘어나 전체가 보임 (자바스크립트가 높이를 정함, max-height 는 안전장치) ===== */
+/* 세로 배치(.composer.kw)에서 flex:1 이면 높이 지정이 무시되어 2줄에서 멈추므로, 지정한 높이를 따르도록 flex:none */
+.composer.kw textarea{flex:0 0 auto;max-height:60vh;max-height:60dvh;overflow-wrap:anywhere}
