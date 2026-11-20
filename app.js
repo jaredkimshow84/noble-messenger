@@ -45,7 +45,8 @@
     copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/>',
     check: '<path d="M5 12l5 5 9-10"/>',
     at: '<circle cx="12" cy="12" r="3.6"/><path d="M15.6 12v1.4a2.4 2.4 0 0 0 4.8 0V12a8.4 8.4 0 1 0-3.3 6.7"/>',
-    crop: '<path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M2 6h14a2 2 0 0 1 2 2v14"/>'
+    crop: '<path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M2 6h14a2 2 0 0 1 2 2v14"/>',
+    queue: '<path d="M8 4H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/><rect x="8" y="2.5" width="8" height="3.6" rx="1.2"/><path d="M8 11.4l1.4 1.4 2.5-2.7"/><path d="M14.4 11.7h2.1"/><path d="M8 16.6h.01"/><path d="M11.4 16.6h5.1"/>'
   };
   /* 프로필 사진(없으면 이름 첫 글자) */
   function av(p, cls) {
@@ -186,7 +187,7 @@
   var S = {
     me: null, profiles: {}, rooms: [], notices: [], noticeReads: {}, pendingCount: 0,
     route: { tab: 'chats', id: null }, room: null, members: {}, messages: [], oldestLoaded: null, hasOlder: false,
-    urlCache: {}, channel: null, solo: false, polls: {}, pollSel: {}, pollLoading: {}, imgSize: {}, replyTo: null, reacts: {}, replyCache: {}, workTab: 'att', att: null, ipReqs: [], ipHist: [], attWatch: null, attMonth: ymd(new Date()).slice(0, 7), attDay: ymd(new Date()), attView: 'mine', adminMonth: ymd(new Date()).slice(0, 7), adminStatus: '전체', staffQuery: ''
+    urlCache: {}, channel: null, solo: false, polls: {}, pollSel: {}, pollLoading: {}, imgSize: {}, replyTo: null, reacts: {}, replyCache: {}, workTab: 'att', att: null, ipReqs: [], ipHist: [], queue: [], qDone: [], qErr: '', qLoaded: false, qStale: false, qWatch: null, qOpenDone: false, qSig: '', attWatch: null, attMonth: ymd(new Date()).slice(0, 7), attDay: ymd(new Date()), attView: 'mine', adminMonth: ymd(new Date()).slice(0, 7), adminStatus: '전체', staffQuery: ''
   };
 
   /* ---------------- 로그인 ---------------- */
@@ -269,15 +270,15 @@
         if (/^#join/.test(location.hash)) location.hash = '#chats';
         renderShell();
         subscribeRealtime(); checkPush();
-        return Promise.all([loadRooms(), loadNotices(), loadPending(), loadIpReqs()]).then(function () { route(); });
+        return Promise.all([loadRooms(), loadNotices(), loadPending(), loadIpReqs(), loadQueue()]).then(function () { route(); });
       });
     }).catch(function (e) { renderLogin(errMsg(e)); });
   }
 
   /* ---------------- 화면 틀 ---------------- */
-  var TABS = [['chats', '채팅', 'chat'], ['notices', '공지', 'bell'], ['work', '근무신청', 'clock'], ['staff', '직원', 'users'], ['settings', '설정', 'gear']];
+  var TABS = [['chats', '채팅', 'chat'], ['queue', '순서표', 'queue'], ['notices', '공지', 'bell'], ['work', '근무신청', 'clock'], ['staff', '직원', 'users'], ['settings', '설정', 'gear']];
   function renderShell() {
-    var tabs = TABS.slice(); if (S.me.role === 'admin') tabs.splice(4, 0, ['admin', '관리', 'shield']);
+    var tabs = TABS.slice(); if (S.me.role === 'admin') tabs.splice(5, 0, ['admin', '관리', 'shield']);
     root.innerHTML = '<div class="app" id="app"><nav class="rail" aria-label="메뉴"><img class="logo" src="logo.svg" alt="노블">' +
       tabs.map(function (t) { return '<a class="tab" href="#' + t[0] + '" data-tab="' + t[0] + '">' + svg(t[2]) + '<span>' + t[1] + '</span><span class="badge" data-badge="' + t[0] + '" hidden></span></a>'; }).join('') +
       '<div class="spacer"></div></nav>' +
@@ -287,7 +288,7 @@
     var chat = S.rooms.reduce(function (a, r) { return a + (r.muted ? 0 : r.unread); }, 0);
     var nt = S.notices.filter(function (n) { return !S.noticeReads[n.id]; }).length;
     var signups = S.me.role === 'admin' ? Object.keys(S.profiles).filter(function (k) { return S.profiles[k].pending; }).length : 0;
-    var map = { chats: chat, notices: nt, admin: S.pendingCount + signups, work: (S.me.role === 'admin' ? S.pendingCount : 0) + (S.ipReqs || []).length };
+    var map = { chats: chat, queue: qPending().length, notices: nt, admin: S.pendingCount + signups, work: (S.me.role === 'admin' ? S.pendingCount : 0) + (S.ipReqs || []).length };
     $$('[data-badge]').forEach(function (b) { var v = map[b.getAttribute('data-badge')] || 0; b.hidden = !v; b.textContent = v > 99 ? '99+' : v; });
     if (ND && ND.setBadge) ND.setBadge(chat + nt);
     try { if (navigator.setAppBadge) { var tot = chat + nt; tot ? navigator.setAppBadge(tot) : navigator.clearAppBadge(); } } catch (e) {}
@@ -299,7 +300,7 @@
     if (!S.me) return;
     var h = location.hash.replace(/^#/, '') || 'chats', parts = h.split('/');
     var tab = parts[0], id = parts[1] || null;
-    S.solo = tab === 'room' && parts[2] === 'solo';
+    S.solo = (tab === 'room' && parts[2] === 'solo') || (tab === 'queue' && parts[1] === 'solo');
     if (tab === 'room') { S.route = { tab: 'chats', id: id }; }
     else if (tab === 'notice') { S.route = { tab: 'notices', id: id }; }
     else { S.route = { tab: tab, id: null }; }
@@ -311,6 +312,7 @@
     switch (S.route.tab) {
       case 'chats': renderRoomList(); if (S.route.id) { app.classList.add('in-detail', 'in-room'); openRoom(S.route.id); } else renderPlaceholder('대화를 선택해 주세요'); break;
       case 'notices': renderNoticeList(); if (S.route.id) { app.classList.add('in-detail'); openNotice(+S.route.id); } else renderPlaceholder('공지를 선택해 주세요'); break;
+      case 'queue': single(); renderQueue(); break;
       case 'work': single(); renderWork(); break;
       case 'staff': single(); renderStaff(); break;
       case 'admin': single(); if (S.me.role === 'admin') renderAdmin(); break;
@@ -683,7 +685,7 @@
     var nearBottom = S.stick !== false && el.scrollHeight - el.scrollTop - el.clientHeight < 160;
     var html = S.hasOlder ? '<button class="btn btn-line sm load-older" id="older">이전 메시지 보기</button>' : '';
     if (!S.messages.length) html += '<p class="empty">첫 메시지를 보내 보세요.</p>';
-    var prev = null, needUrls = [];
+    var prev = null, needUrls = [], qm = qMap();
     S.messages.forEach(function (m) {
       if (!prev || !sameDay(prev.created_at, m.created_at)) { html += '<div class="day">' + dayLabel(m.created_at) + '</div>'; prev = null; }
       var mine = m.sender_id === S.me.id, p = S.profiles[m.sender_id] || { name: '(퇴사자)' };
@@ -704,8 +706,9 @@
       html += '<div class="msg' + (mine ? ' mine' : '') + (cont ? ' cont' : '') + '" data-id="' + m.id + '">' +
         (mine ? '' : av(p, 'sm')) +
         '<div class="col">' + (mine ? '' : '<div class="who">' + esc(p.name || '') + (pTag(p) ? '<span class="who-tag">' + esc(pTag(p)) + '</span>' : '') + '</div>') +
-        '<div class="line"><div class="col" style="gap:4px">' + content + '</div><span class="meta">' + (un ? '<span class="unread">' + un + '</span>' : '') + '<time>' + hm(m.created_at) + '</time></span>' +
+        '<div class="line"><div class="col" style="gap:4px">' + content + (m.deleted ? '' : qTagHtml(qm[m.id])) + '</div><span class="meta">' + (un ? '<span class="unread">' + un + '</span>' : '') + '<time>' + hm(m.created_at) + '</time></span>' +
         (!m.deleted && m.body && !m.poll_id ? '<button class="copy-btn" data-act="copy" title="복사" aria-label="메시지 복사">' + svg('copy') + '</button>' : '') +
+        (!m.deleted && m.body && !m.poll_id ? '<button class="copy-btn q-btn' + (qm[m.id] && qm[m.id].status === 'pending' ? ' on' : '') + '" data-act="queue" title="진료순서표에 올리기" aria-label="진료순서표에 올리기">' + svg('queue') + '</button>' : '') +
         (!m.deleted ? '<span class="msg-acts"><button data-act="react" title="공감" aria-label="공감">' + svg('smile') + '</button><button data-act="reply" title="답장" aria-label="답장">' + svg('reply') + '</button><button data-act="more" title="더보기" aria-label="더보기">' + svg('more') + '</button></span>' : '') +
         '</div>' + reactsHtml(m.id) + '</div></div>';
       prev = m;
@@ -733,12 +736,14 @@
       el.addEventListener('click', function (e) {
         var pb = e.target.closest('[data-popt],[data-pvote],[data-pclose],[data-pwho],[data-predo]');
         if (pb) { pollClick(pb); return; }
+        if (e.target.closest('[data-qgo]')) { goQueue(); return; }
         var b = e.target.closest('[data-act],[data-tog],[data-jump]'); if (!b) return;
         if (b.hasAttribute('data-jump')) { jumpTo(+b.getAttribute('data-jump')); return; }
         if (b.hasAttribute('data-tog')) { var t = b.getAttribute('data-tog').split('|'); toggleReact(+t[0], t[1]); return; }
         var mid = +b.closest('.msg').getAttribute('data-id'), msg = S.messages.find(function (x) { return x.id === mid; }); if (!msg) return;
         var a = b.getAttribute('data-act');
         if (a === 'copy') { copyText(msg.body, b); return; }
+        if (a === 'queue') { queueFromMessage(msg, b); return; }
         if (a === 'reply') setReply(msg); else msgSheet(msg);
       });
       el.addEventListener('contextmenu', function (e) {
@@ -757,6 +762,7 @@
     fetchPolls(S.messages.filter(function (m) { return m.poll_id && !m.deleted && !S.polls[m.poll_id] && !S.pollLoading[m.poll_id]; }).map(function (m) { return m.poll_id; }));
     if (toBottom || nearBottom) { S.stick = true; el.scrollTop = el.scrollHeight; }
     $$('img', el).forEach(function (im) { if (!im.complete || !im.getAttribute('src')) im.addEventListener('load', function () { if (S.stick && el.isConnected) el.scrollTop = el.scrollHeight; }, { once: true }); });
+    S.qSig = qSig();
     signUrls(needUrls.filter(function (p) { return !cachedUrl(p); }));
   }
 
@@ -966,12 +972,14 @@
       '<div style="display:grid;gap:8px">' +
       '<button class="btn btn-line" id="mReply">답장</button>' +
       (m.body ? '<button class="btn btn-line" id="mCopy">복사</button>' : '') +
+      (m.body && !m.poll_id ? '<button class="btn btn-line" id="mQueue">진료순서표에 올리기</button>' : '') +
       '<button class="btn btn-line" id="mNotice">이 메시지를 대화방 공지로 등록</button>' +
       (mine ? '<button class="btn btn-danger" id="mDel">삭제</button>' : '') +
       '<button class="btn btn-line" data-close>닫기</button></div>');
     $$('[data-e]', s).forEach(function (b) { b.onclick = function () { closeSheet(s); toggleReact(m.id, b.getAttribute('data-e')); }; });
     $('#mReply', s).onclick = function () { closeSheet(s); setReply(m); };
     var c = $('#mCopy', s); if (c) c.onclick = function () { closeSheet(s); copyText(m.body); };
+    var mq = $('#mQueue', s); if (mq) mq.onclick = function () { closeSheet(s); queueFromMessage(m); };
     $('#mNotice', s).onclick = function () { closeSheet(s); setRoomNotice(m.id); };
     var dl = $('#mDel', s); if (dl) dl.onclick = function () { if (!confirmInline(dl, '한 번 더 누르면 삭제됩니다')) return; closeSheet(s); deleteMessage(m.id); };
   }
@@ -1170,7 +1178,7 @@
       });
     }, 300);
   }
-  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { markRead(); if (S.me) { reloadProfiles().then(function () { return loadRooms(); }).then(function () { if (S.route.tab === 'chats') renderRoomList(); }); loadNotices(); } } });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { markRead(); if (S.me) { reloadProfiles().then(function () { return loadRooms(); }).then(function () { if (S.route.tab === 'chats') renderRoomList(); }); loadNotices(); loadQueue(); } } });
 
   function roomMenu() {
     var info = S.room.info || {}, grp = info.type === 'group';
@@ -1786,6 +1794,260 @@
     return sb.from('work_requests').select('id', { count: 'exact', head: true }).eq('status', '대기').then(function (r) { S.pendingCount = r.count || 0; setBadges(); });
   }
 
+  /* ================= 진료순서표 (채팅 메시지 → 순서표, 진료 후 체크하면 목록에서 사라짐) ================= */
+  /* 의원·한의원 구분 없이 한 줄로 관리 (표시: 체크 · 시간 · 내용) */
+  function qPending() { return S.queue || []; }
+  function qDoneToday() { return S.qDone || []; }
+  function qSoundOn() { return lsGet('noble-q-sound') !== 'off'; }
+  function qFind(id) { return (S.queue || []).concat(S.qDone || []).find(function (x) { return x.id === id; }); }
+  /* 메시지 번호 → 순서표 항목 (대기 중인 항목이 우선) */
+  function qMap() {
+    var m = {};
+    (S.qDone || []).forEach(function (x) { if (x.message_id && !m[x.message_id]) m[x.message_id] = x; });
+    (S.queue || []).forEach(function (x) { if (x.message_id) m[x.message_id] = x; });
+    return m;
+  }
+  /* 지금 열려 있는 대화방의 메시지에 붙는 '순서표' 표시가 바뀌었는지 알아보는 표식 */
+  function qSig() {
+    if (!S.room) return '';
+    var ids = {}; S.messages.forEach(function (m) { ids[m.id] = 1; });
+    return (S.queue || []).concat(S.qDone || []).filter(function (x) { return x.message_id && ids[x.message_id]; })
+      .map(function (x) { return x.id + x.status + (x.done_by || ''); }).join(',');
+  }
+  function refreshMsgTags() {
+    var s = qSig();
+    if (s !== S.qSig) { S.qSig = s; if ($('#msgs')) renderMessages(false); }
+  }
+  function qTagHtml(it) {
+    if (!it) return '';
+    if (it.status === 'pending') return '<button class="q-tag" data-qgo="1" title="진료순서표 보기">' + svg('queue') + '순서표 대기 중</button>';
+    var who = (S.profiles[it.done_by] || {}).name || '';
+    return '<button class="q-tag done" data-qgo="1" title="진료순서표 보기">' + svg('check') + '진료 완료' + (who ? ' · ' + esc(who) : '') + ' ' + hm(it.done_at) + '</button>';
+  }
+  /* 표·함수가 아직 없는 경우(SQL 미적용)만 따로 구분 */
+  function qMissing(s) { return /does not exist|schema cache|PGRST20[25]|42P01|42883/i.test(s || ''); }
+  function qErrText(e) {
+    var m = errMsg(e);
+    return qMissing(m + ' ' + ((e && e.code) || '')) ? '진료순서표 업데이트(SQL)가 아직 적용되지 않았습니다. 관리자에게 알려 주세요.' : m;
+  }
+  function goQueue() {
+    if (S.route.tab === 'queue') return;
+    if (S.solo) { openQueueWindow(); return; }   // 새 창(대화방 등)은 그대로 두고 순서표 창을 따로 띄움
+    location.hash = '#queue';
+  }
+  /* 진료순서표만 따로 띄워 두기 (의사 PC 옆 화면용) */
+  function openQueueWindow() {
+    var w = 460, h = Math.min(screen.availHeight - 40, 820);
+    var win = window.open(location.href.split('#')[0] + '#queue/solo', 'noble-queue',
+      'popup,width=' + w + ',height=' + h + ',left=' + Math.max(0, screen.availWidth - w - 20) + ',top=20');
+    if (!win && ND) return;   // PC 프로그램은 프로그램이 직접 창을 열어 줌 (차단 아님)
+    if (!win) toast('팝업이 차단되었습니다. 주소창 오른쪽 팝업 차단 아이콘에서 "항상 허용"을 눌러 주세요.');
+    else try { win.focus(); } catch (e) {}
+  }
+
+  function loadQueue() {
+    var since = new Date(); since.setHours(0, 0, 0, 0);
+    return Promise.all([
+      sb.from('care_queue').select('*').eq('status', 'pending').order('sort_at', { ascending: true }).limit(500),
+      sb.from('care_queue').select('*').eq('status', 'done').gte('done_at', since.toISOString()).order('done_at', { ascending: false }).limit(300)
+    ]).then(function (r) {
+      if (r[0].error) {
+        var em = errMsg(r[0].error) + ' ' + (r[0].error.code || '');
+        if (qMissing(em) || !S.qLoaded) { S.qErr = em; S.queue = []; S.qDone = []; S.qLoaded = true; S.qStale = false; }   // 기능이 꺼져 있거나 처음부터 못 불러옴
+        else S.qStale = true;                                                                                         // 이미 보고 있던 목록은 그대로 두고 경고만
+      } else { S.qErr = ''; S.qStale = false; S.queue = r[0].data || []; S.qDone = (r[1] && r[1].data) || []; S.qLoaded = true; }
+      setBadges();
+      if (S.route.tab === 'queue') renderQueueBody();
+      refreshMsgTags();
+    }).catch(function () {
+      /* 인터넷이 끊긴 경우: 보던 목록은 그대로 두고 '최신이 아닐 수 있음' 경고를 띄운 뒤 자동으로 다시 시도 */
+      if (S.qLoaded) { S.qStale = true; if (S.route.tab === 'queue') renderQueueBody(); }
+    });
+  }
+  var qTimer = null;
+  function queueRefreshSoon() { clearTimeout(qTimer); qTimer = setTimeout(loadQueue, 120); }
+
+  /* 채팅 메시지 → 진료순서표 */
+  function queueFromMessage(m, btn) {
+    if (!m || !m.body || m.deleted) return;
+    var ex = qMap()[m.id];
+    if (ex && ex.status === 'pending') { toast('이미 <b>진료순서표</b>에 올라가 있습니다 · 눌러서 보기', goQueue); return; }
+    if (btn) btn.disabled = true;
+    sb.rpc('care_queue_add', { p_message_id: m.id }).then(function (r) {
+      if (btn) btn.disabled = false;
+      if (r.error) throw r.error;
+      var created = !(r.data && r.data.created === false);
+      toast(created ? '<b>📋 진료순서표에 올렸습니다</b> · 눌러서 보기' : '이미 <b>진료순서표</b>에 올라가 있습니다 · 눌러서 보기', goQueue);
+      return loadQueue();
+    }).catch(function (e) { if (btn) btn.disabled = false; toast('<b>순서표에 올리지 못했습니다</b> ' + esc(qErrText(e))); });
+  }
+
+  /* 다른 직원이 새로 올렸을 때: 소리 + 알림 */
+  var qLastBeep = 0;
+  function queueAlert(row) {
+    if (S.solo && S.route.tab !== 'queue') return;   // 대화방 새 창에서는 알리지 않음 (중복 방지)
+    var who = (S.profiles[row.sender_id] || S.profiles[row.created_by] || {}).name || '';
+    var txt = (row.body || '').replace(/\s+/g, ' ').slice(0, 80);
+    if (qSoundOn() && Date.now() - qLastBeep > 1500) { qLastBeep = Date.now(); playSound('chime', true); }   // 채팅 알림음 설정과 별개로 울림
+    toast('<span><b>📋 새 진료순서표</b> ' + esc(txt) + (who ? ' <span style="opacity:.7">· ' + esc(who) + '</span>' : '') + '</span>', goQueue);
+    if (ND && !S.solo) deskNotify('📋 진료순서표', txt, '#queue', { name: '📋 진료순서표', room: '진료순서표' + (who ? ' · ' + who : '') });
+  }
+
+  function qFmtTime(t) { t = d(t); return sameDay(t, new Date()) ? hm(t) : (t.getMonth() + 1) + '/' + t.getDate() + ' ' + hm(t); }
+  /* 목록의 시간 칸: 오늘이면 "오전 9:05", 지난 날짜면 위에 날짜(11/19)를 함께 표시 */
+  function qTimeHtml(t) {
+    var x = d(t);
+    return '<time class="q-time" datetime="' + esc(String(t)) + '">' + (sameDay(x, new Date()) ? '' : '<span class="q-day">' + (x.getMonth() + 1) + '/' + x.getDate() + '</span>') + hm(x) + '</time>';
+  }
+  /* 한 줄 = [체크] [시간] [내용] — 진료순서표(구글시트)와 같은 모양. 보낸 사람·병원 구분은 목록에 표시하지 않음 */
+  function qRowHtml(it) {
+    return '<li class="q-item" data-qid="' + it.id + '">' +
+      '<button class="q-chk" role="checkbox" aria-checked="false" aria-label="진료 완료 체크" title="진료가 끝나면 체크하세요 (목록에서 사라집니다)" data-qdone="' + it.id + '">' + svg('check') + '</button>' +
+      qTimeHtml(it.created_at) +
+      '<div class="q-main"><div class="q-txt">' + linkify(it.body) + '</div></div>' +
+      '<button class="icon-btn q-more" data-qmore="' + it.id + '" aria-label="더보기" title="더보기">' + svg('more') + '</button></li>';
+  }
+  function qDoneRowHtml(it) {
+    var who = (S.profiles[it.done_by] || {}).name || '';
+    return '<li class="q-drow"><span class="q-dok">' + svg('check') + '</span><div class="q-dmain"><div class="q-dt">' + esc(it.body) + '</div>' +
+      '<div class="q-meta"><span>' + hm(it.done_at) + ' 완료' + (who ? ' · ' + esc(who) : '') + '</span></div></div>' +
+      '<button class="btn btn-line sm" data-qundo="' + it.id + '">되돌리기</button></li>';
+  }
+  function renderQueueBody() {
+    var el = $('#qbody'); if (!el) return;
+    if (S.qErr) {
+      var off = qMissing(S.qErr);
+      el.innerHTML = '<div class="q-empty"><b>' + (off ? '진료순서표 기능이 아직 켜지지 않았습니다' : '순서표를 불러오지 못했습니다') + '</b><p>' +
+        (off ? '관리자에게 "업데이트(SQL) 적용"을 요청해 주세요.' : esc(S.qErr) + '<br>잠시 뒤 자동으로 다시 시도합니다.') + '</p></div>';
+      return;
+    }
+    if (!S.qLoaded) { el.innerHTML = '<p class="empty">불러오는 중…</p>'; return; }
+    var pend = qPending(), done = qDoneToday();
+    var html = (S.qStale ? '<div class="q-stale" role="alert">⚠ 최신 목록을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요. (자동으로 다시 시도합니다)</div>' : '') +
+      (pend.length ? '<div class="q-count">대기 중 <b>' + pend.length + '</b>건</div>' : '');
+    html += pend.length ? '<ol class="q-list">' + pend.map(qRowHtml).join('') + '</ol>' :
+      '<div class="q-empty"><span class="q-empty-ic">' + svg('check') + '</span><b>대기 중인 환자가 없습니다</b>' +
+      '<p>채팅 메시지 옆의 <span class="q-inl">' + svg('queue') + '</span> 버튼을 누르면 이곳에 올라옵니다.<br>진료가 끝난 항목은 체크하면 사라집니다.</p></div>';
+    html += '<section class="q-done"><button class="q-done-hd" id="qDoneTgl" aria-expanded="' + (S.qOpenDone ? 'true' : 'false') + '">오늘 진료 완료 <b>' + done.length + '</b><span class="q-caret" aria-hidden="true"></span></button>' +
+      (S.qOpenDone ? (done.length ? '<ul class="q-dlist">' + done.map(qDoneRowHtml).join('') + '</ul>' : '<p class="muted small" style="padding:2px 4px 12px">오늘 완료한 항목이 없습니다.</p>') : '') + '</section>';
+    var top = el.scrollTop; el.innerHTML = html; el.scrollTop = top;
+  }
+  function renderQueue() {
+    var main = $('#main'); main.style.justifyContent = '';
+    if (S.solo) document.title = '진료순서표 · 노블 메신저';
+    var right = '<button class="icon-btn" id="qSnd" aria-label="새 항목 알림음"></button>' +
+      (DESKTOP.matches && !S.solo ? '<button class="btn btn-line sm q-win" id="qWin" aria-label="진료순서표를 새 창으로 열기" title="진료순서표만 작은 새 창으로 띄워 두기 (모니터 옆에 두고 볼 수 있습니다)">' + svg('pop') + '새 창</button>' : '') +
+      '<button class="icon-btn" id="qAdd" aria-label="직접 추가" title="직접 추가">' + svg('plus') + '</button>';
+    main.innerHTML = header('진료순서표', { right: right }) + '<div class="pane-body q-body" id="qbody"></div>';
+    function snd() {
+      var on = qSoundOn(), b = $('#qSnd'); b.innerHTML = svg(on ? 'bell' : 'mute'); b.classList.toggle('off', !on);
+      b.title = on ? '새 항목 알림음 켜짐 (누르면 끄기)' : '새 항목 알림음 꺼짐 (누르면 켜기)'; b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+    snd();
+    $('#qSnd').onclick = function () { lsSet('noble-q-sound', qSoundOn() ? 'off' : 'on'); snd(); if (qSoundOn()) playSound('chime', true); };
+    var pop = $('#qWin'); if (pop) pop.onclick = openQueueWindow;
+    $('#qAdd').onclick = qAddSheet;
+    $('#qbody').addEventListener('click', function (e) {
+      var t = e.target.closest('[data-qdone],[data-qundo],[data-qmore],#qDoneTgl'); if (!t) return;
+      if (t.hasAttribute('data-qdone')) { qCheck(+t.getAttribute('data-qdone')); return; }
+      if (t.hasAttribute('data-qundo')) { qUndo(+t.getAttribute('data-qundo')); return; }
+      if (t.hasAttribute('data-qmore')) { var it = qFind(+t.getAttribute('data-qmore')); if (it) qMoreSheet(it); return; }
+      if (t.id === 'qDoneTgl') { S.qOpenDone = !S.qOpenDone; renderQueueBody(); }
+    });
+    renderQueueBody();
+    loadQueue();   // 열 때마다 최신으로
+    qWatch();
+  }
+
+  /* 진료 완료 체크 → 목록에서 사라짐 (되돌리기 가능) */
+  function qCheck(id) {
+    var it = (S.queue || []).find(function (x) { return x.id === id; });
+    if (!it || it.busy) return;
+    it.busy = true;
+    var row = $('.q-item[data-qid="' + id + '"]'); if (row) row.classList.add('leaving');
+    sb.rpc('care_queue_set_done', { p_id: id, p_done: true }).then(function (r) {
+      if (r.error) throw r.error;
+      it.busy = false; it.status = 'done'; it.done_by = S.me.id; it.done_at = new Date().toISOString();
+      S.queue = S.queue.filter(function (x) { return x.id !== id; });
+      S.qDone = [it].concat((S.qDone || []).filter(function (x) { return x.id !== id; }));
+      setBadges(); refreshMsgTags();
+      if (S.route.tab === 'queue') setTimeout(renderQueueBody, 280);   // 사라지는 동작이 끝난 뒤 목록을 다시 그림
+      toast('<b>✓ 진료 완료</b> · 잘못 눌렀다면 여기를 눌러 되돌리기', function () { qUndo(id); });
+    }).catch(function (e) {
+      it.busy = false; if (row) row.classList.remove('leaving');
+      toast('<b>체크하지 못했습니다</b> ' + esc(qErrText(e))); loadQueue();
+    });
+  }
+  function qUndo(id) {
+    sb.rpc('care_queue_set_done', { p_id: id, p_done: false }).then(function (r) {
+      if (r.error) throw r.error;
+      toast(r.data === 'duplicate' ? '같은 메시지가 이미 대기 중이라 되돌릴 수 없습니다' : '대기 목록으로 되돌렸습니다');
+      return loadQueue();
+    }).catch(function (e) { toast('<b>되돌리지 못했습니다</b> ' + esc(qErrText(e))); });
+  }
+  function qTop(id) {
+    sb.rpc('care_queue_top', { p_id: id }).then(function (r) {
+      if (r.error) throw r.error;
+      toast('맨 위로 올렸습니다'); return loadQueue();
+    }).catch(function (e) { toast('<b>순서를 바꾸지 못했습니다</b> ' + esc(qErrText(e))); });
+  }
+  function qDelete(id) {
+    sb.rpc('care_queue_delete', { p_id: id }).then(function (r) {
+      if (r.error) throw r.error;
+      toast('목록에서 삭제했습니다'); return loadQueue();
+    }).catch(function (e) { toast('<b>삭제하지 못했습니다</b> ' + esc(qErrText(e))); });
+  }
+  function qGoMessage(it) {
+    sb.from('messages').select('id, room_id, created_at').eq('id', it.message_id).maybeSingle().then(function (r) {
+      var m = r.data;
+      if (!m) { toast('원본 메시지를 찾을 수 없습니다 (삭제됐거나 볼 수 없는 대화방입니다)'); return; }
+      if (S.solo) { openRoomWindow(m.room_id); return; }   // 순서표 새 창은 그대로 두고 그 대화방을 따로 엶
+      S.pendingJump = m; location.hash = '#room/' + m.room_id;
+    });
+  }
+  function qMoreSheet(it) {
+    var canDel = it.created_by === S.me.id || S.me.role === 'admin', by = S.profiles[it.created_by];
+    var s = sheet('진료순서표 항목',
+      '<p class="q-sheet-txt">' + linkify(it.body) + '</p>' +
+      '<p class="muted small" style="margin-bottom:12px">' + esc(qFmtTime(it.created_at)) + ' 올라옴' + (by ? ' · 올린 사람 ' + esc(by.name) : '') + '</p>' +
+      '<div style="display:grid;gap:8px">' +
+      (it.status === 'pending' ? '<button class="btn btn-line" id="qTop">맨 위로 올리기</button>' : '') +
+      (it.message_id ? '<button class="btn btn-line" id="qGo">원본 대화 보기</button>' : '') +
+      '<button class="btn btn-line" id="qCp">내용 복사</button>' +
+      (canDel ? '<button class="btn btn-danger" id="qDel">목록에서 삭제</button>' : '') +
+      '<button class="btn btn-line" data-close>닫기</button></div>');
+    var t = $('#qTop', s); if (t) t.onclick = function () { closeSheet(s); qTop(it.id); };
+    var g = $('#qGo', s); if (g) g.onclick = function () { closeSheet(s); qGoMessage(it); };
+    $('#qCp', s).onclick = function () { closeSheet(s); copyText(it.body); };
+    var dl = $('#qDel', s); if (dl) dl.onclick = function () { if (!confirmInline(dl, '한 번 더 누르면 삭제됩니다')) return; closeSheet(s); qDelete(it.id); };
+  }
+  function qAddSheet() {
+    var m = sheet('진료순서표에 직접 추가',
+      '<div class="field"><label for="qb">내용</label><textarea class="input" id="qb" rows="3" maxlength="1000" placeholder="예: 자보 재진 홍길동님 치료실가세요 - 물치 침/9시에"></textarea></div>' +
+      '<p class="err" id="qe"></p><div class="sheet-actions"><button class="btn btn-line" data-close>취소</button><button class="btn btn-navy" id="qOk">추가</button></div>');
+    function go() {
+      var b = $('#qb', m).value.trim(); if (!b) { $('#qe', m).textContent = '내용을 입력해 주세요.'; return; }
+      var btn = $('#qOk', m); btn.disabled = true;
+      sb.rpc('care_queue_add', { p_body: b }).then(function (r) {
+        if (r.error) throw r.error;
+        closeSheet(m); toast('<b>📋 진료순서표에 추가했습니다</b>'); return loadQueue();
+      }).catch(function (e) { $('#qe', m).textContent = qErrText(e); btn.disabled = false; });
+    }
+    $('#qOk', m).onclick = go;
+    $('#qb', m).addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229 && DESKTOP.matches) { e.preventDefault(); go(); }
+    });
+  }
+  /* 순서표 화면이 열려 있는 동안만: 1분마다 목록을 다시 확인 (실시간 연결이 끊겼을 때를 대비) */
+  function qWatch() {
+    if (S.qWatch) { clearInterval(S.qWatch); S.qWatch = null; }
+    S.qWatch = setInterval(function () {
+      if (!$('#qbody')) { clearInterval(S.qWatch); S.qWatch = null; return; }   // 다른 화면으로 가면 스스로 멈춤
+      if (document.visibilityState !== 'visible') return;
+      loadQueue();
+    }, 60000);
+  }
+
   /* ================= 직원 ================= */
   function groupPeople(list) {
     var g = {};
@@ -2137,6 +2399,11 @@
             toast('<b>🛜 병원 주소 등록 요청</b> ' + esc((p.new.names || []).join(', ') + (p.new.label ? ' · ' + p.new.label : '')), gotoIpReqs);
           }
         });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'care_queue' }, function (p) {
+        queueRefreshSoon();
+        var row = p.new;
+        if (p.eventType === 'INSERT' && row && row.status === 'pending' && row.created_by !== S.me.id) queueAlert(row);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'work_requests' }, function (p) {
         loadPending();
