@@ -295,10 +295,35 @@
   }
 
   /* ---------------- 라우팅 ---------------- */
+  /* ---------- 대화방 자동 열기 ----------
+     넓은 창(왼쪽 목록 + 오른쪽 대화)에서 채팅 탭을 열거나 메신저를 다시 켜면 "대화를 선택해 주세요" 대신 방을 바로 엶:
+     마지막으로 본 방 → 없으면 '노블365' 단톡방. (좁은 창·휴대폰·새 창은 예전 그대로) 설정에서 '노블365 단톡방만'·'열지 않기' 선택 가능 */
+  function autoMode() { var v = lsGet('noble-auto-room'); return v === 'group' || v === 'off' ? v : 'last'; }
+  function lastRoomKey() { return 'noble-last-room-' + S.me.id; }   // 직원별로 따로 기억 (같은 PC를 여러 명이 써도 섞이지 않게)
+  function hasRoom(id) { return !!id && S.rooms.some(function (r) { return r.id === id; }); }
+  function groupRoomId() {   // 이름이 '노블365'로 시작하는 단체방: 이름이 정확히 '노블365' → 상단 고정 → 인원 많은 순
+    var nm = function (r) { return String(r.name || '').replace(/\s+/g, ''); };
+    var c = S.rooms.filter(function (r) { return r.type === 'group' && /^노블365/.test(nm(r)); });
+    var exact = function (r) { return nm(r) === '노블365' ? 1 : 0; };
+    c.sort(function (a, b) { return exact(b) - exact(a) || (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.member_count || 0) - (a.member_count || 0); });
+    return c.length ? c[0].id : null;
+  }
+  function autoRoomOn() { return !NARROW.matches && autoMode() !== 'off'; }
+  function autoRoomId() {
+    if (!autoRoomOn()) return null;
+    var last = lsGet(lastRoomKey()), grp = groupRoomId();
+    if (autoMode() === 'group') return grp || (hasRoom(last) ? last : null);
+    return hasRoom(last) ? last : grp;
+  }
   window.addEventListener('hashchange', route);
   function route() {
     if (!S.me) return;
-    var h = location.hash.replace(/^#/, '') || 'chats', parts = h.split('/');
+    var h = location.hash.replace(/^#/, '') || 'chats';
+    if (h === 'chats') {   // 주소를 그 방으로 덮어써서(뒤로 가기 기록이 늘지 않음) 방 나가기·알림 판단이 어긋나지 않게
+      var auto = autoRoomId();
+      if (auto) { try { history.replaceState(null, '', '#room/' + auto); } catch (e) { location.replace('#room/' + auto); return; } h = 'room/' + auto; }
+    }
+    var parts = h.split('/');
     var tab = parts[0], id = parts[1] || null;
     S.solo = (tab === 'room' && parts[2] === 'solo') || (tab === 'queue' && parts[1] === 'solo');
     if (tab === 'room') { S.route = { tab: 'chats', id: id }; }
@@ -321,6 +346,8 @@
     }
     setBadges();
   }
+  function onWiden() { if (S.me && !NARROW.matches && S.route.tab === 'chats' && !S.route.id) route(); }
+  if (NARROW.addEventListener) NARROW.addEventListener('change', onWiden); else if (NARROW.addListener) NARROW.addListener(onWiden);
   function single() { var a = $('#app'); a.classList.add('in-detail', 'single'); $('#list').hidden = true; $('#main').hidden = false; }
   function unsingle() { $('#list').hidden = false; $('#main').hidden = false; }
   function renderPlaceholder(t) { $('#main').innerHTML = '<div class="empty" style="margin:auto">' + esc(t) + '</div>'; $('#main').style.justifyContent = 'center'; }
@@ -559,6 +586,7 @@
   function openRoom(id) {
     if (S.room && S.room.id === id && $('#msgs')) return;
     var info = S.rooms.find(function (r) { return r.id === id; });
+    if (info && !S.solo) lsSet(lastRoomKey(), id);   // 다음에 메신저를 켜거나 채팅 탭으로 돌아오면 이 방이 열림
     // 나갔던(숨긴) 방에 다시 들어오면 목록에 다시 보이게
     if (!info && !(S.unhid || (S.unhid = {}))[id]) {
       S.unhid[id] = true;
@@ -1189,7 +1217,16 @@
       });
     }, 300);
   }
-  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { markRead(); if (S.me) { reloadProfiles().then(function () { return loadRooms(); }).then(function () { if (S.route.tab === 'chats') renderRoomList(); }); loadNotices(); loadQueue(); } } });
+  /* 창이 다시 보일 때(최소화·절전 뒤) 그동안 놓친 새 메시지를 채움 — 방이 계속 열려 있어도(자동 열기) 실시간 연결이 끊겼던 사이의 대화가 빠지지 않게 */
+  function catchUp() {
+    if (!S.room || !S.messages.length) return;
+    var rid = S.room.id, last = S.messages[S.messages.length - 1];
+    sb.from('messages').select('*').eq('room_id', rid).gte('created_at', last.created_at).order('created_at', { ascending: true }).limit(200).then(function (r) {
+      if (!S.room || S.room.id !== rid || r.error || !r.data) return;
+      r.data.forEach(function (m) { addMessage(m); });   // 이미 있는 메시지는 addMessage 가 걸러 줌
+    }).catch(function () {});
+  }
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { markRead(); catchUp(); if (S.me) { reloadProfiles().then(function () { return loadRooms(); }).then(function () { if (S.route.tab === 'chats') renderRoomList(); }); loadNotices(); loadQueue(); } } });
 
   function roomMenu() {
     var info = S.room.info || {}, grp = info.type === 'group';
@@ -2195,6 +2232,8 @@
       '<section class="card"><h3>글자 크기</h3><div class="fs-seg">' + FS.map(function (f, i) { return '<button data-fs="' + f[0] + '"' + (fontSize() === f[0] ? ' aria-pressed="true"' : '') + ' style="font-size:' + [13, 15, 18, 21][i] + 'px">' + f[1] + '</button>'; }).join('') + '</div>' +
       '<h3 style="margin-top:16px">글씨체</h3><div class="face-list">' + Object.keys(FACES).map(function (k) { return '<button data-face="' + k + '"' + (fontFace() === k ? ' aria-pressed="true"' : '') + ' style="font-family:' + FACES[k][1].replace(/"/g, '&quot;') + ',sans-serif">' + FACES[k][0] + '<span>가나다 ABC 123</span></button>'; }).join('') + '</div>' +
       '<div class="fs-prev"><div class="bubble" style="max-width:100%">미리보기입니다. 오늘 오후 3시 회의 있습니다. 확인 부탁드립니다.</div></div><p class="muted small" style="margin-top:8px">이 기기에만 적용됩니다.</p></section>' +
+      '<section class="card"><h3>채팅 화면</h3><p class="muted small" style="margin-bottom:10px">창이 넓을 때(왼쪽 목록 + 오른쪽 대화) 채팅 탭을 열거나 메신저를 다시 켜면 대화방을 바로 열어 줍니다. 창이 좁은 미니 창·휴대폰은 목록이 먼저 보입니다. (이 기기에만 적용)</p>' +
+      '<div class="field"><label for="autoRoom">자동으로 열 대화방</label><select class="input" id="autoRoom"><option value="last">마지막으로 본 대화방 (없으면 노블365 단톡방)</option><option value="group">항상 노블365 단톡방</option><option value="off">자동으로 열지 않기</option></select></div></section>' +
       '<section class="card"><h3>메시지 알림음</h3><p class="muted small" style="margin-bottom:10px">메신저가 켜져 있을 때 새 메시지가 오면 소리로 알려 줍니다. (이 기기에만 적용)<br>※ 아래 <b>알림 켜기</b>를 한 기기는 Windows·휴대폰 알림음이 대신 울립니다.</p>' +
       '<label class="switch-row"><input type="checkbox" id="sndOn"' + (soundOn() ? ' checked' : '') + '> 알림음 켜기</label>' +
       '<div class="snd-row"><select class="input" id="sndKind" aria-label="알림음 종류">' + Object.keys(SOUNDS).map(function (k) { return '<option value="' + k + '"' + (k === soundKind() ? ' selected' : '') + '>' + SOUNDS[k][0] + '</option>'; }).join('') + '</select>' +
@@ -2216,6 +2255,7 @@
     Object.keys(FACES).forEach(function (k) { if (FACES[k][2]) applyFaceLink(k); });
     $$('[data-face]').forEach(function (b) { b.onclick = function () { var k = b.getAttribute('data-face'); lsSet('noble-face', k); applyFace(k); $$('[data-face]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); }; });
     $$('[data-fs]').forEach(function (b) { b.onclick = function () { lsSet('noble-font', b.getAttribute('data-fs')); applyFont(b.getAttribute('data-fs')); $$('[data-fs]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); }; });
+    var ar = $('#autoRoom'); ar.value = autoMode(); ar.onchange = function () { lsSet('noble-auto-room', this.value); toast('저장했습니다'); };
     $('#sndOn').onchange = function () { lsSet('noble-sound', this.checked ? 'on' : 'off'); if (this.checked) playSound(null, true); };
     $('#sndKind').onchange = function () { lsSet('noble-sound-kind', this.value); playSound(this.value, true); };
     $('#sndVol').onchange = function () { lsSet('noble-sound-vol', this.value); playSound(null, true); };
@@ -2464,6 +2504,7 @@
     if (S.route && S.route.tab === 'chats' && S.route.id) {
       e.preventDefault();
       if (S.solo) { window.close(); return; }
+      if (autoRoomOn()) { if (ND && ND.minimize) ND.minimize(); return; }   // 넓은 창: 닫아도 곧바로 다시 열리므로 닫지 않음 · PC 프로그램은 바로 최소화
       location.hash = '#chats';
       return;
     }
