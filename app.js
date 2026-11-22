@@ -55,7 +55,8 @@
   }
   var DESKTOP = window.matchMedia('(hover:hover) and (pointer:fine)');
   var NARROW = window.matchMedia('(max-width:860px)');
-  var EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏', '✅'];
+  var EMOJIS = ['네!', '👍', '❤️', '😂', '😮', '😢', '🙏', '✅'];   // 맨 앞 "네!" = 글자 공감 (직원 건의)
+  function isTextReact(e) { return /[가-힣]/.test(e); }
   var PICK_EMOJIS = ['😀', '😄', '😂', '🤣', '😊', '😍', '🥰', '😘', '😎', '🤔', '😮', '😅', '😢', '😭', '😡', '🥲', '😴', '🤗', '🙄', '😱',
     '👍', '👎', '👏', '🙏', '💪', '👌', '✌️', '🙌', '👋', '🤝', '❤️', '💙', '💛', '🔥', '⭐', '🎉', '🎂', '☕', '🍚', '🍺',
     '✅', '❌', '⭕', '❗', '❓', '⚠️', '📌', '📢', '💊', '🏥'];
@@ -879,16 +880,25 @@
     var g = {}; list.forEach(function (x) { (g[x.emoji] = g[x.emoji] || []).push(x.user_id); });
     return '<div class="reacts">' + Object.keys(g).map(function (e) {
       var us = g[e], mine = us.indexOf(S.me.id) > -1, names = us.map(function (u) { return (S.profiles[u] || {}).name || ''; }).join(', ');
-      return '<button class="react' + (mine ? ' on' : '') + '" data-tog="' + mid + '|' + e + '" title="' + esc(names) + '">' + e + ' <b>' + us.length + '</b></button>';
+      return '<button class="react' + (mine ? ' on' : '') + (isTextReact(e) ? ' txt' : '') + '" data-tog="' + mid + '|' + esc(e) + '" title="' + esc(names) + '">' + esc(e) + ' <b>' + us.length + '</b></button>';
     }).join('') + '</div>';
   }
   function toggleReact(mid, emoji) {
-    var list = S.reacts[mid] = S.reacts[mid] || [], i = list.findIndex(function (x) { return x.user_id === S.me.id && x.emoji === emoji; });
+    var rid = S.room.id, list = S.reacts[mid] = S.reacts[mid] || [], i = list.findIndex(function (x) { return x.user_id === S.me.id && x.emoji === emoji; }), adding = i < 0;
     var q;
     if (i > -1) { list.splice(i, 1); q = sb.from('message_reactions').delete().eq('message_id', mid).eq('user_id', S.me.id).eq('emoji', emoji); }
     else { list.push({ message_id: mid, user_id: S.me.id, emoji: emoji }); q = sb.from('message_reactions').insert({ message_id: mid, room_id: S.room.id, user_id: S.me.id, emoji: emoji }); }
     renderMessages(false);
-    q.then(function (r) { if (r.error && !/duplicate/i.test(r.error.message)) toast('<b>공감 실패</b> ' + esc(errMsg(r.error))); });
+    q.then(function (r) {
+      if (!r.error || /duplicate/i.test(r.error.message)) return;
+      /* 서버에 반영되지 않았으니 화면도 되돌림 — 저장된 것처럼 남아 있으면 본인만 보냈다고 믿고 상대는 못 보게 됨 */
+      if (S.room && S.room.id === rid) {
+        var cur = S.reacts[mid] = S.reacts[mid] || [], j = cur.findIndex(function (x) { return x.user_id === S.me.id && x.emoji === emoji; });
+        if (adding && j > -1) cur.splice(j, 1); else if (!adding && j < 0) cur.push({ message_id: mid, user_id: S.me.id, emoji: emoji });
+        renderMessages(false);
+      }
+      toast('<b>공감 실패</b> ' + esc(errMsg(r.error)));
+    });
   }
   /* ---------- 투표 ---------- */
   function fetchPolls(ids) {
@@ -1007,7 +1017,7 @@
   }
   function msgSheet(m) {
     var mine = m.sender_id === S.me.id;
-    var s = sheet('메시지', '<div class="emoji-row">' + EMOJIS.map(function (e) { return '<button data-e="' + e + '" aria-label="' + e + ' 공감">' + e + '</button>'; }).join('') + '</div>' +
+    var s = sheet('메시지', '<div class="emoji-row">' + EMOJIS.map(function (e) { return '<button' + (isTextReact(e) ? ' class="txt"' : '') + ' data-e="' + e + '" aria-label="' + e + ' 공감">' + e + '</button>'; }).join('') + '</div>' +
       '<div style="display:grid;gap:8px">' +
       '<button class="btn btn-line" id="mReply">답장</button>' +
       (m.body ? '<button class="btn btn-line" id="mCopy">복사</button>' : '') +

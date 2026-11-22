@@ -140,9 +140,13 @@ textarea.input{min-height:110px;resize:vertical}
 .react b{font-size:12px;color:var(--muted)}
 .react.on{background:var(--gold-soft);border-color:var(--gold)}
 .react.on b{color:var(--gold-d)}
-.emoji-row{display:flex;justify-content:space-between;gap:4px;margin:0 0 14px;padding:8px;background:var(--bg);border-radius:14px}
-.emoji-row button{font-size:26px;width:44px;height:44px;border-radius:12px}
+.react.txt{font-weight:700;white-space:nowrap;color:var(--navy)}
+.emoji-row{display:flex;justify-content:space-between;gap:3px;margin:0 0 14px;padding:8px 6px;background:var(--bg);border-radius:14px}
+.emoji-row button{flex:0 1 44px;min-width:0;font-size:26px;height:44px;border-radius:12px}
 .emoji-row button:hover{background:#fff}
+.emoji-row button.txt{flex:0 0 auto;padding:0 11px;font-size:17px;font-weight:800;line-height:1;white-space:nowrap;color:var(--navy);background:var(--gold-soft);border:1px solid var(--gold)}
+.emoji-row button.txt:hover{background:#fff;border-color:var(--gold-d)}
+@media (max-width:359px){.emoji-row button{font-size:22px}.emoji-row button.txt{padding:0 8px;font-size:15px}}
 .quote{display:flex;gap:6px;align-items:flex-start;text-align:left;max-width:min(520px,72vw);padding:6px 10px;border-left:3px solid var(--gold);background:rgba(13,36,64,.05);border-radius:8px;font-size:12.5px;color:var(--body)}
 .quote svg{width:14px;height:14px;flex:0 0 auto;margin-top:2px;fill:none;stroke:var(--gold-d);stroke-width:2}
 .quote b{display:block;color:var(--navy);font-size:12.5px}
@@ -361,6 +365,8 @@ html.fs-l .card h3{font-size:18.5px}
 html.fs-l .pane-hd h1{font-size:22.5px}
 html.fs-l .sheet-hd h2{font-size:20.5px}
 html.fs-l .react b{font-size:14.5px}
+html.fs-l .react.txt{font-size:15px}
+html.fs-l .emoji-row button.txt{font-size:18px}
 html.fs-l .chips span{font-size:15.5px}
 html.fs-l .seg button{font-size:16.5px}
 html.fs-xl body{font-size:20px}
@@ -407,6 +413,8 @@ html.fs-xl .card h3{font-size:21px}
 html.fs-xl .pane-hd h1{font-size:25px}
 html.fs-xl .sheet-hd h2{font-size:23px}
 html.fs-xl .react b{font-size:17px}
+html.fs-xl .react.txt{font-size:17px}
+html.fs-xl .emoji-row button.txt{font-size:19.5px}
 html.fs-xl .chips span{font-size:18px}
 html.fs-xl .seg button{font-size:19px}
 html.fs-l .bubble,html.fs-xl .bubble{line-height:1.55}
