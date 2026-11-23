@@ -186,7 +186,7 @@
 
   /* ---------------- 상태 ---------------- */
   var S = {
-    me: null, profiles: {}, rooms: [], notices: [], noticeReads: {}, pendingCount: 0,
+    me: null, profiles: {}, rooms: [], notices: [], noticeReads: {}, pendingCount: 0, wPend: [], wPendOk: false, wPendErr: '', wPendSeq: 0,
     route: { tab: 'chats', id: null }, room: null, members: {}, messages: [], oldestLoaded: null, hasOlder: false,
     urlCache: {}, channel: null, solo: false, polls: {}, pollSel: {}, pollLoading: {}, imgSize: {}, replyTo: null, reacts: {}, replyCache: {}, workTab: 'att', att: null, ipReqs: [], ipHist: [], queue: [], qDone: [], qErr: '', qLoaded: false, qStale: false, qWatch: null, qOpenDone: false, qSig: '', attWatch: null, attMonth: ymd(new Date()).slice(0, 7), attDay: ymd(new Date()), attView: 'mine', adminMonth: ymd(new Date()).slice(0, 7), adminStatus: '전체', staffQuery: ''
   };
@@ -289,10 +289,24 @@
     var chat = S.rooms.reduce(function (a, r) { return a + (r.muted ? 0 : r.unread); }, 0);
     var nt = S.notices.filter(function (n) { return !S.noticeReads[n.id]; }).length;
     var signups = S.me.role === 'admin' ? Object.keys(S.profiles).filter(function (k) { return S.profiles[k].pending; }).length : 0;
-    var map = { chats: chat, queue: qPending().length, notices: nt, admin: S.pendingCount + signups, work: (S.me.role === 'admin' ? S.pendingCount : 0) + (S.ipReqs || []).length };
-    $$('[data-badge]').forEach(function (b) { var v = map[b.getAttribute('data-badge')] || 0; b.hidden = !v; b.textContent = v > 99 ? '99+' : v; });
+    var wp = S.me.role === 'admin' ? S.pendingCount : 0, ip = (S.ipReqs || []).length;   // 근무신청 승인 대기 · 출퇴근 주소 요청
+    var map = { chats: chat, queue: qPending().length, notices: nt, admin: wp + signups, work: wp + ip };
+    var why = { work: [wp && '근무신청 승인 대기 ' + wp + '건', ip && '출퇴근 주소 요청 ' + ip + '건'], admin: [wp && '근무신청 승인 대기 ' + wp + '건', signups && '가입 승인 대기 ' + signups + '명'] };   // 숫자에 마우스를 올리면 계산 내역
+    $$('[data-badge]').forEach(function (b) {
+      var k = b.getAttribute('data-badge'), v = map[k] || 0, tip = v && why[k] ? why[k].filter(Boolean).join(' + ') : '';
+      b.hidden = !v; b.textContent = v > 99 ? '99+' : v;
+      if (tip) b.title = tip; else b.removeAttribute('title');
+    });
+    syncWorkTabs();
     if (ND && ND.setBadge) ND.setBadge(chat + nt);
     try { if (navigator.setAppBadge) { var tot = chat + nt; tot ? navigator.setAppBadge(tot) : navigator.clearAppBadge(); } } catch (e) {}
+  }
+
+  /* 근무신청 화면 탭 이름의 숫자: "전체 관리 (승인 대기 건수)" · "출퇴근 (주소 요청 건수)". 숫자가 바뀔 때마다 setBadges 가 글자만 바꿔 줌(탭을 새로 그리지 않음) */
+  function wtLabel(t) { var n = t === 'all' ? S.pendingCount : (S.ipReqs || []).length; return (t === 'all' ? '전체 관리' : '출퇴근') + (n ? ' (' + n + ')' : ''); }
+  function syncWorkTabs() {
+    $$('[data-wt="all"], [data-wt="att"]').forEach(function (b) { var t = wtLabel(b.getAttribute('data-wt')); if (b.textContent !== t) b.textContent = t; });
+    var gp = $('#goPend'); if (gp) { if (S.pendingCount) gp.textContent = '근무신청 대기 ' + S.pendingCount + '건'; else gp.remove(); }   // 관리 탭의 "근무신청 대기 N건" 링크
   }
 
   /* ---------------- 라우팅 ---------------- */
@@ -1236,7 +1250,7 @@
       r.data.forEach(function (m) { addMessage(m); });   // 이미 있는 메시지는 addMessage 가 걸러 줌
     }).catch(function () {});
   }
-  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { markRead(); catchUp(); if (S.me) { reloadProfiles().then(function () { return loadRooms(); }).then(function () { if (S.route.tab === 'chats') renderRoomList(); }); loadNotices(); loadQueue(); } } });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { markRead(); catchUp(); if (S.me) { reloadProfiles().then(function () { return loadRooms(); }).then(function () { if (S.route.tab === 'chats') renderRoomList(); }); loadNotices(); loadQueue(); loadPending(); } } });
 
   function roomMenu() {
     var info = S.room.info || {}, grp = info.type === 'group';
@@ -1730,10 +1744,10 @@
     var admin = S.me.role === 'admin', tab = S.workTab;
     var main = $('#main'); main.style.justifyContent = '';
     main.innerHTML = header('출퇴근 · 근무 신청') + '<div class="pane-body" id="wbody">' +
-      '<div class="seg" role="group" aria-label="근무 신청 메뉴"><button aria-pressed="' + (tab === 'att') + '" data-wt="att">출퇴근' + ((S.ipReqs || []).length ? ' (' + S.ipReqs.length + ')' : '') + '</button><button aria-pressed="' + (tab === 'new') + '" data-wt="new">신청하기</button><button aria-pressed="' + (tab === 'mine') + '" data-wt="mine">내 신청 내역</button>' +
-      (admin ? '<button aria-pressed="' + (tab === 'all') + '" data-wt="all">전체 관리' + (S.pendingCount ? ' (' + S.pendingCount + ')' : '') + '</button>' : '') + '</div><div id="wcontent"></div></div>';
+      '<div class="seg" role="group" aria-label="근무 신청 메뉴"><button aria-pressed="' + (tab === 'att') + '" data-wt="att">' + wtLabel('att') + '</button><button aria-pressed="' + (tab === 'new') + '" data-wt="new">신청하기</button><button aria-pressed="' + (tab === 'mine') + '" data-wt="mine">내 신청 내역</button>' +
+      (admin ? '<button aria-pressed="' + (tab === 'all') + '" data-wt="all">' + wtLabel('all') + '</button>' : '') + '</div><div id="wcontent"></div></div>';
     $$('[data-wt]').forEach(function (b) { b.onclick = function () { S.workTab = b.getAttribute('data-wt'); renderWork(); }; });
-    if (tab === 'att') renderAtt(); else if (tab === 'new') workForm(); else if (tab === 'mine') workList(false); else workList(true);
+    if (tab === 'att') renderAtt(); else if (tab === 'new') workForm(); else if (tab === 'mine') workList(false); else { loadPending(); workList(true); }
   }
   function workForm() {
     var today = ymd(new Date());
@@ -1780,11 +1794,12 @@
       var y = +month.slice(0, 4), mo = +month.slice(5, 7), end = new Date(y, mo, 0).getDate();
       q = q.gte('work_date', month + '-01').lte('work_date', month + '-' + String(end).padStart(2, '0'));
       if (st !== '전체') q = q.eq('status', st);
-      box.innerHTML = '<div class="toolbar"><input class="input" type="month" id="am" value="' + month + '" aria-label="월 선택"><select class="input" id="as" aria-label="상태">' +
+      box.innerHTML = '<section class="pend" id="wpend" aria-label="승인 대기"></section><h3 class="wl-h">월별 신청 내역</h3><div class="toolbar"><input class="input" type="month" id="am" value="' + month + '" aria-label="월 선택"><select class="input" id="as" aria-label="상태">' +
         ['전체', '대기', '승인', '반려'].map(function (s) { return '<option' + (s === st ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select>' +
         '<button class="btn btn-gold sm" id="csv">' + svg('down').replace('<svg', '<svg style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2"') + ' 급여정리용 엑셀(CSV)</button></div><div id="wl"><p class="empty">불러오는 중…</p></div>';
       $('#am').onchange = function () { S.adminMonth = this.value || S.adminMonth; workList(true); };
       $('#as').onchange = function () { S.adminStatus = this.value; workList(true); };
+      renderPend();
     } else {
       q = q.eq('user_id', S.me.id).limit(100);
       box.innerHTML = '<div id="wl"><p class="empty">불러오는 중…</p></div>';
@@ -1795,16 +1810,8 @@
       if (all) {
         var tot = {}; rows.filter(function (x) { return x.status === '승인'; }).forEach(function (x) { tot[x.kind] = (tot[x.kind] || 0) + x.minutes; });
         var sum = Object.keys(tot).map(function (k) { return k + ' ' + mins(tot[k]); }).join(' · ');
-        wl.innerHTML = (sum ? '<p class="sum">승인 합계: ' + esc(sum) + '</p>' : '') + (rows.length ? rows.map(function (x) {
-          var p = S.profiles[x.user_id] || { name: '(퇴사자)', dept: '' };
-          return '<div class="req"><div class="req-top"><b>' + esc(p.name) + ' <span class="muted small">' + esc(p.dept) + '</span> · ' + esc(x.kind) + '</b>' + statusPill(x.status) + '</div>' +
-            '<p>' + reqLine(x) + '</p>' + (x.reason ? '<p>사유: ' + esc(x.reason) + '</p>' : '') + (x.review_note ? '<p>메모: ' + esc(x.review_note) + '</p>' : '') +
-            '<div class="req-actions">' + (x.status !== '승인' ? '<button class="btn btn-navy sm" data-ap="' + x.id + '">승인</button>' : '') + (x.status !== '반려' ? '<button class="btn btn-danger sm" data-rj="' + x.id + '">반려</button>' : '') +
-            (x.status !== '대기' ? '<button class="btn btn-line sm" data-rs="' + x.id + '">대기로 되돌리기</button>' : '') + '</div></div>';
-        }).join('') : '<p class="empty">이 달 신청 내역이 없습니다.</p>');
-        $$('[data-ap]', wl).forEach(function (b) { b.onclick = function () { review(+b.getAttribute('data-ap'), '승인'); }; });
-        $$('[data-rj]', wl).forEach(function (b) { b.onclick = function () { review(+b.getAttribute('data-rj'), '반려', true); }; });
-        $$('[data-rs]', wl).forEach(function (b) { b.onclick = function () { review(+b.getAttribute('data-rs'), '대기'); }; });
+        wl.innerHTML = (sum ? '<p class="sum">승인 합계: ' + esc(sum) + '</p>' : '') + (rows.length ? rows.map(reqCard).join('') : '<p class="empty">이 달 신청 내역이 없습니다.</p>');
+        bindReq(wl);
         $('#csv').onclick = function () { exportCsv(rows, month); };
       } else {
         wl.innerHTML = rows.length ? rows.map(function (x) {
@@ -1819,15 +1826,18 @@
           };
         });
       }
-    }).catch(function (e) { box.innerHTML = '<p class="empty">' + esc(errMsg(e)) + '</p>'; });
+    }).catch(function (e) { (all && $('#wl') ? $('#wl') : box).innerHTML = '<p class="empty">' + esc(errMsg(e)) + '</p>'; });
   }
   function review(id, status, askNote) {
     function go(note) {
       var patch = { status: status }; if (note != null) patch.review_note = note;
       sb.from('work_requests').update(patch).eq('id', id).then(function (r) {
         if (r.error) { toast(esc(errMsg(r.error))); return; }
-        if (status !== '대기') sb.functions.invoke('push', { body: { action: 'request', request_id: id } }).catch(function () {});
-        loadPending(); workList(true);
+        if (status !== '대기') { sb.functions.invoke('push', { body: { action: 'request', request_id: id } }).catch(function () {}); pendDrop(id); }
+        workList(true);
+        loadPending().then(function () {   // 서버 기준 최신 건수로 안내 (확인이 실패하면 방금 처리를 반영한 값)
+          toast('<b>' + (status === '승인' ? '승인했습니다' : status === '반려' ? '반려했습니다' : '대기로 되돌렸습니다') + '</b>' + (status === '대기' ? '' : S.pendingCount ? ' 남은 대기 ' + S.pendingCount + '건' : ' 남은 대기 없음'));
+        });
       });
     }
     if (!askNote) { go(null); return; }
@@ -1849,7 +1859,49 @@
   }
   function loadPending() {
     if (S.me.role !== 'admin') return Promise.resolve();
-    return sb.from('work_requests').select('id', { count: 'exact', head: true }).eq('status', '대기').then(function (r) { S.pendingCount = r.count || 0; setBadges(); });
+    var seq = ++S.wPendSeq;
+    return sb.from('work_requests').select('*', { count: 'exact' }).eq('status', '대기').order('work_date', { ascending: true }).order('created_at', { ascending: true }).limit(100).then(function (r) {
+      if (seq !== S.wPendSeq) return;   // 그 뒤에 더 새로 보낸 조회가 있으면 이 (낡은) 결과는 버림
+      if (r.error) throw r.error;
+      S.wPend = r.data || []; S.pendingCount = r.count != null ? r.count : S.wPend.length; S.wPendOk = true; S.wPendErr = '';
+      setBadges(); renderPend();
+    }).catch(function (e) {
+      if (seq !== S.wPendSeq) return;
+      S.wPendErr = errMsg(e) || '연결 오류'; renderPend();   // 실패해도 숫자·목록은 마지막으로 확인한 값을 그대로 둠 (0으로 사라지면 처리할 건이 없는 것처럼 보임)
+    });
+  }
+  function pendDrop(id) {   // 방금 처리한 건을 대기 목록·숫자에서 바로 뺌 (서버 최신값은 곧이어 loadPending 이 다시 확인)
+    var n = (S.wPend || []).length; S.wPend = (S.wPend || []).filter(function (x) { return x.id !== id; });
+    if (S.wPend.length < n && S.pendingCount > 0) S.pendingCount--;
+    setBadges(); renderPend();
+  }
+  /* 관리자 화면의 신청 카드 (월별 목록 · 승인 대기 칸 공용) */
+  function reqCard(x) {
+    var p = S.profiles[x.user_id] || { name: '(퇴사자)', dept: '' };
+    return '<div class="req"><div class="req-top"><b>' + esc(p.name) + ' <span class="muted small">' + esc(p.dept) + '</span> · ' + esc(x.kind) + '</b>' + statusPill(x.status) + '</div>' +
+      '<p>' + reqLine(x) + '</p>' + (x.reason ? '<p>사유: ' + esc(x.reason) + '</p>' : '') + (x.review_note ? '<p>메모: ' + esc(x.review_note) + '</p>' : '') +
+      '<div class="req-actions">' + (x.status !== '승인' ? '<button class="btn btn-navy sm" data-ap="' + x.id + '">승인</button>' : '') + (x.status !== '반려' ? '<button class="btn btn-danger sm" data-rj="' + x.id + '">반려</button>' : '') +
+      (x.status !== '대기' ? '<button class="btn btn-line sm" data-rs="' + x.id + '">대기로 되돌리기</button>' : '') + '</div></div>';
+  }
+  function bindReq(scope) {
+    $$('[data-ap]', scope).forEach(function (b) { b.onclick = function () { review(+b.getAttribute('data-ap'), '승인'); }; });
+    $$('[data-rj]', scope).forEach(function (b) { b.onclick = function () { review(+b.getAttribute('data-rj'), '반려', true); }; });
+    $$('[data-rs]', scope).forEach(function (b) { b.onclick = function () { review(+b.getAttribute('data-rs'), '대기'); }; });
+  }
+  /* 전체 관리 맨 위 "승인 대기" 칸: 달과 상관없이 모든 대기 신청 (메뉴·탭의 숫자는 이 건수를 센 것) */
+  function renderPend() {
+    var box = $('#wpend'); if (!box) return;
+    if (!S.wPendOk) {   // 아직 한 번도 확인하지 못함
+      box.innerHTML = S.wPendErr ? '<p class="err" style="padding:12px 16px">승인 대기를 불러오지 못했습니다 (' + esc(S.wPendErr) + ')</p><p style="padding:0 16px 12px"><button class="btn btn-line sm" id="pretry">다시 시도</button></p>' : '<p class="muted small" style="padding:12px 16px">승인 대기를 확인하는 중…</p>';
+      var rt = $('#pretry', box); if (rt) rt.onclick = function () { loadPending(); workList(true); };
+      return;
+    }
+    var n = S.pendingCount, rows = S.wPend || [];
+    var stale = S.wPendErr ? '<p class="muted small">최신 내용을 불러오지 못해 마지막으로 확인한 내용을 보여 드립니다.</p>' : '';
+    if (!n && !rows.length) { box.innerHTML = '<p class="pend-none">✓ 승인 대기 중인 신청이 없습니다</p>' + stale; return; }
+    box.innerHTML = '<h3>승인 대기 <b>' + n + '건</b></h3><p class="muted small">달과 관계없이 모든 대기 신청입니다 · "전체 관리" 옆 숫자와 같습니다</p>' + stale + rows.map(reqCard).join('') +
+      (n > rows.length ? '<p class="muted small">처음 ' + rows.length + '건만 보여 드립니다. 처리하면 나머지가 이어서 나옵니다.</p>' : '');
+    bindReq(box);
   }
 
   /* ================= 진료순서표 (채팅 메시지 → 순서표, 진료 후 체크하면 목록에서 사라짐) ================= */
@@ -2469,7 +2521,7 @@
       .on('postgres_changes', { event: '*', schema: 'public', table: 'work_requests' }, function (p) {
         loadPending();
         if (p.eventType === 'UPDATE' && p.new.user_id === S.me.id && p.old && p.new.status !== '대기') toast('<b>근무 신청 ' + esc(p.new.status) + '</b> ' + esc(p.new.kind + ' ' + p.new.work_date), function () { S.workTab = 'mine'; location.hash = '#work'; });
-        if (S.route.tab === 'work' && S.workTab !== 'new') workList(S.workTab === 'all');
+        if (S.route.tab === 'work' && (S.workTab === 'mine' || S.workTab === 'all')) workList(S.workTab === 'all');   // 출퇴근·신청하기 화면은 그대로 둠
       })
       .subscribe();
   }

@@ -214,6 +214,14 @@ textarea.input{min-height:110px;resize:vertical}
 .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 16px;background:#fff;border-bottom:1px solid var(--line)}
 .toolbar .input{min-height:38px;width:auto;padding:6px 10px;font-size:14px}
 .sum{font-size:13.5px;color:var(--body);padding:8px 16px;background:var(--gold-soft)}
+/* 근무신청 · 승인 대기 칸 (달과 상관없이 모든 대기 신청) */
+.pend{background:#fff;border-bottom:1px solid var(--line)}
+.pend h3{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:13px 16px 3px;font-size:16px;color:var(--navy)}
+.pend h3 b{background:var(--gold);color:#1b1404;border-radius:999px;padding:1px 11px;font-size:14px;font-weight:800}
+.pend>p{padding:0 16px 8px;font-size:12.5px;line-height:1.45}
+.pend .req{border-left:3px solid var(--gold)}
+.pend-none{padding:12px 16px;font-size:14px;color:var(--muted)}
+.wl-h{font-size:12.5px;font-weight:800;color:var(--muted);padding:14px 16px 6px;letter-spacing:.04em;background:#fafbfd;border-bottom:1px solid #f1f3f7}
 
 /* ---------- 직원 ---------- */
 .group-hd{font-size:12.5px;font-weight:800;color:var(--muted);padding:14px 16px 6px;letter-spacing:.04em;background:#fafbfd;border-bottom:1px solid #f1f3f7}
@@ -342,6 +350,10 @@ html.fs-l .person b{font-size:17.5px}
 html.fs-l .person span{font-size:15.5px}
 html.fs-l .req-top b{font-size:17.5px}
 html.fs-l .req p{font-size:16px}
+html.fs-l .pend h3{font-size:18.5px}
+html.fs-l .pend h3 b{font-size:16px}
+html.fs-l .pend>p,html.fs-l .pend-none{font-size:15px}
+html.fs-l .wl-h{font-size:15px}
 html.fs-l .pm-txt b{font-size:16px}
 html.fs-l .pm-txt p{font-size:16.5px}
 html.fs-l .toast{font-size:16.5px}
@@ -390,6 +402,10 @@ html.fs-xl .person b{font-size:20px}
 html.fs-xl .person span{font-size:18px}
 html.fs-xl .req-top b{font-size:20px}
 html.fs-xl .req p{font-size:18.5px}
+html.fs-xl .pend h3{font-size:21px}
+html.fs-xl .pend h3 b{font-size:18px}
+html.fs-xl .pend>p,html.fs-xl .pend-none{font-size:17.5px}
+html.fs-xl .wl-h{font-size:17.5px}
 html.fs-xl .pm-txt b{font-size:18.5px}
 html.fs-xl .pm-txt p{font-size:19px}
 html.fs-xl .toast{font-size:19px}
