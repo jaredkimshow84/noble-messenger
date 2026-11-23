@@ -741,3 +741,64 @@ html.fs-xl .q-dt{font-size:18px}
 /* ===== 입력창 자동 확장: 글이 길어지면 화면의 절반 정도까지 늘어나 전체가 보임 (자바스크립트가 높이를 정함, max-height 는 안전장치) ===== */
 /* 세로 배치(.composer.kw)에서 flex:1 이면 높이 지정이 무시되어 2줄에서 멈추므로, 지정한 높이를 따르도록 flex:none */
 .composer.kw textarea{flex:0 0 auto;max-height:60vh;max-height:60dvh;overflow-wrap:anywhere}
+
+/* ===== v46: 큰 화면 4단 · 폰/태블릿 가로 3단 =====
+   app.js(layoutSync)가 #app 에 data-lay="q4"|"q3" 를 붙이고, 채팅 탭이면 has-q 도 붙임 (새 창·작은 PC 창·세로 화면은 둘 다 없음 → 예전 그대로).
+   q4 = 폭 1200px 이상            : 메뉴 | 채팅방 목록 | 채팅방 | 순서표
+   q3 = 터치 기기 가로 640~1199px : 메뉴(왼쪽 세로) | 방 아이콘 띠 | 채팅방 | 순서표
+   아래 규칙은 앞쪽 좁은 화면 규칙(@media max-width:860px)보다 선택자가 구체적이라 뒤에 둬도 그대로 덮어씀 */
+.queue-pane{display:none}
+.app.has-q .queue-pane{display:flex;flex-direction:column;flex:0 0 auto;min-width:0;min-height:0;background:var(--bg);border-left:1px solid var(--line);container-name:qp;container-type:inline-size}
+/* 알림·"순서표 대기 중" 표시를 눌렀을 때 순서표 칸 테두리가 잠깐 강조됨 (움직임 줄이기 설정이면 움직임 없이 잠깐 켜짐) */
+.queue-pane.flash{outline:3px solid transparent;outline-offset:-3px;animation:qflash .9s ease-out}
+@keyframes qflash{0%,60%{outline-color:var(--gold)}100%{outline-color:rgba(201,166,70,0)}}
+@media (prefers-reduced-motion:reduce){.queue-pane.flash{outline-color:var(--gold)}}
+/* 순서표 칸이 좁을 때(400px 미만): 첫 줄 [체크 · 시각 · ⋯], 둘째 줄 글 — 글 칸이 한두 글자씩 끊기지 않게 */
+@container qp (max-width:399px){
+  .q-list{padding:6px 10px 10px}
+  .q-item{flex-wrap:wrap;align-items:center;gap:2px 8px;padding:8px 4px 10px 10px}
+  .q-time{flex:1 1 0;min-width:0;padding-top:0}
+  .q-main{order:3;flex:1 1 100%}
+  .q-notice{margin:10px 10px 0}
+  .q-stale{margin:10px 10px 0}
+  .q-count{margin:12px 14px 0}
+  .q-done{margin:6px 10px 0}
+}
+
+/* --- q4: 큰 화면 4단 --- */
+.app[data-lay="q4"]{max-width:1680px}
+.app.has-q[data-lay="q4"] .list-pane{width:clamp(280px,24vw,360px)}
+.app.has-q[data-lay="q4"] .queue-pane{width:clamp(300px,26vw,420px)}
+
+/* --- q3: 폰·태블릿 가로 3단 --- */
+.app[data-lay="q3"]{flex-direction:row;box-shadow:none}
+.app[data-lay="q3"] .rail{order:0;flex:0 0 auto;width:calc(54px + env(safe-area-inset-left,0px));flex-direction:column;justify-content:flex-start;align-items:center;gap:2px;padding:6px 0 6px env(safe-area-inset-left,0px);border-top:0;overflow-y:auto;scrollbar-width:none}
+.app[data-lay="q3"] .rail::-webkit-scrollbar{display:none}
+.app[data-lay="q3"] .rail .logo,.app[data-lay="q3"] .rail .spacer{display:none}
+.app[data-lay="q3"].in-room .rail{display:flex}
+.app[data-lay="q3"] .tab{flex:0 0 auto;width:48px;max-width:none;padding:5px 0 3px;gap:1px;font-size:10px}
+.app[data-lay="q3"] .tab svg{width:20px;height:20px}
+.app[data-lay="q3"] .tab .badge{top:0;right:0;height:16px;min-width:16px;padding:0 4px;font-size:10px}
+.app[data-lay="q3"] .pane-hd{min-height:48px;padding:6px 12px}
+.app.has-q[data-lay="q3"] .back{display:none!important}
+.app.has-q[data-lay="q3"] .list-pane{display:flex;flex:0 0 60px;width:60px;border-right:1px solid var(--line);overflow:hidden}
+.app.has-q[data-lay="q3"] .main-pane{display:flex}
+.app.has-q[data-lay="q3"] .queue-pane{width:clamp(220px,34%,400px);padding-right:env(safe-area-inset-right,0px)}
+.app[data-lay="q3"] .queue-pane .pane-hd{padding:6px 4px 6px 12px;gap:2px}
+.app[data-lay="q3"] .queue-pane .pane-hd h1{font-size:17px}
+/* 방 아이콘 띠: 방 이름·미리보기 글자는 숨기고 색 타일만 (이름·안 읽은 수는 aria-label/title) */
+.app.has-q[data-lay="q3"] .list-pane .pane-hd{min-height:0;padding:8px 0 6px;justify-content:center;border-bottom:0}
+.app.has-q[data-lay="q3"] .list-pane .pane-hd h1,
+.app.has-q[data-lay="q3"] .list-pane .search,
+.app.has-q[data-lay="q3"] .list-pane #pushAsk,
+.app.has-q[data-lay="q3"] .list-pane #attNudge,
+.app.has-q[data-lay="q3"] .list-pane .empty{display:none}
+.app.has-q[data-lay="q3"] .list-pane .pane-body{display:flex;flex-direction:column;align-items:center;gap:8px;padding:2px 0 12px;scrollbar-width:none}
+.app.has-q[data-lay="q3"] .list-pane .pane-body::-webkit-scrollbar{display:none}
+.app.has-q[data-lay="q3"] .room-item{position:relative;flex:0 0 auto;width:46px;height:46px;padding:0;gap:0;justify-content:center;border:0;border-radius:16px;background:none}
+.app.has-q[data-lay="q3"] .room-item:hover,.app.has-q[data-lay="q3"] .room-item.pinned{background:none}
+.app.has-q[data-lay="q3"] .room-item[aria-current=true]{background:none;box-shadow:0 0 0 2px var(--gold)}
+.app.has-q[data-lay="q3"] .room-item .ri-main,.app.has-q[data-lay="q3"] .room-item .ri-bot{display:contents}
+.app.has-q[data-lay="q3"] .room-item .ri-top,.app.has-q[data-lay="q3"] .room-item .ri-bot p{display:none}
+.app.has-q[data-lay="q3"] .room-item.is-muted .avatar{opacity:.5}
+.app.has-q[data-lay="q3"] .room-item .badge{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 4px;font-size:11px;box-shadow:0 0 0 2px #fff}

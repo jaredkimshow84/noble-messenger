@@ -55,6 +55,7 @@
   }
   var DESKTOP = window.matchMedia('(hover:hover) and (pointer:fine)');
   var NARROW = window.matchMedia('(max-width:860px)');
+  var QUAD = window.matchMedia('(min-width:1200px)'), LANDSCAPE = window.matchMedia('(orientation:landscape)'), W640 = window.matchMedia('(min-width:640px)');   // 큰 화면 4단 · 가로 폰/태블릿 3단 판단용
   var EMOJIS = ['네!', '👍', '❤️', '😂', '😮', '😢', '🙏', '✅'];   // 맨 앞 "네!" = 글자 공감 (직원 건의)
   function isTextReact(e) { return /[가-힣]/.test(e); }
   var PICK_EMOJIS = ['😀', '😄', '😂', '🤣', '😊', '😍', '🥰', '😘', '😎', '🤔', '😮', '😅', '😢', '😭', '😡', '🥲', '😴', '🤗', '🙄', '😱',
@@ -285,7 +286,8 @@
     root.innerHTML = '<div class="app" id="app"><nav class="rail" aria-label="메뉴"><img class="logo" src="logo.svg" alt="노블">' +
       tabs.map(function (t) { return '<a class="tab" href="#' + t[0] + '" data-tab="' + t[0] + '">' + svg(t[2]) + '<span>' + t[1] + '</span><span class="badge" data-badge="' + t[0] + '" hidden></span></a>'; }).join('') +
       '<div class="spacer"></div></nav>' +
-      '<section class="list-pane" id="list"></section><section class="main-pane" id="main"></section></div>';
+      '<section class="list-pane" id="list"></section><section class="main-pane" id="main"></section>' +
+      '<aside class="queue-pane" id="qpane" aria-label="진료순서표" hidden></aside></div>';
   }
   function setBadges() {
     var chat = S.rooms.reduce(function (a, r) { return a + (r.muted ? 0 : r.unread); }, 0);
@@ -325,7 +327,7 @@
     c.sort(function (a, b) { return exact(b) - exact(a) || (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.member_count || 0) - (a.member_count || 0); });
     return c.length ? c[0].id : null;
   }
-  function autoRoomOn() { return !NARROW.matches && autoMode() !== 'off'; }
+  function autoRoomOn() { return (!NARROW.matches || qMode() === 'q3') && autoMode() !== 'off'; }   // 폰·태블릿 가로(띠 + 채팅방 + 순서표)도 방이 늘 열려 있어야 함
   function autoRoomId() {
     if (!autoRoomOn()) return null;
     var last = lsGet(lastRoomKey()), grp = groupRoomId();
@@ -350,6 +352,7 @@
     $$('.tab').forEach(function (t) { if (t.getAttribute('data-tab') === S.route.tab) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
     app.classList.remove('in-detail', 'in-room', 'single');
     app.classList.toggle('solo', S.solo);
+    layoutSync();   // 큰 화면/가로 화면이면 채팅 탭에서만 오른쪽에 순서표 칸 (화면을 그리기 전에 맞춰 순서표 본문이 두 곳에 생기지 않게)
     if (S.route.tab !== 'chats' || !S.route.id) leaveRoom();
     switch (S.route.tab) {
       case 'chats': renderRoomList(); if (S.route.id) { app.classList.add('in-detail', 'in-room'); openRoom(S.route.id); } else renderPlaceholder('대화를 선택해 주세요'); break;
@@ -363,8 +366,31 @@
     }
     setBadges();
   }
-  function onWiden() { if (S.me && !NARROW.matches && S.route.tab === 'chats' && !S.route.id) route(); }
-  if (NARROW.addEventListener) NARROW.addEventListener('change', onWiden); else if (NARROW.addListener) NARROW.addListener(onWiden);
+  /* ---------- 화면 배치: 큰 화면 4단 / 폰·태블릿 가로 3단 ----------
+     q4 = 폭 1200px 이상: 메뉴 | 채팅방 목록 | 채팅방 | 순서표
+     q3 = 터치 기기를 가로로 둔 폭 640~1199px: 메뉴 | 방 아이콘 띠 | 채팅방 | 순서표
+     순서표 칸(#qpane)은 채팅 탭에서만 보임. 새 창(solo)·작은 PC 창·세로 화면은 예전 그대로 */
+  function qMode() {
+    if (S.solo) return '';
+    if (QUAD.matches) return 'q4';
+    return LANDSCAPE.matches && W640.matches && !DESKTOP.matches ? 'q3' : '';
+  }
+  function layoutSync() {
+    var app = $('#app'), pane = $('#qpane'); if (!app || !pane) return;
+    var m = qMode(), on = !!m && !!S.route && S.route.tab === 'chats';
+    if (m) app.setAttribute('data-lay', m); else app.removeAttribute('data-lay');
+    app.classList.toggle('has-q', on);
+    if (on) { pane.hidden = false; if (!$('#qbody', pane)) renderQueue(pane); }   // 이미 그려져 있으면 그대로 (방을 옮길 때 깜빡이거나 서버를 다시 부르지 않게)
+    else { if (pane.firstChild) pane.innerHTML = ''; pane.hidden = true; }
+  }
+  /* 창 크기·방향이 바뀔 때: 방이 안 열린 채팅 탭이면 route()(마지막 방 열기·목록 다시 그림), 아니면 배치만 맞춤 — 열려 있는 대화방은 다시 불러오지 않음 */
+  function onLayoutChange() {
+    if (!S.me || !$('#app') || !S.route) return;
+    if (S.route.tab === 'chats' && !S.route.id && (!NARROW.matches || qMode() === 'q3')) { route(); return; }
+    layoutSync();
+    if (S.route.tab === 'chats' && $('#roomQ') && (qMode() === 'q3') !== !!S.stripOn) renderRoomList();   // 띠 ↔ 목록 모양이 바뀌면 목록만 다시 그림 (열려 있는 대화방은 그대로)
+  }
+  [NARROW, QUAD, LANDSCAPE, W640].forEach(function (mq) { if (mq.addEventListener) mq.addEventListener('change', onLayoutChange); else if (mq.addListener) mq.addListener(onLayoutChange); });
   function single() { var a = $('#app'); a.classList.add('in-detail', 'single'); $('#list').hidden = true; $('#main').hidden = false; }
   function unsingle() { $('#list').hidden = false; $('#main').hidden = false; }
   function renderPlaceholder(t) { $('#main').innerHTML = '<div class="empty" style="margin:auto">' + esc(t) + '</div>'; $('#main').style.justifyContent = 'center'; }
@@ -414,7 +440,8 @@
   }
   function renderRoomList() {
     unsingle(); $('#main').style.justifyContent = '';
-    var q = (S.roomQuery || '').trim();
+    var strip = qMode() === 'q3', ob = $('#list .pane-body'), keepTop = strip && S.stripOn && ob ? ob.scrollTop : 0; S.stripOn = strip;   // 폰·태블릿 가로: 목록이 아이콘 띠(검색칸 숨김) → 검색어는 무시하되 값은 보관(세로로 돌리면 다시 적용)
+    var q = strip ? '' : (S.roomQuery || '').trim();
     var list = S.rooms.filter(function (r) { return !q || (r.name || '').indexOf(q) > -1; });
     var tones = roomTones();   // 걸러진 목록(list)이 아니라 전체 방 기준 — 검색해도 색이 바뀌지 않게
     $('#list').innerHTML = header('채팅', { right: '<button class="icon-btn" id="newChat" aria-label="새 대화">' + svg('plus') + '</button>' }) +
@@ -422,7 +449,10 @@
       '<div class="pane-body">' + (q && list.length ? '<div class="group-hd">대화방</div>' : '') + (list.length ? list.map(function (r) {
         var grp = r.type === 'group';
         var face = grp ? grpFace(r.name, tones[String(r.id)]) : r.type === 'self' ? av(S.me, 'me') : av(S.profiles[r.other_id] || { name: r.name });
-        return '<a class="room-item' + (r.pinned ? ' pinned' : '') + '" href="#room/' + r.id + '" data-room="' + r.id + '"' + (S.route.id === r.id ? ' aria-current="true"' : '') + '>' + face +
+        var rn = r.name == null ? '' : String(r.name);
+        // 띠에서는 글자가 안 보이므로 방 이름·안 읽은 수를 라벨로 (목록 모양에서는 마지막 메시지가 읽히도록 라벨을 달지 않음)
+        var sa = strip ? ' title="' + esc(rn) + '" aria-label="' + esc(rn + (r.unread ? ' · 안 읽은 메시지 ' + (r.unread > 99 ? '99개 이상' : r.unread + '개') : '')) + '"' : '';
+        return '<a class="room-item' + (r.pinned ? ' pinned' : '') + (r.muted ? ' is-muted' : '') + '" href="#room/' + r.id + '" data-room="' + r.id + '"' + (S.route.id === r.id ? ' aria-current="true"' : '') + sa + '>' + face +
           '<span class="ri-main"><span class="ri-top"><b>' + (r.pinned ? '<svg class="pin-ico" viewBox="0 0 24 24">' + IC.pin + '</svg>' : '') + esc(r.name) + (r.type === 'dm' && pTag(S.profiles[r.other_id]) ? '<span class="who-tag">' + esc(pTag(S.profiles[r.other_id])) + '</span>' : '') + (grp ? '<small>' + r.member_count + '</small>' : '') + (r.muted ? ' <svg class="mute-ico" viewBox="0 0 24 24">' + IC.mute + '</svg>' : '') + '</b><time>' + (r.last_body != null ? shortTime(r.last_message_at) : '') + '</time></span>' +
           '<span class="ri-bot"><p>' + esc(r.last_body == null ? '새 대화방' : (grp && r.last_sender ? r.last_sender + ': ' : '') + r.last_body) + '</p>' + (r.unread ? '<span class="badge">' + (r.unread > 99 ? '99+' : r.unread) + '</span>' : '') + '</span></span></a>';
       }).join('') : (q ? '' : '<p class="empty">아직 대화가 없습니다.<br>오른쪽 위 + 버튼으로 대화를 시작하세요.</p>')) +
@@ -456,6 +486,15 @@
     renderPushAsk();
     if (S.att && (S.att.error || S.att.today === ymd(new Date()))) renderAttNudge(); else if ((S.profiles[S.me.id] || S.me).att_enabled && (DESKTOP.matches || (S.profiles[S.me.id] || S.me).mobile_punch) && !S.attLoading) { S.attLoading = true; attLoad().then(function () { S.attLoading = false; renderAttNudge(); }); } else renderAttNudge();
     wireMsgResults();
+    if (strip) keepStripView(keepTop);
+  }
+  /* 아이콘 띠: 다시 그려도(방을 옮기거나 안 읽은 수가 바뀔 때) 보던 위치를 유지하고, 선택된 방이 띠 밖이면 보이는 곳까지만 스크롤 */
+  function keepStripView(top) {
+    var pb = $('#list .pane-body'); if (!pb) return;
+    pb.scrollTop = top;
+    var cur = $('.room-item[aria-current="true"]', pb); if (!cur) return;
+    var p = pb.getBoundingClientRect(), c = cur.getBoundingClientRect();
+    if (c.top < p.top) pb.scrollTop -= p.top - c.top + 8; else if (c.bottom > p.bottom) pb.scrollTop += c.bottom - p.bottom + 8;
   }
 
   /* ---------- 메시지 검색 ---------- */
@@ -2047,8 +2086,14 @@
     var m = errMsg(e);
     return qMissing(m + ' ' + ((e && e.code) || '')) ? '진료순서표 업데이트(SQL)가 아직 적용되지 않았습니다. 관리자에게 알려 주세요.' : m;
   }
+  function qShown() { return !!$('#qbody'); }   // 순서표 본문이 화면에 있음 (순서표 탭이거나 채팅 탭 오른쪽 칸)
+  function qFlash() {   // 오른쪽 칸이 이미 보일 때 "순서표 보기"를 누르면 화면을 옮기지 않고 칸만 잠깐 강조
+    var p = $('#qpane'); if (!p || p.hidden) return;
+    p.classList.remove('flash'); void p.offsetWidth; p.classList.add('flash');
+    clearTimeout(qFlash.t); qFlash.t = setTimeout(function () { p.classList.remove('flash'); }, 900);
+  }
   function goQueue() {
-    if (S.route.tab === 'queue') return;
+    if (qShown()) { qFlash(); return; }
     if (S.solo) { openQueueWindow(); return; }   // 새 창(대화방 등)은 그대로 두고 순서표 창을 따로 띄움
     location.hash = '#queue';
   }
@@ -2076,11 +2121,11 @@
         else S.qStale = true;                                                                                         // 이미 보고 있던 목록은 그대로 두고 경고만
       } else { S.qErr = ''; S.qStale = false; S.queue = r[0].data || []; S.qDone = (r[1] && r[1].data) || []; S.qLoaded = true; }
       setBadges();
-      if (S.route.tab === 'queue') renderQueueBody();
+      if (qShown()) renderQueueBody();
       refreshMsgTags();
     }).catch(function () {
       /* 인터넷이 끊긴 경우: 보던 목록은 그대로 두고 '최신이 아닐 수 있음' 경고를 띄운 뒤 자동으로 다시 시도 */
-      if (S.qLoaded) { S.qStale = true; if (S.route.tab === 'queue') renderQueueBody(); }
+      if (S.qLoaded) { S.qStale = true; if (qShown()) renderQueueBody(); }
     });
   }
   /* ----- 순서표 맨 위 공지 (직원 누구나 고침 · 병원 전체에 하나) ----- */
@@ -2127,7 +2172,7 @@
         var dd = r.data;
         S.qNotice = dd && typeof dd.body === 'string' ? dd : { body: v, updated_by: S.me.id, updated_at: new Date().toISOString() }; S.qNoticeErr = '';
         closeSheet(m); toast('<b>✓ 공지를 저장했습니다</b>');
-        if (S.route.tab === 'queue') renderQueueBody();
+        if (qShown()) renderQueueBody();
       }).catch(function (e) { busy = false; err.textContent = qErrText(e); sync(); });   // 입력은 그대로 두고 다시 저장할 수 있게
     };
   }
@@ -2187,8 +2232,8 @@
       '<div class="q-meta"><span>' + hm(it.done_at) + ' 완료' + (who ? ' · ' + esc(who) : '') + '</span></div></div>' +
       '<button class="btn btn-line sm" data-qundo="' + it.id + '">되돌리기</button></li>';
   }
-  function renderQueueBody() {
-    var el = $('#qbody'); if (!el) return;
+  function renderQueueBody(host) {   // host: 그릴 본문 요소 (생략하면 화면에 있는 #qbody)
+    var el = host && host.nodeType === 1 ? host : $('#qbody'); if (!el) return;
     if (S.qErr) {
       var off = qMissing(S.qErr);
       el.innerHTML = '<div class="q-empty"><b>' + (off ? '진료순서표 기능이 아직 켜지지 않았습니다' : '순서표를 불러오지 못했습니다') + '</b><p>' +
@@ -2206,22 +2251,23 @@
       (S.qOpenDone ? (done.length ? '<ul class="q-dlist">' + done.map(qDoneRowHtml).join('') + '</ul>' : '<p class="muted small" style="padding:2px 4px 12px">오늘 완료한 항목이 없습니다.</p>') : '') + '</section>';
     var top = el.scrollTop; el.innerHTML = html; el.scrollTop = top;
   }
-  function renderQueue() {
-    var main = $('#main'); main.style.justifyContent = '';
+  function renderQueue(host) {   // host 가 있으면 그 안(채팅 탭 오른쪽 칸)에, 없으면 #main(순서표 탭)에 그림
+    var main = host || $('#main'); if (!host) main.style.justifyContent = '';
     if (S.solo) document.title = '진료순서표 · 노블 메신저';
     var right = '<button class="icon-btn" id="qSnd" aria-label="새 항목 알림음"></button>' +
-      (DESKTOP.matches && !S.solo ? '<button class="btn btn-line sm q-win" id="qWin" aria-label="진료순서표를 새 창으로 열기" title="진료순서표만 작은 새 창으로 띄워 두기 (모니터 옆에 두고 볼 수 있습니다)">' + svg('pop') + '새 창</button>' : '') +
+      (DESKTOP.matches && !S.solo && !host ? '<button class="btn btn-line sm q-win" id="qWin" aria-label="진료순서표를 새 창으로 열기" title="진료순서표만 작은 새 창으로 띄워 두기 (모니터 옆에 두고 볼 수 있습니다)">' + svg('pop') + '새 창</button>' : '') +
       '<button class="icon-btn" id="qAdd" aria-label="직접 추가" title="직접 추가">' + svg('plus') + '</button>';
     main.innerHTML = header('진료순서표', { right: right }) + '<div class="pane-body q-body" id="qbody"></div>';
     function snd() {
-      var on = qSoundOn(), b = $('#qSnd'); b.innerHTML = svg(on ? 'bell' : 'mute'); b.classList.toggle('off', !on);
+      var on = qSoundOn(), b = $('#qSnd', main); b.innerHTML = svg(on ? 'bell' : 'mute'); b.classList.toggle('off', !on);
       b.title = on ? '새 항목 알림음 켜짐 (누르면 끄기)' : '새 항목 알림음 꺼짐 (누르면 켜기)'; b.setAttribute('aria-pressed', on ? 'true' : 'false');
     }
     snd();
-    $('#qSnd').onclick = function () { lsSet('noble-q-sound', qSoundOn() ? 'off' : 'on'); snd(); if (qSoundOn()) playSound('chime', true); };
-    var pop = $('#qWin'); if (pop) pop.onclick = openQueueWindow;
-    $('#qAdd').onclick = qAddSheet;
-    $('#qbody').addEventListener('click', function (e) {
+    $('#qSnd', main).onclick = function () { lsSet('noble-q-sound', qSoundOn() ? 'off' : 'on'); snd(); if (qSoundOn()) playSound('chime', true); };
+    var pop = $('#qWin', main); if (pop) pop.onclick = openQueueWindow;
+    $('#qAdd', main).onclick = qAddSheet;
+    var body = $('#qbody', main);   // 전체 문서가 아니라 방금 그린 칸 안에서 찾음 (순서표 탭 화면이 아직 남아 있는 순간에 오른쪽 칸을 그릴 수 있음)
+    body.addEventListener('click', function (e) {
       var t = e.target.closest('[data-qdone],[data-qundo],[data-qmore],[data-qnotice],#qDoneTgl'); if (!t) return;
       if (t.hasAttribute('data-qnotice')) { qNoticeSheet(); return; }
       if (t.hasAttribute('data-qdone')) { qCheck(+t.getAttribute('data-qdone')); return; }
@@ -2229,7 +2275,7 @@
       if (t.hasAttribute('data-qmore')) { var it = qFind(+t.getAttribute('data-qmore')); if (it) qMoreSheet(it); return; }
       if (t.id === 'qDoneTgl') { S.qOpenDone = !S.qOpenDone; renderQueueBody(); }
     });
-    renderQueueBody();
+    renderQueueBody(body);
     loadQueue();   // 열 때마다 최신으로
     qWatch();
   }
@@ -2246,7 +2292,7 @@
       S.queue = S.queue.filter(function (x) { return x.id !== id; });
       S.qDone = [it].concat((S.qDone || []).filter(function (x) { return x.id !== id; }));
       setBadges(); refreshMsgTags();
-      if (S.route.tab === 'queue') setTimeout(renderQueueBody, 280);   // 사라지는 동작이 끝난 뒤 목록을 다시 그림
+      if (qShown()) setTimeout(renderQueueBody, 280);   // 사라지는 동작이 끝난 뒤 목록을 다시 그림
       toast('<b>✓ 진료 완료</b> · 잘못 눌렀다면 여기를 눌러 되돌리기', function () { qUndo(id); });
     }).catch(function (e) {
       it.busy = false; if (row) row.classList.remove('leaving');
@@ -2318,7 +2364,7 @@
         var same = !!(r.data && r.data.changed === false), cur = qFind(it.id);
         if (cur) { cur.body = v; if (!same) { cur.edited_by = S.me.id; cur.edited_at = new Date().toISOString(); } }
         closeSheet(m); toast(same ? '이미 같은 내용입니다' : '<b>✓ 내용을 수정했습니다</b>');
-        if (S.route.tab === 'queue') renderQueueBody();
+        if (qShown()) renderQueueBody();
         return loadQueue();
       }).catch(function (e) { busy = false; err.textContent = qErrText(e); sync(); });   // 입력은 그대로 두고 다시 저장할 수 있게
     }
@@ -2722,7 +2768,7 @@
     S.nChannel = sb.channel('noble-qn-' + S.me.id)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'care_queue_notice' }, function (p) {
         var row = p.new;
-        if (row && typeof row.body === 'string') { S.qNotice = row; S.qNoticeErr = ''; if (S.route.tab === 'queue') renderQueueBody(); }   // 다른 직원이 고친 공지를 바로 반영 (내 수정 창은 그대로 둠)
+        if (row && typeof row.body === 'string') { S.qNotice = row; S.qNoticeErr = ''; if (qShown()) renderQueueBody(); }   // 다른 직원이 고친 공지를 바로 반영 (내 수정 창은 그대로 둠)
         else queueRefreshSoon();   // 지워졌거나 내용이 오지 않은 경우: 다시 불러옴
       })
       .subscribe();
