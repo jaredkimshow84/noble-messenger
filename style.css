@@ -317,11 +317,13 @@ mark{background:#ffe27a;color:inherit;border-radius:3px;padding:0 1px}
 .room-search{position:relative;background:#fff;border-bottom:1px solid var(--line);padding:8px 12px;z-index:5}
 .rs-in{display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:10px;padding:0 6px 0 12px}
 .rs-in>svg{width:17px;height:17px;flex:0 0 auto;fill:none;stroke:var(--muted);stroke-width:2}
-.rs-in input{flex:1;height:40px;border:0;background:transparent;font-size:15px;outline:none}
-.rs-in button{width:32px;height:32px;border-radius:8px;display:grid;place-items:center}
+.rs-in input{flex:1;min-width:0;height:40px;border:0;background:transparent;font-size:15px;outline:none}
+.rs-in button{flex:0 0 auto;width:32px;height:32px;border-radius:8px;display:grid;place-items:center}
 .rs-in button svg{width:16px;height:16px;fill:none;stroke:var(--muted);stroke-width:2.2}
 .rs-list{position:absolute;left:12px;right:12px;top:calc(100% - 2px);max-height:min(420px,55vh);overflow-y:auto;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 40px rgba(13,36,64,.18)}
 .rs-count{font-size:12.5px;color:var(--muted);padding:8px 14px;border-bottom:1px solid #f1f3f7}
+.rs-n{flex:0 0 auto;font-size:12.5px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.rs-n:empty{display:none}
 .rs-list button{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;width:100%;text-align:left;padding:9px 14px;border-bottom:1px solid #f1f3f7}
 .rs-list button:hover{background:#f6f8fb}
 .rs-list b{font-size:13.5px}
@@ -366,6 +368,7 @@ html.fs-l .reply-bar{font-size:15.5px}
 html.fs-l .mention-box b{font-size:17px}
 html.fs-l .search input{font-size:17.5px}
 html.fs-l .rs-in input{font-size:17.5px}
+html.fs-l .rs-n{font-size:14.5px}
 html.fs-l .input,html.fs-l select.input,html.fs-l textarea.input{font-size:17.5px}
 html.fs-l .field label{font-size:16px}
 html.fs-l .btn{font-size:17.5px}
@@ -418,6 +421,7 @@ html.fs-xl .reply-bar{font-size:18px}
 html.fs-xl .mention-box b{font-size:19.5px}
 html.fs-xl .search input{font-size:20px}
 html.fs-xl .rs-in input{font-size:20px}
+html.fs-xl .rs-n{font-size:16.5px}
 html.fs-xl .input,html.fs-xl select.input,html.fs-xl textarea.input{font-size:20px}
 html.fs-xl .field label{font-size:18.5px}
 html.fs-xl .btn{font-size:20px}

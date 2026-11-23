@@ -81,6 +81,7 @@
   /* ---------- 메시지 알림음 (이 기기에 저장) ---------- */
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
   var SOUNDS = { ding: ['띵동', [[880, 0, .22], [1320, .14, .45]]], pop: ['똑', [[700, 0, .09], [1050, .05, .12]]], bell: ['종소리', [[1046, 0, .9], [1568, 0, .9], [2093, 0, .6]]], chime: ['차임', [[784, 0, .25], [988, .12, .3], [1175, .24, .5]]] };
   var actx = null, lastBeep = 0;
   function unlockAudio() {
@@ -269,6 +270,7 @@
           });
         }
         if (/^#join/.test(location.hash)) location.hash = '#chats';
+        draftPrune();
         renderShell();
         subscribeRealtime(); checkPush();
         return Promise.all([loadRooms(), loadNotices(), loadPending(), loadIpReqs(), loadQueue()]).then(function () { route(); });
@@ -505,18 +507,35 @@
       renderMessages(false); setTimeout(function () { jumpTo(m.id, S.searchQ); }, 60);
     });
   }
-  function roomSearchBar() {
+  function roomSearchBar(forceOpen) {
     var bar = $('#roomSearch'); if (!bar) return;
-    if (!bar.hidden) { bar.hidden = true; S.searchQ = ''; renderMessages(false); return; }
+    if (!bar.hidden) {
+      if (forceOpen === true) { var q0 = $('#rsQ'); if (q0) { q0.focus(); q0.select(); } return; }   // Ctrl+F 를 또 눌렀을 때: 닫지 않고 쓰던 검색어를 선택
+      bar.hidden = true; S.searchQ = ''; renderMessages(false); return;
+    }
     bar.hidden = false;
-    bar.innerHTML = '<div class="rs-in">' + svg('search') + '<input id="rsQ" placeholder="이 대화방에서 검색 (두 글자 이상)" aria-label="대화방 안에서 검색"><button type="button" id="rsX" aria-label="검색 닫기">' + svg('x') + '</button></div><div class="rs-list" id="rsList" hidden></div>';
-    var inp = $('#rsQ'), list = $('#rsList'), t = null;
+    bar.innerHTML = '<div class="rs-in">' + svg('search') + '<input id="rsQ" placeholder="이 대화방에서 검색 (두 글자 이상)" aria-label="대화방 안에서 검색"><span class="rs-n" id="rsN" aria-live="polite"></span><button type="button" id="rsX" aria-label="검색 닫기">' + svg('x') + '</button></div><div class="rs-list" id="rsList" hidden></div>';
+    var inp = $('#rsQ'), list = $('#rsList'), cnt = $('#rsN'), t = null;
+    var hits = [], cur = -1, doneQ = null, runQ = null, want = 0;   // hits: 화면에 보이는 결과 목록(최근 → 과거 순) · cur: 지금 보고 있는 결과 · doneQ: 그 결과가 나온 검색어 · runQ: 마지막으로 검색을 시작한 검색어 · want: 검색이 끝나면 이동할 방향(Enter 1 · Shift+Enter -1)
     inp.focus();
     $('#rsX').onclick = function () { bar.hidden = true; S.searchQ = ''; renderMessages(false); };
-    inp.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.preventDefault(); $('#rsX').click(); } if (e.key === 'Enter') { e.preventDefault(); run(); } });
-    inp.addEventListener('input', function () { clearTimeout(t); t = setTimeout(run, 350); });
+    function go(i) {   // i번째 결과로 이동 (목록은 닫고 "3/12" 처럼 몇 번째인지 표시)
+      cur = i; list.hidden = true; cnt.textContent = (i + 1) + '/' + hits.length + (hits.length >= 100 ? '+' : '');
+      jumpToMsg(hits[i]);
+    }
+    inp.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { e.preventDefault(); $('#rsX').click(); return; }
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      if (e.isComposing || e.keyCode === 229) return;   // 한글 조합을 확정하는 Enter 는 이동으로 치지 않음
+      var q = inp.value.trim(), dir = e.shiftKey ? -1 : 1;
+      if (q.length < 2) { clearTimeout(t); run(); return; }   // 한 글자 이하: 검색하지 않고 남아 있던 결과 목록만 닫음 (예전 Enter 동작 그대로)
+      if (doneQ === q && runQ === q) { clearTimeout(t); if (hits.length) go(cur < 0 ? (dir > 0 ? 0 : hits.length - 1) : (cur + dir + hits.length) % hits.length); return; }   // Enter = 더 오래된 결과 · Shift+Enter = 더 최근 결과 (끝에서는 반대쪽 끝으로)
+      want = dir; if (runQ !== q) { clearTimeout(t); run(); }   // 아직 검색 전이면 지금 바로 검색 → 끝나는 대로 이동
+    });
+    inp.addEventListener('input', function () { clearTimeout(t); cnt.textContent = ''; want = 0; t = setTimeout(run, 350); });   // 글자를 고치면 번호는 지우고 기다리던 이동은 취소 (화면에 남은 이전 결과 목록은 새 결과가 나올 때까지 그대로 눌러 쓸 수 있음)
     function run() {
-      var q = inp.value.trim(); S.searchQ = q;
+      var q = inp.value.trim(); S.searchQ = q; runQ = q;
       if (q.length < 2) { list.hidden = true; renderMessages(false); return; }
       var rid = S.room.id, cl = S.room.info && S.room.info.cleared_at;
       var qq = sb.from('messages').select('id, room_id, sender_id, body, created_at').eq('room_id', rid).eq('deleted', false).ilike('body', likePat(q));
@@ -524,13 +543,15 @@
       qq.order('created_at', { ascending: false }).limit(100).then(function (r) {
         if (!S.room || S.room.id !== rid || S.searchQ !== q) return;
         var rows = r.data || [];
+        hits = rows; cur = -1; doneQ = q; cnt.textContent = '';
         list.hidden = false;
         list.innerHTML = rows.length ? '<p class="rs-count">' + rows.length + (rows.length >= 100 ? '+' : '') + '건</p>' + rows.map(function (m) {
           var p = S.profiles[m.sender_id] || { name: '(퇴사자)' };
           return '<button data-rs="' + m.id + '"><b>' + esc(nameTag(p)) + '</b><time>' + shortTime(m.created_at) + ' ' + hm(m.created_at) + '</time><span>' + hl(around(m.body, q), q) + '</span></button>';
         }).join('') : '<p class="rs-count">검색 결과가 없습니다.</p>';
-        $$('[data-rs]', list).forEach(function (b) { b.onclick = function () { var m = rows.find(function (x) { return x.id === +b.getAttribute('data-rs'); }); list.hidden = true; jumpToMsg(m); }; });
+        $$('[data-rs]', list).forEach(function (b) { b.onclick = function () { var m = rows.find(function (x) { return x.id === +b.getAttribute('data-rs'); }); go(rows.indexOf(m)); }; });
         renderMessages(false);
+        if (want) { var d = want; want = 0; if (rows.length) go(d > 0 ? 0 : rows.length - 1); }   // Enter 로 시작한 검색이면 결과가 나오는 대로 이동
       });
     }
   }
@@ -565,6 +586,37 @@
       p.then(function (r) { if (r.error) throw r.error; closeSheet(m); return loadRooms().then(function () { location.hash = '#room/' + r.data; }); })
         .catch(function (e) { $('#nerr', m).textContent = errMsg(e); $('#startChat', m).disabled = false; });
     };
+  }
+
+  /* ---------- 작성 중이던 글 보관 ----------
+     입력창에 쓰던 글을 방마다·직원마다 따로 이 기기에 저장해 두었다가, 그 방을 다시 열면 이어서 쓸 수 있게 함
+     (다른 방·다른 탭에 갔다 와도, 메신저를 껐다 켜도). 보내거나 다 지우거나 방을 나가면 삭제 · 14일이 지나면 자동 삭제 · 로그아웃하면 내 것 삭제(공용 PC) */
+  var DRAFT_PRE = 'noble-draft-', DRAFT_MS = 14 * 864e5;
+  function draftKey(rid) { return DRAFT_PRE + S.me.id + '-' + rid; }
+  function draftRead(raw) {   // 저장된 값 → 쓰던 글 (비어 있거나 깨졌거나 14일이 지났으면 null)
+    try { var o = JSON.parse(raw); return o && typeof o.t === 'string' && o.t.trim() && Date.now() - o.at < DRAFT_MS ? o.t : null; } catch (e) { return null; }
+  }
+  function draftGet(rid) { return draftRead(lsGet(draftKey(rid))); }
+  function draftPut(rid, text) {   // 글이 있으면 저장 · 비었으면(공백만 있어도) 삭제 · 같은 글이면 다시 쓰지 않음(방을 열기만 해서 14일이 늘어나지 않게)
+    var k = draftKey(rid);
+    if (!text || !text.trim()) { if (lsGet(k) !== null) lsDel(k); return; }
+    if (draftGet(rid) !== text) lsSet(k, JSON.stringify({ t: text, at: Date.now() }));
+  }
+  function draftDel(rid) { lsDel(draftKey(rid)); }
+  function draftSweep(pick) {   // 조건에 맞는 보관 글을 모두 삭제
+    try {
+      var dead = [];
+      for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.indexOf(DRAFT_PRE) === 0 && pick(k, localStorage.getItem(k))) dead.push(k); }
+      dead.forEach(function (k) { localStorage.removeItem(k); });
+    } catch (e) {}
+  }
+  function draftPrune() { draftSweep(function (k, raw) { return draftRead(raw) === null; }); }   // 시작할 때: 14일 지난 것·깨진 것 정리 (다른 직원 것 포함)
+  function draftClearMine() { var mine = DRAFT_PRE + S.me.id + '-'; draftSweep(function (k) { return k.indexOf(mine) === 0; }); }   // 로그아웃할 때: 내 것 전부 삭제
+  /* 전송에 실패하면 보내려던 글을 되돌려 놓음: 그 방이 열려 있으면 입력창 맨 앞에(쓰던 글이 있으면 그 앞에 붙여서), 다른 방으로 옮겼으면 그 방의 작성 중 글로 */
+  function unsent(rid, body) {
+    var t = S.room && S.room.id === rid ? $('#txt') : null;
+    if (t) { t.value = t.value.trim() ? body + '\n' + t.value : body; t.dispatchEvent(new Event('input', { bubbles: true })); return; }
+    var cur = draftGet(rid); draftPut(rid, cur ? body + '\n' + cur : body);
   }
 
   /* ---- 대화방 ---- */
@@ -610,6 +662,7 @@
         .then(function () { if (S.route.id === id) { S.room = null; openRoom(id); } if (!S.solo) refreshRooms(); });
     }
     S.room = { id: id, info: info }; S.messages = []; S.members = {}; S.hasOlder = false;
+    S.replyTo = null;   // 다른 방에서 눌러 둔 "답장"이 이 방 전송에 따라오지 않게 (예전에는 방을 바로 옮기면 남아 있었음)
     $('#main').style.justifyContent = '';
     var title = roomTitle(info);
     var right = '<button class="icon-btn" id="roomSearchBtn" aria-label="대화 내용 검색" title="대화 내용 검색">' + svg('search') + '</button>' + (DESKTOP.matches && !S.solo ? '<button class="icon-btn" id="popOut" aria-label="새 창으로 열기" title="새 창으로 열기">' + svg('pop') + '</button>' : '') +
@@ -626,7 +679,7 @@
       (info && info.type === 'self' ? '' : '<button type="button" class="icon-btn" id="pollBtn" aria-label="투표 만들기" title="투표 만들기">' + svg('poll') + '</button>') +
       '<span class="ct-sp"></span><button class="send" id="sendBtn" aria-label="보내기" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20l18-8L3 4l2 7 9 1-9 1z"/></svg></button></div></form></div>';
     $('#roomMenu').onclick = roomMenu;
-    $('#roomSearchBtn').onclick = roomSearchBar; S.searchQ = '';
+    $('#roomSearchBtn').onclick = function () { roomSearchBar(); }; S.searchQ = '';
     var pb = $('#pollBtn'); if (pb) pb.onclick = pollCreateSheet;
     var po = $('#popOut'); if (po) po.onclick = function () {
       openRoomWindow(id);
@@ -645,7 +698,11 @@
       txt.style.overflowY = want > cap ? 'auto' : 'hidden';
       if (stick && ms) ms.scrollTop = ms.scrollHeight;   // 아래 대화를 보고 있었다면 입력창이 커져도 마지막 대화가 가려지지 않게
       btn.disabled = !txt.value.trim();
+      draftPut(id, txt.value);   // 쓰는 대로 이 방의 "작성 중 글"로 보관 (이모티콘·@ 버튼으로 넣은 글자, 보낸 뒤 비움도 모두 여기를 지남)
     }
+    /* 이 방에서 쓰다 만 글이 있으면 입력창에 되살림 (값을 넣으면 커서는 저절로 글 맨 끝 — 실제 크롬에서도 확인) */
+    var draft = draftGet(id);
+    if (draft) { txt.value = draft; grow(); }
     txt.addEventListener('input', function () { grow(); mentionCheck(txt); });
     txt.addEventListener('click', function () { mentionCheck(txt); });
     txt.addEventListener('keydown', function (e) {
@@ -694,7 +751,7 @@
       var row = { body: body }, men = findMentions(body);
       if (men.length) row.mentions = men;
       if (S.replyTo) { row.reply_to = S.replyTo.id; setReply(null); }
-      postMessage(row);
+      postMessage(row).then(function (sent) { if (sent === false) unsent(id, body); });   // 보내지 못했으면 쓰던 글이 사라지지 않게 되돌려 놓음
     }
     Promise.all([
       sb.from('room_members').select('*').eq('room_id', id),
@@ -1104,6 +1161,7 @@
     q.then(function (x) {
       if (x.error) { toast(esc(errMsg(x.error))); return; }
       toast(r.type === 'group' ? '채팅방에서 나왔습니다' : clear ? '대화 내용을 지우고 나왔습니다' : '채팅방에서 나왔습니다 (대화 내용은 남아 있습니다)');
+      draftDel(r.id);   // 나간 방의 작성 중 글도 함께 삭제
       loadRooms().then(function () { if (S.route.id === r.id) location.hash = '#chats'; else renderRoomList(); });
     });
   }
@@ -1152,15 +1210,17 @@
     });
   }
 
-  function postMessage(row) {
-    var roomId = S.room.id;
+  function postMessage(row) {   // 결과: 서버에 저장됐으면 true · 저장하지 못했으면 false (글을 되돌려 놓을 때 씀)
+    var roomId = S.room.id, sent = false;
     row.room_id = roomId; row.sender_id = S.me.id;
     return sb.from('messages').insert(row).select().single().then(function (r) {
       if (r.error) throw r.error;
+      sent = true;
       addMessage(r.data);
       sb.functions.invoke('push', { body: { action: 'message', message_id: r.data.id } }).catch(function () {});
       refreshRooms();
-    }).catch(function (e) { toast('<b>전송 실패</b> ' + esc(errMsg(e))); });
+      return true;
+    }).catch(function (e) { toast('<b>전송 실패</b> ' + esc(errMsg(e))); return sent; });
   }
   function addMessage(m) {
     if (!S.room || m.room_id !== S.room.id) return;
@@ -2351,7 +2411,7 @@
     }; });
     try { if (window.name === 'noble-mini' && window.resizeTo) {} } catch (e) {}
     $('#logout').onclick = function () {
-      unsubscribePush().then(function () { return sb.auth.signOut(); }).then(function () { S.me = null; if (S.channel) sb.removeChannel(S.channel); location.hash = ''; renderLogin(); });
+      unsubscribePush().then(function () { return sb.auth.signOut(); }).then(function () { draftClearMine(); S.me = null; if (S.channel) sb.removeChannel(S.channel); location.hash = ''; renderLogin(); });
     };
   }
   function squareJpeg(file) {
@@ -2554,6 +2614,16 @@
     var a = document.activeElement, t = $('#txt');
     if (!t || a === t || (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || (a && a.isContentEditable)) return;
     t.focus();
+  }, true);
+
+  /* Ctrl+F (맥은 ⌘F): 채팅방이 열려 있으면 그 방 안 검색 · 방이 없으면 목록의 "대화방·메시지 검색" 칸으로.
+     채팅 탭에서만 브라우저 기본 "찾기"를 대신하고, 다른 탭(순서표·근무신청 등)이나 열린 창이 있을 때는 기본 찾기를 그대로 둠 */
+  document.addEventListener('keydown', function (e) {
+    if (!S.route || S.route.tab !== 'chats' || e.altKey || e.shiftKey || !(e.ctrlKey || e.metaKey) || $('.modal')) return;
+    var k = String(e.key || '').toLowerCase();
+    if (!(k === 'f' || k === 'ㄹ' || (!/^[a-z]$/.test(k) && e.code === 'KeyF'))) return;   // 한글 입력 상태에서는 키 이름이 'ㄹ'·'Process' 로 올 수 있어 키 위치(KeyF)도 봄
+    if (S.room && $('#msgs')) { e.preventDefault(); roomSearchBar(true); return; }
+    var q = $('#roomQ'); if (q) { e.preventDefault(); q.focus(); q.select(); }
   }, true);
 
   /* ESC: 열린 창(시트) 닫기 → 답장 취소 → 방 검색 닫기 → 채팅방 나가기 (새 창이면 창 닫기) */
