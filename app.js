@@ -58,7 +58,7 @@
   var DESKTOP = window.matchMedia('(hover:hover) and (pointer:fine)');
   var NARROW = window.matchMedia('(max-width:860px)');
   var QUAD = window.matchMedia('(min-width:1200px)'), LANDSCAPE = window.matchMedia('(orientation:landscape)'), W640 = window.matchMedia('(min-width:640px)');   // 큰 화면 4단 · 가로 폰/태블릿 3단 판단용
-  var EMOJIS = ['네!', '👍', '❤️', '😂', '😮', '😢', '🙏', '✅'];   // 맨 앞 "네!" = 글자 공감 (직원 건의)
+  var EMOJIS = ['네!', '완료!', '❤️', '✅', '👍', '😂', '😮', '🙏'];   // v49g: 콧물(😢) 빼고 "완료!" 추가, 순서 네!→완료!→하트→체크 요청대로
   function isTextReact(e) { return /[가-힣]/.test(e); }
   var PICK_EMOJIS = ['😀', '😄', '😂', '🤣', '😊', '😍', '🥰', '😘', '😎', '🤔', '😮', '😅', '😢', '😭', '😡', '🥲', '😴', '🤗', '🙄', '😱',
     '👍', '👎', '👏', '🙏', '💪', '👌', '✌️', '🙌', '👋', '🤝', '❤️', '💙', '💛', '🔥', '⭐', '🎉', '🎂', '☕', '🍚', '🍺',
