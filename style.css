@@ -1008,6 +1008,12 @@ html.fs-xl .rsv-hr{font-size:14px}
 .rsv-det-r{color:var(--body)}
 .rsv-det-m{margin-top:8px;padding:10px 12px;border-radius:11px;background:var(--bg);color:var(--ink);white-space:pre-wrap}
 
+/* v49f: 예약자 검색 결과 줄 */
+.rsv-sr{display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%;padding:11px 2px;text-align:left;border-bottom:1px solid #f1f3f7}
+.rsv-sr:hover{background:#f8fafc}
+.rsv-sr-n{font-weight:700;font-size:14.5px;color:var(--ink)}
+.rsv-sr-d{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--muted)}
+
 /* ---------- 예약 끌기·길이 조절·범위 선택 (v48 6단계) ---------- */
 .rsv-ev,.rsv-mi,.rsv-cell{-webkit-user-select:none;user-select:none}
 .rsv-ev{cursor:grab}

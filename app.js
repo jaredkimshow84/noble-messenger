@@ -3818,7 +3818,8 @@
     [['prev', '이전', '‹'], ['today', '오늘', '오늘'], ['next', '다음', '›']].forEach(function (n) { h += '<button type="button" class="btn btn-line sm" data-rnav="' + n[0] + '" aria-label="' + n[1] + '">' + n[2] + '</button>'; });
     h += '</div><h2 class="rsv-title" aria-live="polite">' + esc(rsvTitle(R, rg)) + '</h2><div class="rsv-views" role="group" aria-label="보기">';
     [['day', '일'], ['week', '주'], ['month', '월']].forEach(function (v) { h += '<button type="button" data-rv="' + v[0] + '" aria-pressed="' + (R.view === v[0] ? 'true' : 'false') + '">' + v[1] + '</button>'; });
-    h += '</div><div class="rsv-acts"><button type="button" class="icon-btn" id="rsvUndo" aria-label="되돌리기" title="' + esc(rsvUndoTitle(R)) + '"' + (R.undo.length ? '' : ' disabled') + '>' + svg('undo') + '</button>' +
+    h += '</div><div class="rsv-acts"><button type="button" class="icon-btn" id="rsvSearch" aria-label="예약자 검색" title="이름으로 예약 찾기">' + svg('search') + '</button>' +
+      '<button type="button" class="icon-btn" id="rsvUndo" aria-label="되돌리기" title="' + esc(rsvUndoTitle(R)) + '"' + (R.undo.length ? '' : ' disabled') + '>' + svg('undo') + '</button>' +
       (DESKTOP.matches && !S.solo ? '<button type="button" class="icon-btn" id="rsvWin" aria-label="예약 화면을 새 창으로 열기" title="예약 화면만 따로 새 창으로 띄워 두기 (데스크 PC 옆 화면 등에 두고 볼 수 있습니다)">' + svg('pop') + '</button>' : '') +
       '<button type="button" class="btn btn-navy sm" id="rsvAdd">' + svg('plus') + '<span>예약</span></button>' +
       '<button type="button" class="icon-btn" id="rsvMore" aria-label="더보기" aria-haspopup="menu">' + svg('more') + '</button></div></div>';
@@ -3900,6 +3901,7 @@
     if ((b = t.closest('.rsv-strip [data-date]'))) { rsvGo('day', b.getAttribute('data-date'), false); return; }
     if ((b = t.closest('.rsv-dh[data-date]'))) { rsvGo('day', b.getAttribute('data-date'), false); return; }   // 날짜를 눌러 들어간 하루 보기는 기억하지 않음
     if (t.closest('#rsvAdd')) { rsvItemSheet({}); return; }
+    if (t.closest('#rsvSearch')) { rsvSearchSheet(); return; }
     if (t.closest('#rsvWin')) { openRsvWindow(); return; }
     if (t.closest('#rsvUndo')) { rsvUndo(); return; }
     if (t.closest('#rsvMore')) { rsvMoreMenu(); return; }
@@ -4377,6 +4379,49 @@
       if (t.closest('#rsvEdit')) { cur = R.items[id]; if (!cur) return; if (R.open && R.open.el === m) R.open = null; closeSheet(m); rsvItemSheet({ item: cur }); return; }
       if ((b = t.closest('#rsvDel'))) { if (!confirmInline(b, '한 번 더 누르면 삭제됩니다')) return; rsvDeleteItem(id); }
     });
+  }
+  /* v49f: 예약자 이름 검색 — 채팅과 상관없이 rsv_items만 서버에서 바로 찾음(지금 보이는 기간에 안 받아 둔 예약도 나옴) */
+  function rsvSearchHtml(rows, q, err) {
+    if (err) return '<p class="muted small" style="padding:12px 2px">검색하지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.</p>';
+    if (!rows) return '<p class="muted small" style="padding:12px 2px">검색 중…</p>';
+    if (!rows.length) return '<p class="muted small" style="padding:12px 2px">"' + esc(q) + '" 이름으로 예약된 사람이 없습니다.</p>';
+    return rows.map(function (it) {
+      var sp = rsvSpan(it), th = rsvTher(it.therapist_id), md = sp ? rsvMD(sp.ymd) : '', tm = sp ? rsvHm(sp.s) : '',
+        when = md ? md + ' (' + RSV_DOWN[rsvParts(sp.ymd).dow] + ') ' + tm : '날짜 확인 불가';
+      return '<button type="button" class="rsv-sr" data-id="' + esc(it.id) + '"><span class="rsv-sr-n">' + esc(rsvItemTitle(it) || it.patient_name || '(이름 없음)') + '</span>' +
+        '<span class="rsv-sr-d"><i class="rsv-dot" style="background:' + rsvColor(th && th.color) + '"></i>' + esc(when + (th ? ' · ' + th.name : '') + (it.status && it.status !== '예약' ? ' · ' + it.status : '')) + '</span></button>';
+    }).join('');
+  }
+  function rsvSearchSheet() {
+    var body = '<div class="sm-in" style="margin-bottom:10px">' + svg('search') + '<input id="rsvSq" placeholder="예약자 이름으로 검색" autocomplete="off" aria-label="예약 검색"></div><div id="rsvSqBody"></div>',
+      m = sheet('예약 검색', body), inp = $('#rsvSq', m), composing = false, timer = null, curQ = '', curRows = null, curErr = false;
+    function paint() { var box = $('#rsvSqBody', m); if (box) box.innerHTML = curQ ? rsvSearchHtml(curRows, curQ, curErr) : '<p class="muted small" style="padding:12px 2px">이름을 입력하면 예약을 찾습니다.</p>'; }
+    function run(q) {
+      sb.from('rsv_items').select('*').is('deleted_at', null).ilike('patient_name', likePat(q)).order('start_at', { ascending: false }).limit(40).then(function (r) {
+        if (curQ !== q) return;   // 그 사이 다른 글자를 입력했으면 버림
+        curErr = !!r.error; curRows = r.error ? [] : (r.data || []); paint();
+      });
+    }
+    function apply() {
+      clearTimeout(timer); curQ = inp.value.trim(); curRows = null; curErr = false; paint();
+      if (curQ) timer = setTimeout(function () { run(curQ); }, 300);
+    }
+    inp.addEventListener('compositionstart', function () { composing = true; });
+    inp.addEventListener('compositionend', function () { composing = false; apply(); });
+    inp.addEventListener('input', function () { if (composing) return; apply(); });
+    m.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-id]'), it; if (!b || !curRows) return;
+      it = curRows.find(function (x) { return String(x.id) === b.getAttribute('data-id'); }); if (!it) return;
+      closeSheet(m); rsvOpenSearchHit(it);
+    });
+    paint();
+  }
+  function rsvOpenSearchHit(row) {   // 검색 결과를 누르면: 그 날짜로 달력을 옮기고 바로 상세 창을 엶
+    var R = S.rsv, sp = rsvSpan(row);
+    if (!R) return;
+    rsvPut(row);
+    if (sp) rsvGo(R.view, sp.ymd, false);
+    rsvDetailSheet(row.id);
   }
   function rsvFail(R, e) {   // 상태·삭제가 거절·실패했을 때: 이유 안내 (내가 본 버전이 낡았으면 최신으로 다시 불러옴)
     if (rsvIsConflict(e)) { toast(esc(rsvErrText(e)) + ' 최신 내용으로 다시 불러옵니다.'); rsvLoad(); return; }
