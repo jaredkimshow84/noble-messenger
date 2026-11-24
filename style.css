@@ -94,6 +94,27 @@ textarea.input{min-height:110px;resize:vertical}
 .search{margin:10px 14px;position:relative}
 .search input{width:100%;height:40px;border-radius:10px;border:0;background:var(--bg);padding:0 12px 0 36px;font-size:15px}
 .search svg{position:absolute;left:11px;top:11px;width:18px;height:18px;fill:none;stroke:var(--muted);stroke-width:2}
+/* v49c: 검색칸이 입력창에서 "통합 검색 창을 여는 단추"로 바뀜 — 생김새는 예전 입력창과 똑같이 */
+.search-trigger{display:flex;align-items:center;gap:0;width:100%;height:40px;border-radius:10px;border:0;background:var(--bg);padding:0 12px 0 11px;font-size:15px;color:var(--muted);text-align:left;cursor:pointer}
+.search-trigger svg{width:18px;height:18px;fill:none;stroke:var(--muted);stroke-width:2;margin-right:8px;flex:0 0 auto}
+.search-trigger:hover{background:#eef1f6}
+
+/* ---------- v49c: 통합 검색 창(카카오워크 스타일 가운데 모달) ---------- */
+.sm-modal .sheet{width:min(720px,96vw)}
+.sm-modal .sheet-hd{display:none}
+.sm-top{display:flex;align-items:center;gap:8px;position:sticky;top:0;background:#fff;z-index:3;padding-bottom:10px}
+.sm-in{flex:1;position:relative;min-width:0}
+.sm-in input{width:100%;height:42px;border-radius:10px;border:0;background:var(--bg);padding:0 12px 0 36px;font-size:15px}
+.sm-in svg{position:absolute;left:11px;top:12px;width:18px;height:18px;fill:none;stroke:var(--muted);stroke-width:2}
+.sm-tabs{display:flex;gap:6px;position:sticky;top:52px;background:#fff;z-index:3;padding-bottom:8px;margin-bottom:6px;border-bottom:1px solid var(--line)}
+.sm-tabs button{padding:7px 14px;border-radius:999px;font-size:13.5px;font-weight:700;color:var(--muted);background:transparent}
+.sm-tabs button:hover{background:var(--bg)}
+.sm-tabs button[aria-selected="true"]{background:var(--navy);color:#fff}
+.sm-body{margin:0 -18px}
+.sm-body .group-hd:first-child{margin-top:0}
+.sm-more{display:block;width:100%;text-align:center;padding:11px;color:var(--navy);font-weight:700;font-size:13.5px;border-top:1px solid #f1f3f7}
+.sm-more:hover{background:#f8fafc}
+@media (max-width:640px){.sm-modal .sheet{width:100%}}
 
 /* 대화 목록 */
 .room-item{display:flex;gap:12px;align-items:center;padding:12px 16px;width:100%;text-align:left;border-bottom:1px solid #f1f3f7}
@@ -122,7 +143,8 @@ textarea.input{min-height:110px;resize:vertical}
 .to-latest.has-new{background:var(--navy);color:#fff;border-color:var(--navy)}
 .to-latest.has-new:hover{background:var(--navy-2)}
 /* ② 날짜 구분선 — KakaoTalk 스타일 (가로줄 위로 pill) */
-.day{position:relative;align-self:stretch;display:flex;justify-content:center;align-items:center;margin:16px 0 8px;min-height:22px}
+/* v49c: 카카오워크처럼 스크롤 중에는 지금 보고 있는 날짜가 위에 고정되게 (sticky) — 배경을 채팅 배경색과 맞춰 아래 말풍선이 겹쳐 보이지 않게 함 */
+.day{position:sticky;top:0;z-index:2;background:#f3f4f6;align-self:stretch;display:flex;justify-content:center;align-items:center;margin:16px 0 8px;min-height:22px}
 .day::before{content:'';position:absolute;left:0;right:0;top:50%;border-top:1px solid var(--line);z-index:0}
 .day span{position:relative;z-index:1;font-size:12.5px;color:var(--muted);background:var(--bg);padding:3px 12px;border-radius:999px;border:1px solid rgba(13,36,64,.08)}
 .msg{display:flex;gap:8px;align-items:flex-end;max-width:100%}

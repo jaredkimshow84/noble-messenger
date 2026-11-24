@@ -446,13 +446,12 @@
   }
   function renderRoomList() {
     unsingle(); $('#main').style.justifyContent = '';
-    var strip = qMode() === 'q3', ob = $('#list .pane-body'), keepTop = strip && S.stripOn && ob ? ob.scrollTop : 0; S.stripOn = strip;   // 폰·태블릿 가로: 목록이 아이콘 띠(검색칸 숨김) → 검색어는 무시하되 값은 보관(세로로 돌리면 다시 적용)
-    var q = strip ? '' : (S.roomQuery || '').trim();
-    var list = S.rooms.filter(function (r) { return !q || (r.name || '').indexOf(q) > -1; });
-    var tones = roomTones();   // 걸러진 목록(list)이 아니라 전체 방 기준 — 검색해도 색이 바뀌지 않게
+    var strip = qMode() === 'q3', ob = $('#list .pane-body'), keepTop = strip && S.stripOn && ob ? ob.scrollTop : 0; S.stripOn = strip;   // 폰·태블릿 가로: 목록이 아이콘 띠(검색칸 숨김)
+    var list = S.rooms, tones = roomTones();
+    /* v49c: 검색을 카카오워크처럼 가운데 창(통합 검색)으로 분리 — 목록 자체는 더 이상 걸러지지 않고, 검색칸은 그 창을 여는 단추가 됨 */
     $('#list').innerHTML = header('채팅', { right: '<button class="ra-btn" id="readAll" type="button" title="안 읽은 대화를 모두 읽음으로 표시" aria-label="모두 읽음"' + (S.rooms.some(function (r) { return r.unread > 0; }) ? '' : ' disabled') + '>' + svg('checkall') + '<span>모두 읽음</span></button><button class="icon-btn" id="newChat" aria-label="새 대화">' + svg('plus') + '</button>' }) +
-      '<div class="search">' + svg('search') + '<input id="roomQ" placeholder="대화방·메시지 검색" value="' + esc(q) + '" aria-label="대화방·메시지 검색"></div><div id="pushAsk"></div><div id="attNudge"></div>' +
-      '<div class="pane-body">' + (q && list.length ? '<div class="group-hd">대화방</div>' : '') + (list.length ? list.map(function (r) {
+      (strip ? '' : '<div class="search"><button type="button" class="search-trigger" id="roomQ" aria-label="대화방·직원·메시지 검색">' + svg('search') + '<span>대화방·직원·메시지 검색</span></button></div>') + '<div id="pushAsk"></div><div id="attNudge"></div>' +
+      '<div class="pane-body">' + (list.length ? list.map(function (r) {
         var grp = r.type === 'group';
         var face = grp ? grpFace(r.name, tones[String(r.id)]) : r.type === 'self' ? av(S.me, 'me') : av(S.profiles[r.other_id] || { name: r.name });
         var rn = r.name == null ? '' : String(r.name);
@@ -461,8 +460,7 @@
         return '<a class="room-item' + (r.pinned ? ' pinned' : '') + (r.muted ? ' is-muted' : '') + '" href="#room/' + r.id + '" data-room="' + r.id + '"' + (S.route.id === r.id ? ' aria-current="true"' : '') + sa + '>' + face +
           '<span class="ri-main"><span class="ri-top"><b>' + (r.pinned ? '<svg class="pin-ico" viewBox="0 0 24 24">' + IC.pin + '</svg>' : '') + esc(r.name) + (r.type === 'dm' && pTag(S.profiles[r.other_id]) ? '<span class="who-tag">' + esc(pTag(S.profiles[r.other_id])) + '</span>' : '') + (grp ? '<small>' + r.member_count + '</small>' : '') + (r.muted ? ' <svg class="mute-ico" viewBox="0 0 24 24">' + IC.mute + '</svg>' : '') + '</b><time>' + (r.last_body != null ? shortTime(r.last_message_at) : '') + '</time></span>' +
           '<span class="ri-bot"><p>' + esc(r.last_body == null ? '새 대화방' : (grp && r.last_sender ? r.last_sender + ': ' : '') + r.last_body) + '</p>' + (r.unread ? '<span class="badge">' + (r.unread > 99 ? '99+' : r.unread) + '</span>' : '') + '</span></span></a>';
-      }).join('') : (q ? '' : '<p class="empty">아직 대화가 없습니다.<br>오른쪽 위 + 버튼으로 대화를 시작하세요.</p>')) +
-      (q ? '<div id="msgResults">' + msgResultsHtml(q) + '</div>' : '') + '</div>';
+      }).join('') : '<p class="empty">아직 대화가 없습니다.<br>오른쪽 위 + 버튼으로 대화를 시작하세요.</p>') + '</div>';
     $('#newChat').onclick = newChatSheet;
     $('#readAll').onclick = readAllRooms;
     $$('[data-room]').forEach(function (a) {
@@ -488,17 +486,10 @@
       a.addEventListener('contextmenu', function (e) { e.preventDefault(); roomQuickSheet(S.rooms.find(function (x) { return x.id === a.getAttribute('data-room'); })); });
       longPress(a, function () { roomQuickSheet(S.rooms.find(function (x) { return x.id === a.getAttribute('data-room'); })); });
     });
-    /* v49 버그 수정: 글자마다 목록을 다시 그리며 입력창(#roomQ)을 새로 만들어서, 한글 입력 중(조합 중)에 자음이 겹쳐 눌리는 문제가 있었음.
-       조합이 끝난 뒤에만 다시 그리도록 고침 (영문·숫자는 조합이 없어 예전처럼 바로 반영됨) */
-    var qi = $('#roomQ'), roomQComposing = false;
-    function roomQApply() { S.roomQuery = qi.value; var pos = qi.selectionStart; renderRoomList(); var n = $('#roomQ'); n.focus(); n.setSelectionRange(pos, pos); }
-    qi.addEventListener('compositionstart', function () { roomQComposing = true; });
-    qi.addEventListener('compositionend', function () { roomQComposing = false; roomQApply(); });
-    qi.oninput = function () { if (roomQComposing) { S.roomQuery = qi.value; return; } roomQApply(); };
-    if (q.length >= 2 && (!S.msgSearch || S.msgSearch.q !== q)) searchAllMessages(q);
+    /* v49c: 검색칸을 누르면 카카오워크 스타일 통합 검색 창(모달)이 뜸 — 입력창이 아니라 단추라서 한글 조합 겹침 문제도 아예 없음 */
+    var qi = $('#roomQ'); if (qi) qi.onclick = function () { openSearchModal(); };
     renderPushAsk();
     if (S.att && (S.att.error || S.att.today === ymd(new Date()))) renderAttNudge(); else if ((S.profiles[S.me.id] || S.me).att_enabled && (DESKTOP.matches || (S.profiles[S.me.id] || S.me).mobile_punch) && !S.attLoading) { S.attLoading = true; attLoad().then(function () { S.attLoading = false; renderAttNudge(); }); } else renderAttNudge();
-    wireMsgResults();
     if (strip) keepStripView(keepTop);
   }
   /* 채팅방 목록 맨 위 "모두 읽음": 안 읽은 대화(알림 끈 방 포함) 전부를 내 읽은 시각만 갱신해 한 번에 처리.
@@ -550,7 +541,7 @@
     var r = S.rooms.find(function (x) { return x.id === m.room_id; });
     return r && (!r.cleared_at || m.created_at > r.cleared_at);
   }
-  var searchTimer = null;
+  var searchTimer = null, smRefresh = null;   // smRefresh: 통합 검색 창이 열려 있을 때, 메시지 검색 결과가 늦게 도착하면 다시 그리는 함수 (닫혀 있으면 호출 안 됨)
   function searchAllMessages(q) {
     clearTimeout(searchTimer);
     S.msgSearch = { q: q, rows: null };
@@ -559,35 +550,96 @@
         .order('created_at', { ascending: false }).limit(60).then(function (r) {
           if (!S.msgSearch || S.msgSearch.q !== q) return;
           S.msgSearch.rows = (r.data || []).filter(visibleHit);
-          var box = $('#msgResults'); if (box) { box.innerHTML = msgResultsHtml(q); wireMsgResults(); }
+          if (smRefresh) smRefresh();
         });
     }, 300);
   }
-  function msgResultsHtml(q) {
+  /* v49c: 메시지 결과 목록(날짜별로 묶음) — 통합 검색 창의 "메시지" 탭·"전체" 탭에서 같이 씀. full=false면 5건만(전체 탭 미리보기) */
+  function msgHitsHtml(q, full) {
     if (q.length < 2) return '<p class="muted small" style="padding:12px 16px">메시지는 두 글자 이상 입력하면 검색됩니다.</p>';
     var ms = S.msgSearch && S.msgSearch.q === q ? S.msgSearch.rows : null;
-    if (!ms) return '<div class="group-hd">메시지</div><p class="muted small" style="padding:12px 16px">검색 중…</p>';
-    if (!ms.length) return '<div class="group-hd">메시지</div><p class="muted small" style="padding:12px 16px">"' + esc(q) + '"이(가) 들어간 메시지가 없습니다.</p>';
-    /* v49b: 전체 채팅방 검색(사이드바 "메시지 N건" 목록)도 방 안 검색(.rs-day)과 같이 날짜별로 묶어서 표시 */
-    var lastDay = '', items = '';
-    ms.forEach(function (m) {
+    if (!ms) return '<p class="muted small" style="padding:12px 16px">검색 중…</p>';
+    if (!ms.length) return '<p class="muted small" style="padding:12px 16px">"' + esc(q) + '"이(가) 들어간 메시지가 없습니다.</p>';
+    var show = full ? ms : ms.slice(0, 5), lastDay = '', items = '';
+    show.forEach(function (m) {
       var r = S.rooms.find(function (x) { return x.id === m.room_id; }) || {}, p = S.profiles[m.sender_id] || { name: '(퇴사자)' };
       var day = ymd(m.created_at);
       if (day !== lastDay) { items += '<div class="rs-day">' + dayLabel(m.created_at) + '</div>'; lastDay = day; }
       items += '<button class="hit" data-hit="' + m.id + '">' + av(p, 'sm') + '<span class="hit-main"><span class="hit-top"><b>' + esc(r.name || '') + '</b><time>' + hm(m.created_at) + '</time></span>' +
         '<span class="hit-body"><em>' + esc(p.name) + '</em> ' + hl(around(m.body, q), q) + '</span></span></button>';
     });
-    return '<div class="group-hd">메시지 ' + ms.length + (ms.length >= 60 ? '+' : '') + '건</div>' + items;
+    return items + (!full && ms.length > 5 ? '<button type="button" class="sm-more" data-smtab="msg">메시지 더 보기 (' + ms.length + (ms.length >= 60 ? '+' : '') + '건) ›</button>' : '');
   }
-  function wireMsgResults() {
-    $$('[data-hit]').forEach(function (b) {
-      b.onclick = function () {
-        var m = (S.msgSearch.rows || []).find(function (x) { return x.id === +b.getAttribute('data-hit'); }); if (!m) return;
-        S.pendingJump = m;
-        if (S.room && S.room.id === m.room_id && $('#msgs')) { S.pendingJump = null; S.searchQ = (S.roomQuery || '').trim(); renderMessages(false); jumpToMsg(m); }
-        else location.hash = '#room/' + m.room_id;
-      };
+  /* v49c: 대화방 결과 — 방 목록과 같은 모양(.hit)으로, 이름·마지막 메시지로 거름 */
+  function smRoomItems(q) { var qq = (q || '').trim(); return S.rooms.filter(function (r) { return !qq || (r.name || '').indexOf(qq) > -1; }); }
+  function smRoomHtml(q, full) {
+    var list = smRoomItems(q), tones = roomTones();
+    if (!list.length) return '<p class="muted small" style="padding:12px 16px">일치하는 대화방이 없습니다.</p>';
+    var show = full ? list : list.slice(0, 5);
+    return show.map(function (r) {
+      var grp = r.type === 'group', face = grp ? grpFace(r.name, tones[String(r.id)]) : r.type === 'self' ? av(S.me, 'me') : av(S.profiles[r.other_id] || { name: r.name });
+      return '<button class="hit" data-smroom="' + r.id + '">' + face + '<span class="hit-main"><span class="hit-top"><b>' + esc(r.name) + '</b><time>' + (r.last_body != null ? shortTime(r.last_message_at) : '') + '</time></span>' +
+        '<span class="hit-body">' + esc(r.last_body == null ? '새 대화방' : (grp && r.last_sender ? r.last_sender + ': ' : '') + r.last_body) + '</span></span></button>';
+    }).join('') + (!full && list.length > 5 ? '<button type="button" class="sm-more" data-smtab="room">채팅방 더 보기 (' + list.length + '건) ›</button>' : '');
+  }
+  /* v49c: 직원 결과 — 직원 목록과 같은 모양(.person)으로, 이름·부서/직책으로 거름 */
+  function smStaffItems(q) {
+    var qq = (q || '').trim();
+    return others().filter(function (p) { return !qq || (p.name || '').indexOf(qq) > -1 || personLabel(p).indexOf(qq) > -1; })
+      .sort(function (a, b) { return (a.name || '').localeCompare(b.name || '', 'ko'); });
+  }
+  function smStaffHtml(q, full) {
+    var list = smStaffItems(q);
+    if (!list.length) return '<p class="muted small" style="padding:12px 16px">일치하는 직원이 없습니다.</p>';
+    var show = full ? list : list.slice(0, 5);
+    return show.map(function (p) {
+      return '<button class="person" data-smstaff="' + p.id + '">' + av(p) + '<span class="grow"><b>' + esc(p.name) + '</b><br><span>' + esc(personLabel(p)) + '</span></span>' + (p.role === 'admin' ? '<span class="pill gold">관리자</span>' : '') + '</button>';
+    }).join('') + (!full && list.length > 5 ? '<button type="button" class="sm-more" data-smtab="staff">직원 더 보기 (' + list.length + '명) ›</button>' : '');
+  }
+  /* v49c: "전체" 탭 — 채팅방·직원·메시지를 섹션별로 미리 보여 줌 (카카오워크 통합 검색과 같은 구성) */
+  function smAllHtml(q) {
+    var qq = (q || '').trim();
+    if (!qq) return '<p class="muted small" style="padding:18px 16px">대화방, 직원, 메시지를 검색해 보세요.</p>';
+    return '<div class="group-hd">채팅방</div>' + smRoomHtml(qq, false) +
+      '<div class="group-hd">직원</div>' + smStaffHtml(qq, false) +
+      '<div class="group-hd">메시지</div>' + msgHitsHtml(qq, false);
+  }
+  /* v49c: 카카오워크 스타일 통합 검색 창(가운데 모달). #roomQ 단추 또는 Ctrl+F 로 열림 */
+  function openSearchModal() {
+    var exist = $('.sm-modal'); if (exist) { var ef = $('#smQ', exist); if (ef) { ef.focus(); ef.select(); } return; }
+    var body = '<div class="sm-top"><div class="sm-in">' + svg('search') + '<input id="smQ" placeholder="대화방·직원·메시지 검색" autocomplete="off" aria-label="통합 검색"></div><button type="button" class="icon-btn" data-close aria-label="닫기">' + svg('x') + '</button></div>' +
+      '<div class="sm-tabs" role="tablist"><button type="button" data-smtab="all" aria-selected="true">전체</button><button type="button" data-smtab="room" aria-selected="false">채팅방</button><button type="button" data-smtab="staff" aria-selected="false">직원</button><button type="button" data-smtab="msg" aria-selected="false">메시지</button></div>' +
+      '<div class="sm-body" id="smBody"></div>';
+    var m = sheet('통합 검색', body);
+    m.classList.add('sm-modal');
+    var st = { tab: 'all' }, inp = $('#smQ', m), composing = false;
+    function renderBody() {
+      var box = $('#smBody', m); if (!box) return;
+      var q = (inp.value || '').trim();
+      $$('[data-smtab]', m).forEach(function (b) { b.setAttribute('aria-selected', b.getAttribute('data-smtab') === st.tab ? 'true' : 'false'); });
+      if (st.tab === 'all') box.innerHTML = smAllHtml(q);
+      else if (st.tab === 'room') box.innerHTML = smRoomHtml(q, true);
+      else if (st.tab === 'staff') box.innerHTML = smStaffHtml(q, true);
+      else box.innerHTML = msgHitsHtml(q, true);
+    }
+    smRefresh = renderBody;
+    function apply() { S.roomQuery = inp.value; renderBody(); var q = inp.value.trim(); if (q.length >= 2) searchAllMessages(q); }
+    inp.addEventListener('compositionstart', function () { composing = true; });
+    inp.addEventListener('compositionend', function () { composing = false; apply(); });
+    inp.addEventListener('input', function () { if (composing) { S.roomQuery = inp.value; return; } apply(); });
+    m.addEventListener('click', function (e) {
+      var t = e.target.closest('[data-smtab]'); if (t) { st.tab = t.getAttribute('data-smtab'); renderBody(); return; }
+      var r;
+      if ((r = e.target.closest('[data-smroom]'))) { closeSheet(m); location.hash = '#room/' + r.getAttribute('data-smroom'); return; }
+      if ((r = e.target.closest('[data-smstaff]'))) { closeSheet(m); profileView(r.getAttribute('data-smstaff')); return; }
+      if ((r = e.target.closest('[data-hit]'))) {
+        var mm = (S.msgSearch.rows || []).find(function (x) { return x.id === +r.getAttribute('data-hit'); }); if (!mm) return;
+        closeSheet(m); S.pendingJump = mm;
+        if (S.room && S.room.id === mm.room_id && $('#msgs')) { S.pendingJump = null; S.searchQ = (S.roomQuery || '').trim(); renderMessages(false); jumpToMsg(mm); }
+        else location.hash = '#room/' + mm.room_id;
+      }
     });
+    renderBody();
   }
   /* 오래된 메시지도 찾아가기: 그 메시지 주변을 불러와서 이동 */
   function jumpToMsg(m) {
@@ -5388,7 +5440,7 @@
     var k = String(e.key || '').toLowerCase();
     if (!(k === 'f' || k === 'ㄹ' || (!/^[a-z]$/.test(k) && e.code === 'KeyF'))) return;   // 한글 입력 상태에서는 키 이름이 'ㄹ'·'Process' 로 올 수 있어 키 위치(KeyF)도 봄
     if (S.room && $('#msgs')) { e.preventDefault(); roomSearchBar(true); return; }
-    var q = $('#roomQ'); if (q) { e.preventDefault(); q.focus(); q.select(); }
+    if ($('#roomQ')) { e.preventDefault(); openSearchModal(); }   /* v49c: 목록칸이 단추로 바뀌어 통합 검색 창을 바로 염 */
   }, true);
 
   /* ESC: 열린 창(시트) 닫기 → 답장 취소 → 방 검색 닫기 → 채팅방 나가기 (새 창이면 창 닫기) */
