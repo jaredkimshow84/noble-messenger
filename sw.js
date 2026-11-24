@@ -1,5 +1,5 @@
 /* 노블 메신저 – 서비스 워커 (휴대폰 알림, 앱 설치) */
-const CACHE = 'noble-msg-v49e';
+const CACHE = 'noble-msg-v49f';
 const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'config.js', 'vendor/supabase-2.118.0.js', 'icons/icon-192.png', 'logo.svg'];
 
 self.addEventListener('install', (e) => {
