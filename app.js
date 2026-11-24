@@ -355,6 +355,7 @@
     $$('.tab').forEach(function (t) { if (t.getAttribute('data-tab') === S.route.tab) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
     app.classList.remove('in-detail', 'in-room', 'single');
     app.classList.toggle('solo', S.solo);
+    app.classList.toggle('solo-rsv', S.solo && tab === 'rsv');   // v49d: 예약 새 창은 화면 최대너비 제한 없이 꽉 차게
     layoutSync();   // 큰 화면/가로 화면이면 채팅 탭에서만 오른쪽에 순서표 칸 (화면을 그리기 전에 맞춰 순서표 본문이 두 곳에 생기지 않게)
     if (S.route.tab !== 'chats' || !S.route.id) leaveRoom();
     if (S.route.tab !== 'rsv') rsvLeave();   // 예약 화면의 타이머·이벤트 정리
