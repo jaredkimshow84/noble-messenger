@@ -121,7 +121,10 @@ textarea.input{min-height:110px;resize:vertical}
 .to-latest:hover{background:#f3f6fa}
 .to-latest.has-new{background:var(--navy);color:#fff;border-color:var(--navy)}
 .to-latest.has-new:hover{background:var(--navy-2)}
-.day{align-self:center;font-size:12.5px;color:var(--muted);background:rgba(13,36,64,.06);padding:3px 12px;border-radius:999px;margin:12px 0 6px}
+/* ② 날짜 구분선 — KakaoTalk 스타일 (가로줄 위로 pill) */
+.day{position:relative;align-self:stretch;display:flex;justify-content:center;align-items:center;margin:16px 0 8px;min-height:22px}
+.day::before{content:'';position:absolute;left:0;right:0;top:50%;border-top:1px solid var(--line);z-index:0}
+.day span{position:relative;z-index:1;font-size:12.5px;color:var(--muted);background:var(--bg);padding:3px 12px;border-radius:999px;border:1px solid rgba(13,36,64,.08)}
 .msg{display:flex;gap:8px;align-items:flex-end;max-width:100%}
 .msg .who{font-size:12.5px;color:var(--muted);margin:6px 0 2px}
 .msg.cont .avatar{visibility:hidden}
@@ -349,6 +352,8 @@ mark{background:#ffe27a;color:inherit;border-radius:3px;padding:0 1px}
 .rs-list b{font-size:13.5px}
 .rs-list time{font-size:12px;color:var(--muted);justify-self:end}
 .rs-list span{grid-column:1/-1;font-size:13.5px;color:var(--body)}
+/* ④ 날짜 그룹 헤더 (KakaoWork 스타일) */
+.rs-day{font-size:12px;font-weight:700;color:var(--muted);padding:7px 14px 4px;background:#f6f8fb;border-bottom:1px solid #f1f3f7;letter-spacing:.02em;position:sticky;top:0;z-index:1}
 
 /* 글자 크기 (설정 → 글자 크기) */
 html.fs-l body{font-size:17.5px}
@@ -803,10 +808,13 @@ html.fs-xl .q-dt{font-size:18px}
 .app.has-q[data-lay="q3"] .room-item.is-muted .avatar{opacity:.5}
 .app.has-q[data-lay="q3"] .room-item .badge{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 4px;font-size:11px;box-shadow:0 0 0 2px #fff}
 
-/* ===== v47: 공감 칩을 말풍선 아래 테두리에 걸쳐 작게 (카카오워크처럼) ===== */
-.reacts{gap:3px;margin:-15px 0 0;padding:0 8px;position:relative;z-index:1;align-self:flex-start}   /* 안쪽 칸의 gap 4px + -15px = 말풍선 위로 11px 걸침 */
+/* ===== v48: ③ 공감칩·진료완료 pill → .line 아래 별도 행(.msg-extra)으로 이동 ===== */
+/* 보낸 사람(avatar+이름)이 말풍선에만 연결되어 명확하게 보임 */
+.msg-extra{display:flex;flex-direction:column;gap:4px;align-items:flex-start;margin-top:3px;padding:0 2px}
+.msg.mine .msg-extra{align-items:flex-end}
+.reacts{gap:3px;margin:0;padding:0;position:relative;z-index:1;align-self:flex-start}
 .msg.mine .reacts{align-self:flex-end}
-.msg.has-react{margin-bottom:4px}   /* 칩 줄 아래 여유 (글 사이 간격 4px + 4px = 8px) */
+.msg.has-react{margin-bottom:0}   /* 더 이상 말풍선에 걸치지 않으므로 여유 불필요 */
 .react{position:relative;min-height:22px;height:auto;padding:1px 7px;gap:2px;font-size:13px;line-height:1.25;box-shadow:0 1px 3px rgba(13,36,64,.18)}
 .react::after{content:"";position:absolute;inset:-6px -2px}   /* 눈에 안 보이는 클릭 영역 (손가락으로도 누를 수 있게) */
 .react b{font-size:11.5px}
@@ -897,7 +905,8 @@ button.rsv-dh:hover{background:var(--bg)}
 .rsv-ev{position:absolute;z-index:2;overflow:hidden;padding:2px 24px 2px 6px;border:1px solid rgba(13,36,64,.14);border-left:4px solid var(--c,#6b7280);border-radius:7px;background:#fff;background:color-mix(in srgb,var(--c,#6b7280) 13%,#fff);box-shadow:0 1px 2px rgba(13,36,64,.14);font-size:12.5px;line-height:1.25;color:var(--ink);cursor:pointer;touch-action:manipulation}
 .rsv-ev:hover{z-index:3;box-shadow:0 2px 6px rgba(13,36,64,.25)}
 .rsv-ev:focus-visible{z-index:4}
-.rsv-ev-t{display:block;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* v49: 이름이 잘려 안 보이던 문제 — 1줄 말줄임 대신 2줄까지 줄바꿈해서 다 보이게 */
+.rsv-ev-t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;font-weight:700;line-height:1.2}
 .rsv-ev-s{display:block;font-size:11.5px;color:var(--body);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rsv-ev-st{position:absolute;right:3px;top:2px;padding:0 5px;border-radius:999px;background:#eceff4;font-size:11px;font-weight:800;color:var(--body)}
 .rsv-ev[data-status="킵"]{border-style:dashed;border-left-style:solid;background:color-mix(in srgb,var(--c,#6b7280) 6%,#fff)}

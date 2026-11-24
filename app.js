@@ -346,7 +346,8 @@
     }
     var parts = h.split('/');
     var tab = parts[0], id = parts[1] || null;
-    S.solo = (tab === 'room' && parts[2] === 'solo') || (tab === 'queue' && parts[1] === 'solo');
+    /* v49: 예약(rsv) 탭도 새 창(solo)으로 띄울 수 있게 queue와 같은 방식으로 추가 */
+    S.solo = (tab === 'room' && parts[2] === 'solo') || (tab === 'queue' && parts[1] === 'solo') || (tab === 'rsv' && parts[1] === 'solo');
     if (tab === 'room') { S.route = { tab: 'chats', id: id }; }
     else if (tab === 'notice') { S.route = { tab: 'notices', id: id }; }
     else { S.route = { tab: tab, id: null }; }
@@ -629,10 +630,22 @@
         var rows = r.data || [];
         hits = rows; cur = -1; doneQ = q; cnt.textContent = '';
         list.hidden = false;
-        list.innerHTML = rows.length ? '<p class="rs-count">' + rows.length + (rows.length >= 100 ? '+' : '') + '건</p>' + rows.map(function (m) {
-          var p = S.profiles[m.sender_id] || { name: '(퇴사자)' };
-          return '<button data-rs="' + m.id + '"><b>' + esc(nameTag(p)) + '</b><time>' + shortTime(m.created_at) + ' ' + hm(m.created_at) + '</time><span>' + hl(around(m.body, q), q) + '</span></button>';
-        }).join('') : '<p class="rs-count">검색 결과가 없습니다.</p>';
+        /* ④ 날짜별 그룹 헤더 추가 (KakaoWork 스타일) */
+        if (rows.length) {
+          var lastDay = '', items = '';
+          rows.forEach(function (m) {
+            var day = ymd(m.created_at);
+            if (day !== lastDay) {
+              items += '<div class="rs-day">' + dayLabel(m.created_at) + '</div>';
+              lastDay = day;
+            }
+            var p = S.profiles[m.sender_id] || { name: '(퇴사자)' };
+            items += '<button data-rs="' + m.id + '"><b>' + esc(nameTag(p)) + '</b><time>' + hm(m.created_at) + '</time><span>' + hl(around(m.body, q), q) + '</span></button>';
+          });
+          list.innerHTML = '<p class="rs-count">' + rows.length + (rows.length >= 100 ? '+' : '') + '건</p>' + items;
+        } else {
+          list.innerHTML = '<p class="rs-count">검색 결과가 없습니다.</p>';
+        }
         $$('[data-rs]', list).forEach(function (b) { b.onclick = function () { var m = rows.find(function (x) { return x.id === +b.getAttribute('data-rs'); }); go(rows.indexOf(m)); }; });
         renderMessages(false);
         if (want) { var d = want; want = 0; if (rows.length) go(d > 0 ? 0 : rows.length - 1); }   // Enter 로 시작한 검색이면 결과가 나오는 대로 이동
@@ -912,7 +925,8 @@
     if (!S.messages.length) html += '<p class="empty">첫 메시지를 보내 보세요.</p>';
     var prev = null, needUrls = [], qm = qMap();
     S.messages.forEach(function (m) {
-      if (!prev || !sameDay(prev.created_at, m.created_at)) { html += '<div class="day">' + dayLabel(m.created_at) + '</div>'; prev = null; }
+      /* ② 날짜 구분선 — span으로 감싸 CSS ::before 가로줄 위로 pill이 뜨게 */
+      if (!prev || !sameDay(prev.created_at, m.created_at)) { html += '<div class="day"><span>' + dayLabel(m.created_at) + '</span></div>'; prev = null; }
       var mine = m.sender_id === S.me.id, p = S.profiles[m.sender_id] || { name: '(퇴사자)' };
       var toMe = !mine && (m.mentions || []).indexOf(S.me.id) > -1;
       var cont = prev && prev.sender_id === m.sender_id && (d(m.created_at) - d(prev.created_at)) < 5 * 60000;
@@ -927,15 +941,17 @@
       } else content = '<div class="bubble' + (toMe ? ' to-me' : '') + '">' + fmtBody(m.body) + '</div>';
       if (m.poll_id && !m.deleted) content = pollCard(m.poll_id);
       if (m.reply_to && !m.deleted) content = quoteHtml(m.reply_to) + content;
-      var un = unreadCount(m), rh = reactsHtml(m.id);   // 공감 칩 줄은 말풍선과 같은 칸 안에 (말풍선 아래 테두리에 걸쳐 보임)
+      var un = unreadCount(m), rh = reactsHtml(m.id);
+      /* ③ 공감칩(rh)·진료완료(qTagHtml)를 .line 밖(.col 안)으로 이동 → 말풍선 + 보낸사람 명확히 */
+      var qtag = m.deleted ? '' : qTagHtml(qm[m.id]);
       html += '<div class="msg' + (mine ? ' mine' : '') + (cont ? ' cont' : '') + (rh ? ' has-react' : '') + '" data-id="' + m.id + '">' +
         (mine ? '' : av(p, 'sm')) +
         '<div class="col">' + (mine ? '' : '<div class="who">' + esc(p.name || '') + (pTag(p) ? '<span class="who-tag">' + esc(pTag(p)) + '</span>' : '') + '</div>') +
-        '<div class="line"><div class="col" style="gap:4px">' + content + rh + (m.deleted ? '' : qTagHtml(qm[m.id])) + '</div><span class="meta">' + (un ? '<span class="unread">' + un + '</span>' : '') + '<time>' + hm(m.created_at) + '</time></span>' +
+        '<div class="line"><div class="col" style="gap:4px">' + content + '</div><span class="meta">' + (un ? '<span class="unread">' + un + '</span>' : '') + '<time>' + hm(m.created_at) + '</time></span>' +
         (!m.deleted && m.body && !m.poll_id ? '<button class="copy-btn" data-act="copy" title="복사" aria-label="메시지 복사">' + svg('copy') + '</button>' : '') +
         (!m.deleted && m.body && !m.poll_id ? '<button class="copy-btn q-btn' + (qm[m.id] && qm[m.id].status === 'pending' ? ' on' : '') + '" data-act="queue" title="진료순서표에 올리기" aria-label="진료순서표에 올리기">' + svg('queue') + '</button>' : '') +
         (!m.deleted ? '<span class="msg-acts"><button data-act="react" title="공감" aria-label="공감">' + svg('smile') + '</button><button data-act="reply" title="답장" aria-label="답장">' + svg('reply') + '</button><button data-act="more" title="더보기" aria-label="더보기">' + svg('more') + '</button></span>' : '') +
-        '</div></div></div>';
+        '</div>' + (rh || qtag ? '<div class="msg-extra">' + rh + qtag + '</div>' : '') + '</div></div>';
       prev = m;
     });
     /* 이미 불러온 사진은 그대로 옮겨 붙여서 다시 그릴 때 깜빡이거나 겹치지 않게 */
@@ -2177,6 +2193,15 @@
   function openQueueWindow() {
     var w = 460, h = Math.min(screen.availHeight - 40, 820);
     var win = window.open(location.href.split('#')[0] + '#queue/solo', 'noble-queue',
+      'popup,width=' + w + ',height=' + h + ',left=' + Math.max(0, screen.availWidth - w - 20) + ',top=20');
+    if (!win && ND) return;   // PC 프로그램은 프로그램이 직접 창을 열어 줌 (차단 아님)
+    if (!win) toast('팝업이 차단되었습니다. 주소창 오른쪽 팝업 차단 아이콘에서 "항상 허용"을 눌러 주세요.');
+    else try { win.focus(); } catch (e) {}
+  }
+  /* v49: 예약 달력만 따로 띄워 두기 (데스크 PC 옆 화면용) — 순서표 새 창과 같은 방식, 달력이라 폭을 더 넓게 */
+  function openRsvWindow() {
+    var w = Math.min(1040, screen.availWidth - 40), h = Math.min(screen.availHeight - 40, 860);
+    var win = window.open(location.href.split('#')[0] + '#rsv/solo', 'noble-rsv',
       'popup,width=' + w + ',height=' + h + ',left=' + Math.max(0, screen.availWidth - w - 20) + ',top=20');
     if (!win && ND) return;   // PC 프로그램은 프로그램이 직접 창을 열어 줌 (차단 아님)
     if (!win) toast('팝업이 차단되었습니다. 주소창 오른쪽 팝업 차단 아이콘에서 "항상 허용"을 눌러 주세요.');
@@ -3557,7 +3582,7 @@
      · 시간 눈금은 1분 = 1.4px. 주·일 보기는 열마다 예약을 한국 시간 기준으로 얹고, 겹치면 좌우 칸으로 나눔
      · 보이는 시간 범위는 설정값에 "이 기간의(치료사 단추와 상관없이) 모든 예약"이 들어가도록 늘림 → 단추를 눌러도 눈금이 흔들리지 않음
      · 아직 받아 두지 않은 기간은 빈 달력 대신 "불러오는 중"/"불러오지 못했습니다"를 보여 줌 (예약이 없는 것처럼 보이면 안 되므로) */
-  var RSV_PXM = 1.4, RSV_MINH = 18, RSV_SHORT = 36, RSV_GRAY = '#6b7280', RSV_DOWN = ['일', '월', '화', '수', '목', '금', '토'];
+  var RSV_PXM = 1.4, RSV_MINH = 34, RSV_SHORT = 36, RSV_GRAY = '#6b7280', RSV_DOWN = ['일', '월', '화', '수', '목', '금', '토'];   // v49: 이름이 2줄까지 보이도록 최소 높이(RSV_MINH)를 18→34로 늘림
   function rsvPx(n) { return (Math.round(n * 100) / 100) + 'px'; }
   function rsvPct(n) { return (Math.round(n * 100) / 100) + '%'; }
   function rsvColor(c) { return typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c) ? c : RSV_GRAY; }   // 스타일에 직접 넣는 값이라 모양이 맞는 것만
@@ -3725,6 +3750,7 @@
     h += '</div><h2 class="rsv-title" aria-live="polite">' + esc(rsvTitle(R, rg)) + '</h2><div class="rsv-views" role="group" aria-label="보기">';
     [['day', '일'], ['week', '주'], ['month', '월']].forEach(function (v) { h += '<button type="button" data-rv="' + v[0] + '" aria-pressed="' + (R.view === v[0] ? 'true' : 'false') + '">' + v[1] + '</button>'; });
     h += '</div><div class="rsv-acts"><button type="button" class="icon-btn" id="rsvUndo" aria-label="되돌리기" title="' + esc(rsvUndoTitle(R)) + '"' + (R.undo.length ? '' : ' disabled') + '>' + svg('undo') + '</button>' +
+      (DESKTOP.matches && !S.solo ? '<button type="button" class="icon-btn" id="rsvWin" aria-label="예약 화면을 새 창으로 열기" title="예약 화면만 따로 새 창으로 띄워 두기 (데스크 PC 옆 화면 등에 두고 볼 수 있습니다)">' + svg('pop') + '</button>' : '') +
       '<button type="button" class="btn btn-navy sm" id="rsvAdd">' + svg('plus') + '<span>예약</span></button>' +
       '<button type="button" class="icon-btn" id="rsvMore" aria-label="더보기" aria-haspopup="menu">' + svg('more') + '</button></div></div>';
     if (chips.length) {
@@ -3805,6 +3831,7 @@
     if ((b = t.closest('.rsv-strip [data-date]'))) { rsvGo('day', b.getAttribute('data-date'), false); return; }
     if ((b = t.closest('.rsv-dh[data-date]'))) { rsvGo('day', b.getAttribute('data-date'), false); return; }   // 날짜를 눌러 들어간 하루 보기는 기억하지 않음
     if (t.closest('#rsvAdd')) { rsvItemSheet({}); return; }
+    if (t.closest('#rsvWin')) { openRsvWindow(); return; }
     if (t.closest('#rsvUndo')) { rsvUndo(); return; }
     if (t.closest('#rsvMore')) { rsvMoreMenu(); return; }
     if ((b = t.closest('[data-rsv-ok]'))) { rsvToggleOk(b); return; }                                      // ✓ 내원 단추는 예약 블록 안에 있으므로 블록보다 먼저
