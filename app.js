@@ -568,11 +568,16 @@
     var ms = S.msgSearch && S.msgSearch.q === q ? S.msgSearch.rows : null;
     if (!ms) return '<div class="group-hd">메시지</div><p class="muted small" style="padding:12px 16px">검색 중…</p>';
     if (!ms.length) return '<div class="group-hd">메시지</div><p class="muted small" style="padding:12px 16px">"' + esc(q) + '"이(가) 들어간 메시지가 없습니다.</p>';
-    return '<div class="group-hd">메시지 ' + ms.length + (ms.length >= 60 ? '+' : '') + '건</div>' + ms.map(function (m) {
+    /* v49b: 전체 채팅방 검색(사이드바 "메시지 N건" 목록)도 방 안 검색(.rs-day)과 같이 날짜별로 묶어서 표시 */
+    var lastDay = '', items = '';
+    ms.forEach(function (m) {
       var r = S.rooms.find(function (x) { return x.id === m.room_id; }) || {}, p = S.profiles[m.sender_id] || { name: '(퇴사자)' };
-      return '<button class="hit" data-hit="' + m.id + '">' + av(p, 'sm') + '<span class="hit-main"><span class="hit-top"><b>' + esc(r.name || '') + '</b><time>' + shortTime(m.created_at) + '</time></span>' +
+      var day = ymd(m.created_at);
+      if (day !== lastDay) { items += '<div class="rs-day">' + dayLabel(m.created_at) + '</div>'; lastDay = day; }
+      items += '<button class="hit" data-hit="' + m.id + '">' + av(p, 'sm') + '<span class="hit-main"><span class="hit-top"><b>' + esc(r.name || '') + '</b><time>' + hm(m.created_at) + '</time></span>' +
         '<span class="hit-body"><em>' + esc(p.name) + '</em> ' + hl(around(m.body, q), q) + '</span></span></button>';
-    }).join('');
+    });
+    return '<div class="group-hd">메시지 ' + ms.length + (ms.length >= 60 ? '+' : '') + '건</div>' + items;
   }
   function wireMsgResults() {
     $$('[data-hit]').forEach(function (b) {
