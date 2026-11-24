@@ -589,8 +589,11 @@
   }
   /* v49c: 직원 결과 — 직원 목록과 같은 모양(.person)으로, 이름·부서/직책으로 거름 */
   function smStaffItems(q) {
+    /* v49i: others()는 나를 뺀 목록(1:1 대화 상대 고르기용)이라, 직원 탭 검색에 그대로 쓰면 내 이름은 못 찾음 →
+       직원 탭 본문(renderStaff)과 똑같이 나를 포함한 전체 활성 직원에서 찾음 */
     var qq = (q || '').trim();
-    return others().filter(function (p) { return !qq || (p.name || '').indexOf(qq) > -1 || personLabel(p).indexOf(qq) > -1; })
+    return Object.keys(S.profiles).map(function (k) { return S.profiles[k]; })
+      .filter(function (p) { return p.active && (!qq || (p.name || '').indexOf(qq) > -1 || personLabel(p).indexOf(qq) > -1); })
       .sort(function (a, b) { return (a.name || '').localeCompare(b.name || '', 'ko'); });
   }
   function smStaffHtml(q, full) {
@@ -598,7 +601,7 @@
     if (!list.length) return '<p class="muted small" style="padding:12px 16px">일치하는 직원이 없습니다.</p>';
     var show = full ? list : list.slice(0, 5);
     return show.map(function (p) {
-      return '<button class="person" data-smstaff="' + p.id + '">' + av(p) + '<span class="grow"><b>' + esc(p.name) + '</b><br><span>' + esc(personLabel(p)) + '</span></span>' + (p.role === 'admin' ? '<span class="pill gold">관리자</span>' : '') + '</button>';
+      return '<button class="person" data-smstaff="' + p.id + '">' + av(p) + '<span class="grow"><b>' + esc(p.name) + (p.id === S.me.id ? ' (나)' : '') + '</b><br><span>' + esc(personLabel(p)) + '</span></span>' + (p.role === 'admin' ? '<span class="pill gold">관리자</span>' : '') + '</button>';
     }).join('') + (!full && list.length > 5 ? '<button type="button" class="sm-more" data-smtab="staff">직원 더 보기 (' + list.length + '명) ›</button>' : '');
   }
   /* v49c: "전체" 탭 — 채팅방·직원·메시지를 섹션별로 미리 보여 줌 (카카오워크 통합 검색과 같은 구성) */
