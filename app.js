@@ -4,6 +4,7 @@
   'use strict';
   var CFG = window.NOBLE_CONFIG || {};
   var EMAIL_DOMAIN = 'staff.noble365.app';
+  var PIN_TOP_ROOM = '노블365';   // v49h: 이 이름의 채팅방은 직원 개개인의 상단고정 설정과 상관없이 목록 맨 위에 고정
   var root = document.getElementById('root');
 
   /* ---------------- 작은 도우미 ---------------- */
@@ -410,7 +411,10 @@
   /* ================= 채팅 ================= */
   function loadRooms() {
     return sb.rpc('my_rooms').then(function (r) {
-      if (r.error) throw r.error; S.rooms = r.data || []; setBadges();
+      if (r.error) throw r.error; S.rooms = r.data || [];
+      /* v49h: 개개인의 상단고정 여부와 상관없이 PIN_TOP_ROOM은 항상 맨 위 (정렬은 그대로 안정 정렬이라 나머지 순서는 서버가 준 그대로) */
+      S.rooms.sort(function (a, b) { return (b.name === PIN_TOP_ROOM ? 1 : 0) - (a.name === PIN_TOP_ROOM ? 1 : 0); });
+      setBadges();
       if (S.room) { var i = S.rooms.find(function (x) { return x.id === S.room.id; }); if (i) { S.room.info = i; renderRoomNotice(); } }
       if (S.solo && S.room && S.room.info) document.title = S.room.info.name + ' · 노블 메신저';
     });
