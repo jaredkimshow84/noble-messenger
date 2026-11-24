@@ -488,7 +488,13 @@
       a.addEventListener('contextmenu', function (e) { e.preventDefault(); roomQuickSheet(S.rooms.find(function (x) { return x.id === a.getAttribute('data-room'); })); });
       longPress(a, function () { roomQuickSheet(S.rooms.find(function (x) { return x.id === a.getAttribute('data-room'); })); });
     });
-    var qi = $('#roomQ'); qi.oninput = function () { S.roomQuery = qi.value; var pos = qi.selectionStart; renderRoomList(); var n = $('#roomQ'); n.focus(); n.setSelectionRange(pos, pos); };
+    /* v49 버그 수정: 글자마다 목록을 다시 그리며 입력창(#roomQ)을 새로 만들어서, 한글 입력 중(조합 중)에 자음이 겹쳐 눌리는 문제가 있었음.
+       조합이 끝난 뒤에만 다시 그리도록 고침 (영문·숫자는 조합이 없어 예전처럼 바로 반영됨) */
+    var qi = $('#roomQ'), roomQComposing = false;
+    function roomQApply() { S.roomQuery = qi.value; var pos = qi.selectionStart; renderRoomList(); var n = $('#roomQ'); n.focus(); n.setSelectionRange(pos, pos); }
+    qi.addEventListener('compositionstart', function () { roomQComposing = true; });
+    qi.addEventListener('compositionend', function () { roomQComposing = false; roomQApply(); });
+    qi.oninput = function () { if (roomQComposing) { S.roomQuery = qi.value; return; } roomQApply(); };
     if (q.length >= 2 && (!S.msgSearch || S.msgSearch.q !== q)) searchAllMessages(q);
     renderPushAsk();
     if (S.att && (S.att.error || S.att.today === ymd(new Date()))) renderAttNudge(); else if ((S.profiles[S.me.id] || S.me).att_enabled && (DESKTOP.matches || (S.profiles[S.me.id] || S.me).mobile_punch) && !S.attLoading) { S.attLoading = true; attLoad().then(function () { S.attLoading = false; renderAttNudge(); }); } else renderAttNudge();
@@ -2514,7 +2520,12 @@
           return '<button class="person" data-dm="' + p.id + '">' + av(p) + '<span class="grow"><b>' + esc(p.name) + (p.id === S.me.id ? ' (나)' : '') + '</b><br><span>' + esc(personLabel(p)) + '</span></span>' + (p.role === 'admin' ? '<span class="pill gold">관리자</span>' : '') + '</button>';
         }).join('');
       }).join('') + '</div>';
-    var si = $('#sq'); si.oninput = function () { S.staffQuery = si.value; var pos = si.selectionStart; renderStaff(); var n = $('#sq'); n.focus(); n.setSelectionRange(pos, pos); };
+    /* v49: 직원 검색도 roomQ와 같은 한글 입력 겹침 문제가 있어 같은 방식으로 고침 */
+    var si = $('#sq'), staffQComposing = false;
+    function staffQApply() { S.staffQuery = si.value; var pos = si.selectionStart; renderStaff(); var n = $('#sq'); n.focus(); n.setSelectionRange(pos, pos); }
+    si.addEventListener('compositionstart', function () { staffQComposing = true; });
+    si.addEventListener('compositionend', function () { staffQComposing = false; staffQApply(); });
+    si.oninput = function () { if (staffQComposing) { S.staffQuery = si.value; return; } staffQApply(); };
     // 직원 목록: 누르면 프로필 카드 (1:1 대화 / 관리자는 정보 수정) — 어디를 눌러도 같게
     $$('[data-dm]').forEach(function (b) { b.onclick = function () { profileView(b.getAttribute('data-dm')); }; });
     if (false) $$('[data-dm]').forEach(function (b) { b.onclick = function () { if (b.getAttribute('data-dm') === S.me.id) { openSelf(); return; } sb.rpc('start_dm', { other: b.getAttribute('data-dm') }).then(function (r) { if (r.error) { toast(esc(errMsg(r.error))); return; } loadRooms().then(function () { location.hash = '#room/' + r.data; }); }); }; });
