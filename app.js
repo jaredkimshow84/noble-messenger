@@ -32,6 +32,7 @@
     clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-4 3.4-6 6.5-6s5.7 2 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3.2 2.6 3.5 6"/>',
     gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.8 1.2V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-2.8-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.8H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.2-2.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 2.8-1.2V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.8 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0 1.2 2.8H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1.1z"/>',
     shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+    calendar: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
     pencil: '<path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 7.5l3 3"/>', tobottom: '<path d="M12 5v14M6 13l6 6 6-6"/>', plus: '<path d="M12 5v14M5 12h14"/>', back: '<path d="M15 18l-6-6 6-6"/>', clip: '<path d="M21 11l-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7"/>',
     more: '<circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/>', search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
     file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>', mute: '<path d="M11 5L6 9H3v6h3l5 4zM22 9l-6 6M16 9l6 6"/>',
@@ -43,7 +44,8 @@
     camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
     poll: '<path d="M5 20V11M12 20V4M19 20v-7"/><path d="M3 20h18"/>',
     copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/>',
-    check: '<path d="M5 12l5 5 9-10"/>',
+    check: '<path d="M5 12l5 5 9-10"/>', checkall: '<path d="M2.5 12.5l4.5 4.5 8-10"/><path d="M12 15.5l1.5 1.5 8-10"/>',
+    undo: '<path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
     at: '<circle cx="12" cy="12" r="3.6"/><path d="M15.6 12v1.4a2.4 2.4 0 0 0 4.8 0V12a8.4 8.4 0 1 0-3.3 6.7"/>',
     crop: '<path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M2 6h14a2 2 0 0 1 2 2v14"/>',
     queue: '<path d="M8 4H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/><rect x="8" y="2.5" width="8" height="3.6" rx="1.2"/><path d="M8 11.4l1.4 1.4 2.5-2.7"/><path d="M14.4 11.7h2.1"/><path d="M8 16.6h.01"/><path d="M11.4 16.6h5.1"/>'
@@ -190,7 +192,7 @@
   var S = {
     me: null, profiles: {}, rooms: [], notices: [], noticeReads: {}, pendingCount: 0, wPend: [], wPendOk: false, wPendErr: '', wPendSeq: 0,
     route: { tab: 'chats', id: null }, room: null, members: {}, messages: [], oldestLoaded: null, hasOlder: false,
-    urlCache: {}, channel: null, solo: false, polls: {}, pollSel: {}, pollLoading: {}, imgSize: {}, replyTo: null, reacts: {}, replyCache: {}, workTab: 'att', att: null, ipReqs: [], ipHist: [], queue: [], qDone: [], qErr: '', qLoaded: false, qStale: false, qWatch: null, qOpenDone: false, qSig: '', attWatch: null, attMonth: ymd(new Date()).slice(0, 7), attDay: ymd(new Date()), attView: 'mine', adminMonth: ymd(new Date()).slice(0, 7), adminStatus: '전체', staffQuery: ''
+    urlCache: {}, channel: null, rChannel: null, rsv: null, solo: false, polls: {}, pollSel: {}, pollLoading: {}, imgSize: {}, replyTo: null, reacts: {}, replyCache: {}, workTab: 'att', att: null, ipReqs: [], ipHist: [], queue: [], qDone: [], qErr: '', qLoaded: false, qStale: false, qWatch: null, qOpenDone: false, qSig: '', attWatch: null, attMonth: ymd(new Date()).slice(0, 7), attDay: ymd(new Date()), attView: 'mine', adminMonth: ymd(new Date()).slice(0, 7), adminStatus: '전체', staffQuery: ''
   };
 
   /* ---------------- 로그인 ---------------- */
@@ -280,9 +282,9 @@
   }
 
   /* ---------------- 화면 틀 ---------------- */
-  var TABS = [['chats', '채팅', 'chat'], ['queue', '순서표', 'queue'], ['notices', '공지', 'bell'], ['work', '근무신청', 'clock'], ['staff', '직원', 'users'], ['settings', '설정', 'gear']];
+  var TABS = [['chats', '채팅', 'chat'], ['queue', '순서표', 'queue'], ['rsv', '예약', 'calendar'], ['notices', '공지', 'bell'], ['work', '근무신청', 'clock'], ['staff', '직원', 'users'], ['settings', '설정', 'gear']];
   function renderShell() {
-    var tabs = TABS.slice(); if (S.me.role === 'admin') tabs.splice(5, 0, ['admin', '관리', 'shield']);
+    var tabs = TABS.slice(); if (S.me.role === 'admin') tabs.splice(tabs.length - 1, 0, ['admin', '관리', 'shield']);
     root.innerHTML = '<div class="app" id="app"><nav class="rail" aria-label="메뉴"><img class="logo" src="logo.svg" alt="노블">' +
       tabs.map(function (t) { return '<a class="tab" href="#' + t[0] + '" data-tab="' + t[0] + '">' + svg(t[2]) + '<span>' + t[1] + '</span><span class="badge" data-badge="' + t[0] + '" hidden></span></a>'; }).join('') +
       '<div class="spacer"></div></nav>' +
@@ -354,10 +356,12 @@
     app.classList.toggle('solo', S.solo);
     layoutSync();   // 큰 화면/가로 화면이면 채팅 탭에서만 오른쪽에 순서표 칸 (화면을 그리기 전에 맞춰 순서표 본문이 두 곳에 생기지 않게)
     if (S.route.tab !== 'chats' || !S.route.id) leaveRoom();
+    if (S.route.tab !== 'rsv') rsvLeave();   // 예약 화면의 타이머·이벤트 정리
     switch (S.route.tab) {
       case 'chats': renderRoomList(); if (S.route.id) { app.classList.add('in-detail', 'in-room'); openRoom(S.route.id); } else renderPlaceholder('대화를 선택해 주세요'); break;
       case 'notices': renderNoticeList(); if (S.route.id) { app.classList.add('in-detail'); openNotice(+S.route.id); } else renderPlaceholder('공지를 선택해 주세요'); break;
       case 'queue': single(); renderQueue(); break;
+      case 'rsv': single(); renderRsv(); break;
       case 'work': single(); renderWork(); break;
       case 'staff': single(); renderStaff(); break;
       case 'admin': single(); if (S.me.role === 'admin') renderAdmin(); break;
@@ -388,6 +392,7 @@
     if (!S.me || !$('#app') || !S.route) return;
     if (S.route.tab === 'chats' && !S.route.id && (!NARROW.matches || qMode() === 'q3')) { route(); return; }
     layoutSync();
+    if (S.route.tab === 'rsv') rsvLayout();   // 예약 달력: 좁은 화면 ↔ 넓은 화면 (날짜 띠·글자)
     if (S.route.tab === 'chats' && $('#roomQ') && (qMode() === 'q3') !== !!S.stripOn) renderRoomList();   // 띠 ↔ 목록 모양이 바뀌면 목록만 다시 그림 (열려 있는 대화방은 그대로)
   }
   [NARROW, QUAD, LANDSCAPE, W640].forEach(function (mq) { if (mq.addEventListener) mq.addEventListener('change', onLayoutChange); else if (mq.addListener) mq.addListener(onLayoutChange); });
@@ -444,7 +449,7 @@
     var q = strip ? '' : (S.roomQuery || '').trim();
     var list = S.rooms.filter(function (r) { return !q || (r.name || '').indexOf(q) > -1; });
     var tones = roomTones();   // 걸러진 목록(list)이 아니라 전체 방 기준 — 검색해도 색이 바뀌지 않게
-    $('#list').innerHTML = header('채팅', { right: '<button class="icon-btn" id="newChat" aria-label="새 대화">' + svg('plus') + '</button>' }) +
+    $('#list').innerHTML = header('채팅', { right: '<button class="ra-btn" id="readAll" type="button" title="안 읽은 대화를 모두 읽음으로 표시" aria-label="모두 읽음"' + (S.rooms.some(function (r) { return r.unread > 0; }) ? '' : ' disabled') + '>' + svg('checkall') + '<span>모두 읽음</span></button><button class="icon-btn" id="newChat" aria-label="새 대화">' + svg('plus') + '</button>' }) +
       '<div class="search">' + svg('search') + '<input id="roomQ" placeholder="대화방·메시지 검색" value="' + esc(q) + '" aria-label="대화방·메시지 검색"></div><div id="pushAsk"></div><div id="attNudge"></div>' +
       '<div class="pane-body">' + (q && list.length ? '<div class="group-hd">대화방</div>' : '') + (list.length ? list.map(function (r) {
         var grp = r.type === 'group';
@@ -458,6 +463,7 @@
       }).join('') : (q ? '' : '<p class="empty">아직 대화가 없습니다.<br>오른쪽 위 + 버튼으로 대화를 시작하세요.</p>')) +
       (q ? '<div id="msgResults">' + msgResultsHtml(q) + '</div>' : '') + '</div>';
     $('#newChat').onclick = newChatSheet;
+    $('#readAll').onclick = readAllRooms;
     $$('[data-room]').forEach(function (a) {
       /* PC: 한 번 클릭 = 이 창에서 열기, 더블클릭 = 새 창으로 열기 */
       if (DESKTOP.matches) {
@@ -487,6 +493,30 @@
     if (S.att && (S.att.error || S.att.today === ymd(new Date()))) renderAttNudge(); else if ((S.profiles[S.me.id] || S.me).att_enabled && (DESKTOP.matches || (S.profiles[S.me.id] || S.me).mobile_punch) && !S.attLoading) { S.attLoading = true; attLoad().then(function () { S.attLoading = false; renderAttNudge(); }); } else renderAttNudge();
     wireMsgResults();
     if (strip) keepStripView(keepTop);
+  }
+  /* 채팅방 목록 맨 위 "모두 읽음": 안 읽은 대화(알림 끈 방 포함) 전부를 내 읽은 시각만 갱신해 한 번에 처리.
+     서버가 거절하면 화면은 그대로 두고 안내만. 성공하면 배지를 0으로 한 뒤 서버 기준으로 다시 맞춤(시계 오차로 서버가 아직 안 읽음이라 하면 배지가 돌아옴) */
+  function readAllRooms() {
+    var rs = S.rooms.filter(function (r) { return r.unread > 0; }); if (!rs.length) return;
+    var total = rs.reduce(function (a, r) { return a + r.unread; }, 0), muted = rs.filter(function (r) { return r.muted; }).length;
+    var m = sheet('모두 읽음',
+      '<p style="margin:0 0 6px;line-height:1.6">안 읽은 대화 <b>' + rs.length + '개</b>(메시지 ' + total + '개)를 모두 읽은 것으로 표시할까요?</p>' +
+      '<p class="muted small" style="margin:0 0 14px;line-height:1.6">' + (muted ? '알림을 끈 방(' + muted + '개)도 포함되고, ' : '') + '보낸 사람에게도 읽음으로 보입니다.</p>' +
+      '<div style="display:grid;gap:8px"><button class="btn btn-navy" id="raGo">모두 읽음으로 표시</button><button class="btn btn-line" data-close>취소</button></div>');
+    var go = $('#raGo', m);
+    go.onclick = function () {
+      if (go.disabled) return; go.disabled = true; go.textContent = '처리 중…';   // 두 번 눌러도 요청은 1번
+      var ids = rs.map(function (r) { return r.id; });
+      var fail = function (e) { closeSheet(m); toast('<b>읽음 표시 실패</b> ' + esc(errMsg(e))); };
+      sb.from('room_members').update({ last_read_at: new Date().toISOString() }).eq('user_id', S.me.id).in('room_id', ids).then(function (r) {
+        if (r.error) { fail(r.error); return; }
+        closeSheet(m);
+        S.rooms.forEach(function (x) { if (ids.indexOf(x.id) > -1) x.unread = 0; });
+        setBadges(); if (S.route.tab === 'chats') renderRoomList();
+        toast('<b>읽음</b> 대화 ' + ids.length + '개를 읽은 것으로 표시했습니다');
+        loadRooms().then(function () { if (S.route.tab === 'chats') renderRoomList(); }, function () {});
+      }, fail);
+    };
   }
   /* 아이콘 띠: 다시 그려도(방을 옮기거나 안 읽은 수가 바뀔 때) 보던 위치를 유지하고, 선택된 방이 띠 밖이면 보이는 곳까지만 스크롤 */
   function keepStripView(top) {
@@ -674,7 +704,7 @@
   }
 
   /* ---- 대화방 ---- */
-  function leaveRoom() { S.room = null; S.messages = []; S.members = {}; S.replyTo = null; S.reacts = {}; S.pollSel = {}; }
+  function leaveRoom() { if (reactPopEl) hideReactPop(); S.room = null; S.messages = []; S.members = {}; S.replyTo = null; S.reacts = {}; S.pollSel = {}; }
   function openSelf() {
     sb.rpc('start_self').then(function (r) { if (r.error) { toast(esc(errMsg(r.error))); return; } loadRooms().then(function () { location.hash = '#room/' + r.data; }); });
   }
@@ -874,6 +904,7 @@
 
   function renderMessages(toBottom) {
     var el = $('#msgs'); if (!el) return;
+    if (reactPopEl) hideReactPop();   // 글을 다시 그리면 떠 있던 공감 막대가 가리키던 글이 사라지므로 닫음
     // 사용자가 맨 아래를 보고 있을 때만 아래로 따라감 (위로 올려 읽는 중이면 절대 끌어내리지 않음)
     if (toBottom) S.stick = true;
     var nearBottom = S.stick !== false && el.scrollHeight - el.scrollTop - el.clientHeight < 160;
@@ -896,15 +927,15 @@
       } else content = '<div class="bubble' + (toMe ? ' to-me' : '') + '">' + fmtBody(m.body) + '</div>';
       if (m.poll_id && !m.deleted) content = pollCard(m.poll_id);
       if (m.reply_to && !m.deleted) content = quoteHtml(m.reply_to) + content;
-      var un = unreadCount(m);
-      html += '<div class="msg' + (mine ? ' mine' : '') + (cont ? ' cont' : '') + '" data-id="' + m.id + '">' +
+      var un = unreadCount(m), rh = reactsHtml(m.id);   // 공감 칩 줄은 말풍선과 같은 칸 안에 (말풍선 아래 테두리에 걸쳐 보임)
+      html += '<div class="msg' + (mine ? ' mine' : '') + (cont ? ' cont' : '') + (rh ? ' has-react' : '') + '" data-id="' + m.id + '">' +
         (mine ? '' : av(p, 'sm')) +
         '<div class="col">' + (mine ? '' : '<div class="who">' + esc(p.name || '') + (pTag(p) ? '<span class="who-tag">' + esc(pTag(p)) + '</span>' : '') + '</div>') +
-        '<div class="line"><div class="col" style="gap:4px">' + content + (m.deleted ? '' : qTagHtml(qm[m.id])) + '</div><span class="meta">' + (un ? '<span class="unread">' + un + '</span>' : '') + '<time>' + hm(m.created_at) + '</time></span>' +
+        '<div class="line"><div class="col" style="gap:4px">' + content + rh + (m.deleted ? '' : qTagHtml(qm[m.id])) + '</div><span class="meta">' + (un ? '<span class="unread">' + un + '</span>' : '') + '<time>' + hm(m.created_at) + '</time></span>' +
         (!m.deleted && m.body && !m.poll_id ? '<button class="copy-btn" data-act="copy" title="복사" aria-label="메시지 복사">' + svg('copy') + '</button>' : '') +
         (!m.deleted && m.body && !m.poll_id ? '<button class="copy-btn q-btn' + (qm[m.id] && qm[m.id].status === 'pending' ? ' on' : '') + '" data-act="queue" title="진료순서표에 올리기" aria-label="진료순서표에 올리기">' + svg('queue') + '</button>' : '') +
         (!m.deleted ? '<span class="msg-acts"><button data-act="react" title="공감" aria-label="공감">' + svg('smile') + '</button><button data-act="reply" title="답장" aria-label="답장">' + svg('reply') + '</button><button data-act="more" title="더보기" aria-label="더보기">' + svg('more') + '</button></span>' : '') +
-        '</div>' + reactsHtml(m.id) + '</div></div>';
+        '</div></div></div>';
       prev = m;
     });
     /* 이미 불러온 사진은 그대로 옮겨 붙여서 다시 그릴 때 깜빡이거나 겹치지 않게 */
@@ -922,6 +953,7 @@
       // 손가락·마우스로 위로 올리면 '따라가기' 해제, 맨 아래로 다시 내리면 재개
       var lastTop = el.scrollTop;
       el.addEventListener('scroll', function () {
+        if (reactPopEl) hideReactPop();
         var dist = el.scrollHeight - el.scrollTop - el.clientHeight;
         if (el.scrollTop < lastTop - 2 && dist > 40) S.stick = false;
         else if (dist < 40) S.stick = true;
@@ -934,6 +966,7 @@
         if (pb) { pollClick(pb); return; }
         if (e.target.closest('[data-qgo]')) { goQueue(); return; }
         var b = e.target.closest('[data-act],[data-tog],[data-jump]'); if (!b) return;
+        if (reactPopEl) hideReactPop();
         if (b.hasAttribute('data-jump')) { jumpTo(+b.getAttribute('data-jump')); return; }
         if (b.hasAttribute('data-tog')) { var t = b.getAttribute('data-tog').split('|'); toggleReact(+t[0], t[1]); return; }
         var mid = +b.closest('.msg').getAttribute('data-id'), msg = S.messages.find(function (x) { return x.id === mid; }); if (!msg) return;
@@ -946,6 +979,18 @@
         var row = e.target.closest('.msg'); if (!row || e.target.closest('a')) return;
         var msg = S.messages.find(function (x) { return x.id === +row.getAttribute('data-id'); }); if (!msg || msg.deleted) return;
         e.preventDefault(); msgSheet(msg);
+      });
+      /* PC: 😊 에 마우스를 잠깐(150ms) 올리면 공감 막대 — 지나가다 뜨지 않게. 서버에 저장하는 것은 막대의 이모지를 눌렀을 때뿐 */
+      el.addEventListener('mouseover', function (e) {
+        var b = e.target.closest && e.target.closest('[data-act="react"]'); if (!b || !DESKTOP.matches) return;
+        clearTimeout(popHideT);
+        if (reactPopEl && reactPopBtn === b) return;
+        clearTimeout(popOpenT); popOpenT = setTimeout(function () { if (b.isConnected) showReactPop(b); }, 150);
+      });
+      el.addEventListener('mouseout', function (e) {
+        var b = e.target.closest && e.target.closest('[data-act="react"]'); if (!b || b.contains(e.relatedTarget)) return;
+        clearTimeout(popOpenT);   // 150ms 채우기 전에 벗어나면 뜨지 않음
+        if (reactPopEl && !reactPopEl.contains(e.relatedTarget)) popHideSoon();
       });
       var lpT = null;
       el.addEventListener('touchstart', function (e) {
@@ -1057,6 +1102,37 @@
       toast('<b>공감 실패</b> ' + esc(errMsg(r.error)));
     });
   }
+  /* ---------- PC 빠른 공감 막대 (카카오워크처럼): 😊 에 마우스를 올리면 바로 고름 ---------- */
+  var reactPopEl = null, reactPopBtn = null, popOpenT = null, popHideT = null;
+  function hideReactPop() {
+    clearTimeout(popOpenT); clearTimeout(popHideT);
+    $$('.react-pop').forEach(function (n) { n.remove(); });
+    $$('.msg.pop-on').forEach(function (n) { n.classList.remove('pop-on'); });
+    reactPopEl = null; reactPopBtn = null;
+  }
+  function popHideSoon() { clearTimeout(popHideT); popHideT = setTimeout(hideReactPop, 220); }   // 단추에서 막대로 옮겨 갈 틈
+  function showReactPop(btn) {
+    hideReactPop();
+    var row = btn.closest('.msg'); if (!row || !S.room) return;
+    var mid = +row.getAttribute('data-id'), mine = (S.reacts[mid] || []).filter(function (x) { return x.user_id === S.me.id; }).map(function (x) { return x.emoji; });
+    var pop = document.createElement('div'); pop.className = 'react-pop'; pop.setAttribute('role', 'toolbar'); pop.setAttribute('aria-label', '공감 고르기');
+    pop.innerHTML = EMOJIS.map(function (e) {
+      var cls = ((isTextReact(e) ? 'txt' : '') + (mine.indexOf(e) > -1 ? ' on' : '')).trim();
+      return '<button type="button" data-pick="' + esc(e) + '"' + (cls ? ' class="' + cls + '"' : '') + ' aria-label="' + esc(e) + ' 공감">' + esc(e) + '</button>';
+    }).join('');
+    pop.style.visibility = 'hidden'; document.body.appendChild(pop);
+    var r = btn.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight, vw = document.documentElement.clientWidth;
+    var top = r.top - h - 6; if (top < 8) top = r.bottom + 6;   // 맨 위 글이면 아래로
+    pop.style.left = Math.max(8, Math.min(vw - w - 8, r.left + r.width / 2 - w / 2)) + 'px'; pop.style.top = top + 'px'; pop.style.visibility = '';
+    reactPopEl = pop; reactPopBtn = btn; row.classList.add('pop-on');
+    pop.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-pick]'); if (!b) return;
+      e.preventDefault(); var emoji = b.getAttribute('data-pick'); hideReactPop(); toggleReact(mid, emoji);
+    });
+    pop.addEventListener('mouseover', function () { clearTimeout(popHideT); });
+    pop.addEventListener('mouseout', function (e) { var rt = e.relatedTarget; if (!(rt instanceof Node && (pop.contains(rt) || btn.contains(rt)))) popHideSoon(); });
+  }
+  window.addEventListener('resize', function () { if (reactPopEl) hideReactPop(); });
   /* ---------- 투표 ---------- */
   function fetchPolls(ids) {
     ids = ids.filter(function (x, i) { return ids.indexOf(x) === i; });
@@ -1396,7 +1472,7 @@
       r.data.forEach(function (m) { addMessage(m); });   // 이미 있는 메시지는 addMessage 가 걸러 줌
     }).catch(function () {});
   }
-  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { markRead(); catchUp(); if (S.me) { reloadProfiles().then(function () { return loadRooms(); }).then(function () { if (S.route.tab === 'chats') renderRoomList(); }); loadNotices(); loadQueue(); loadPending(); } } });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { markRead(); catchUp(); if (S.me) { reloadProfiles().then(function () { return loadRooms(); }).then(function () { if (S.route.tab === 'chats') renderRoomList(); }); loadNotices(); loadQueue(); loadPending(); if (S.route.tab === 'rsv' && rsvShown()) rsvLoad(); } } });
 
   function roomMenu() {
     var info = S.room.info || {}, grp = info.type === 'group';
@@ -2590,7 +2666,7 @@
     }; });
     try { if (window.name === 'noble-mini' && window.resizeTo) {} } catch (e) {}
     $('#logout').onclick = function () {
-      unsubscribePush().then(function () { return sb.auth.signOut(); }).then(function () { draftClearMine(); S.me = null; if (S.channel) sb.removeChannel(S.channel); location.hash = ''; renderLogin(); });
+      unsubscribePush().then(function () { return sb.auth.signOut(); }).then(function () { draftClearMine(); S.me = null; ['channel', 'nChannel', 'rChannel'].forEach(function (k) { if (S[k]) { sb.removeChannel(S[k]); S[k] = null; } }); rsvLeave(); S.rsv = null; location.hash = ''; renderLogin(); });
     };
   }
   function squareJpeg(file) {
@@ -2677,6 +2753,2459 @@
       S.pushOn = false;
       return sub.unsubscribe().then(function () { return sb.from('push_subscriptions').delete().eq('endpoint', ep); });
     }).catch(function () {});
+  }
+
+  /* ================= 예약 달력: 순수 계산 ================= */
+  /* 화면·서버에 손대지 않는 계산만 모은 블록입니다. 날짜·시간은 모두 한국 시간(KST, UTC+9)으로 계산해
+     기기 시간대와 상관없이 같은 결과가 나옵니다. t/test_rsv_core.mjs 가 이 블록만 잘라 빈 환경에서 시험하고,
+     가져오기 SQL 생성기도 같은 블록을 씁니다 (그래서 화면·바깥 변수는 일절 쓰지 않습니다). */
+  /* ===== RSV-CORE-BEGIN ===== */
+  var RSV = (function () {
+    var DAY = 86400000, KST_MS = 9 * 3600000;
+    var STATUS = ['예약', '킵', '내원', '취소', '노쇼'];
+    var DOWN = ['일', '월', '화', '수', '목', '금', '토'];
+    var DEFAULTS = {
+      view_start: '08:00', view_end: '21:00', default_len: 30, snap: 15, week_start: 1,
+      courses: ['C3', 'C5', 'C10', 'C15', 'C25', 'E', 'E6', 'J15', 'J15+C5'],
+      lunch: { on: true, start: '13:00', end: '14:00' },
+      hours: { all: { '0': ['09:00', '20:00'], '1': ['09:00', '20:00'], '2': ['09:00', '20:00'], '3': ['09:00', '20:00'],
+                      '4': ['09:00', '20:00'], '5': ['09:00', '20:00'], '6': ['09:00', '20:00'] } }
+    };
+    var ISO_RE = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(?:[.,](\d+))?)?\s*(Z|z|[+-]\d{2}(?::?\d{2})?)?$/;
+    var RE_END1 = /(\d{1,2})\.(\d{1,2})\s*기간\s*끝/;
+    var RE_END2 = /~\s*(\d{1,2})[\/.](\d{1,2})/;
+    var RE_INS = /자보(?:\s*도수)?(?:\s*-?\s*(\d+)\s*(?:회차|회)?)?/;
+    var RE_GROUP = /\(([^()]*)\)/;
+    var RE_HANGUL = /[가-힣]/;
+    var RE_NAME = /^[A-Za-z가-힣][A-Za-z가-힣 .\-·']*$/;
+
+    /* ---- 작은 도구 ---- */
+    function pad(n) { return (n < 10 ? '0' : '') + n; }
+    function has(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+    function isArr(x) { return Object.prototype.toString.call(x) === '[object Array]'; }
+    function trim(v) { return (v === null || v === undefined) ? '' : String(v).replace(/^\s+|\s+$/g, ''); }
+    function toList(x) {
+      var out = [], k;
+      if (!x) return out;
+      if (isArr(x)) return x;
+      if (typeof x === 'object') { for (k in x) { if (has(x, k)) out.push(x[k]); } }
+      return out;
+    }
+
+    /* ---- 시간 (서버가 주는 ISO 글자·Date·숫자 모두 읽음. 못 읽으면 null/NaN) ---- */
+    function toMs(x) {
+      var m, ms, sign, z, off;
+      if (typeof x === 'number') return x;
+      if (Object.prototype.toString.call(x) === '[object Date]') return x.getTime();
+      if (typeof x !== 'string') return NaN;
+      m = ISO_RE.exec(x);
+      if (!m) return Date.parse(x);
+      if (+m[2] < 1 || +m[2] > 12 || +m[3] < 1 || +m[3] > 31 || +m[4] > 23 || +m[5] > 59 || +(m[6] || 0) > 59) return NaN;
+      ms = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0), +((m[7] || '') + '00').slice(0, 3));
+      if (new Date(ms).getUTCDate() !== +m[3]) return NaN;      /* 2월 30일처럼 없는 날짜 */
+      off = 0;
+      if (m[8] && m[8] !== 'Z' && m[8] !== 'z') {
+        sign = m[8].charAt(0) === '-' ? -1 : 1;
+        z = m[8].slice(1).replace(':', '');
+        off = sign * (parseInt(z.slice(0, 2), 10) * 60 + (z.length > 2 ? parseInt(z.slice(2, 4), 10) : 0)) * 60000;
+      }
+      return ms - off;
+    }
+    function kst(x) {
+      var t = toMs(x), d;
+      if (typeof t !== 'number' || !isFinite(t)) return null;
+      d = new Date(t + KST_MS);
+      return {
+        y: d.getUTCFullYear(), m: d.getUTCMonth() + 1, d: d.getUTCDate(), hh: d.getUTCHours(), mm: d.getUTCMinutes(), dow: d.getUTCDay(),
+        ymd: d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate()), min: d.getUTCHours() * 60 + d.getUTCMinutes()
+      };
+    }
+    function validYmd(y, m, d) {
+      var t;
+      if (m < 1 || m > 12 || d < 1 || d > 31) return false;
+      t = new Date(Date.UTC(y, m - 1, d));
+      return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
+    }
+    function parseYmd(s) {
+      var m = typeof s === 'string' ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(s) : null;
+      if (!m || !validYmd(+m[1], +m[2], +m[3])) return null;
+      return [+m[1], +m[2], +m[3]];
+    }
+    function fmtYmd(y, m, d) { return y + '-' + pad(m) + '-' + pad(d); }
+    function at(ymd, min) {
+      var p = parseYmd(ymd);
+      if (!p || typeof min !== 'number' || !isFinite(min)) return NaN;
+      return Date.UTC(p[0], p[1] - 1, p[2], 0, min) - KST_MS;
+    }
+    function iso(ymd, min) {
+      var t = at(ymd, min);
+      return isFinite(t) ? new Date(t).toISOString() : '';
+    }
+    function addDays(ymd, n) {
+      var p = parseYmd(ymd), d;
+      if (!p) return '';
+      if (typeof n !== 'number' || !isFinite(n)) n = 0;
+      d = new Date(Date.UTC(p[0], p[1] - 1, p[2] + n));
+      return fmtYmd(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+    }
+    function dowOf(ymd) {
+      var p = parseYmd(ymd);
+      return p ? new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay() : 0;
+    }
+    function parseHm(s) {
+      var m = typeof s === 'string' ? /^(\d{1,2}):(\d{2})$/.exec(s) : null, h, mi;
+      if (!m) return null;
+      h = +m[1]; mi = +m[2];
+      if (mi > 59 || h > 24 || (h === 24 && mi !== 0)) return null;
+      return h * 60 + mi;
+    }
+    function hm(min) {
+      var t;
+      if (typeof min !== 'number' || !isFinite(min)) return '';
+      t = Math.round(min);
+      if (t < 0) t = 0;
+      return pad(Math.floor(t / 60)) + ':' + pad(t % 60);
+    }
+
+    /* ---- 주·월·보기 범위 ---- */
+    function weekStart(ymd, ws) {
+      var w = (ws === 0 || ws === '0') ? 0 : 1;
+      return addDays(ymd, -((dowOf(ymd) - w + 7) % 7));
+    }
+    function monthGrid(ymd, ws) {
+      var p = parseYmd(ymd), s, out = [], i;
+      if (!p) return out;
+      s = weekStart(fmtYmd(p[0], p[1], 1), ws);
+      for (i = 0; i < 42; i++) out.push(addDays(s, i));
+      return out;
+    }
+    function range(view, ymd, ws) {
+      var v = (view === 'day' || view === 'month') ? view : 'week', days = [], s, i, from, to;
+      if (v === 'day') days = [ymd];
+      else if (v === 'week') { s = weekStart(ymd, ws); for (i = 0; i < 7; i++) days.push(addDays(s, i)); }
+      else days = monthGrid(ymd, ws);
+      from = days[0]; to = addDays(days[days.length - 1], 1);
+      return { from: from, to: to, days: days, fetchFrom: iso(addDays(from, -7), 0), fetchTo: iso(addDays(to, 7), 0) };
+    }
+    function defaultView(width) { return (typeof width === 'number' && width >= 720) ? 'week' : 'day'; }
+
+    /* ---- 겹치는 예약을 좌우 칸으로 나누기 (맞닿는 것은 겹침이 아님) ---- */
+    function lanes(list) {
+      var src = toList(list), arr = [], out = {}, cluster = [], laneEnd = [], cend = 0, i, it, p, k;
+      function flush() {
+        var n = laneEnd.length, q;
+        for (q = 0; q < cluster.length; q++) out[cluster[q].id].lanes = n;
+        cluster = []; laneEnd = [];
+      }
+      for (i = 0; i < src.length; i++) {
+        it = src[i];
+        if (!it || it.id === undefined || it.id === null || typeof it.s !== 'number' || it.s !== it.s) continue;
+        arr.push({ id: it.id, s: it.s, e: (typeof it.e === 'number' && it.e > it.s) ? it.e : it.s + 1 });
+      }
+      arr.sort(function (a, b) { return (a.s - b.s) || (b.e - a.e) || (a.id < b.id ? -1 : (a.id > b.id ? 1 : 0)); });
+      for (i = 0; i < arr.length; i++) {
+        p = arr[i];
+        if (!cluster.length || p.s >= cend) { flush(); cend = p.e; } else if (p.e > cend) { cend = p.e; }
+        k = 0;
+        while (k < laneEnd.length && laneEnd[k] > p.s) k++;
+        laneEnd[k] = p.e;
+        cluster.push(p);
+        out[p.id] = { lane: k, lanes: 1 };
+      }
+      flush();
+      return out;
+    }
+
+    /* ---- 눈금 맞추기 · 끌어 옮기기 · 길이 조절 (분 단위, 한국 시간) ---- */
+    function unitOf(u) { return (typeof u === 'number' && u > 0 && isFinite(u)) ? u : 15; }
+    function snap(m, u, mode) {
+      var unit = unitOf(u), q = m / unit, r;
+      r = mode === 'floor' ? Math.floor(q) : (mode === 'ceil' ? Math.ceil(q) : Math.round(q));
+      return r * unit || 0;
+    }
+    function move(item, ymd, startMin, unit, therapistId) {
+      var it = item || {}, len = Math.round((toMs(it.end_at) - toMs(it.start_at)) / 60000), st;
+      if (!(len > 0)) len = 30;
+      if (len > 1440) len = 1440;
+      st = snap(startMin, unit);
+      if (st < 0) st = 0;
+      if (st + len > 1440) st = 1440 - len;
+      return { start_at: iso(ymd, st), end_at: iso(ymd, st + len), therapist_id: (therapistId === undefined || therapistId === null) ? it.therapist_id : therapistId };
+    }
+    function resize(item, endMin, unit) {
+      var it = item || {}, k = kst(it.start_at), u = unitOf(unit), e, lo, hi;
+      if (!k) return { start_at: it.start_at, end_at: it.end_at };
+      e = snap(endMin, u);
+      lo = k.min + u; hi = Math.min(k.min + 720, 1440);
+      if (e < lo) e = lo;
+      if (e > hi) e = hi;
+      return { start_at: it.start_at, end_at: iso(k.ymd, e) };
+    }
+
+    /* ---- 코스 · 제목 해석 ---- */
+    function normCourse(s) {
+      var c;
+      if (typeof s !== 'string') return '';
+      c = s.replace(/\s+/g, '');
+      if (!c || c.length > 30 || !/^[A-Za-z][A-Za-z0-9]*(?:\+[A-Za-z][A-Za-z0-9]*)*$/.test(c)) return '';
+      return c.toUpperCase();
+    }
+    /* MM.DD 의 해 고르기: 기준일 −60일 ~ +300일 안의 해, 창 밖(해마다 5~6일 틈)이면 가까운 쪽. 없는 날짜면 null */
+    function pickYear(mo, da, ref) {
+      var rp = parseYmd(ref), refMs, y, diff, best = null, bestAbs = 1e12;
+      if (!rp) return null;
+      refMs = Date.UTC(rp[0], rp[1] - 1, rp[2]);
+      for (y = rp[0] - 1; y <= rp[0] + 1; y++) {
+        if (!validYmd(y, mo, da)) continue;
+        diff = Math.round((Date.UTC(y, mo - 1, da) - refMs) / DAY);
+        if (diff >= -60 && diff <= 300) return fmtYmd(y, mo, da);
+        if (Math.abs(diff) < bestAbs) { bestAbs = Math.abs(diff); best = fmtYmd(y, mo, da); }
+      }
+      return best;
+    }
+    /* "홍길동 C10", "홍길동 자보도수-5회(12.04기간끝)", "홍길동 킵" 같은 제목을 칸별 값으로 나눕니다. 예외 없이 항상 같은 모양을 돌려줍니다.
+       opt = { refYmd: 기준 날짜(기본 오늘), courses: 내 코스 목록(기본 설정) } */
+    function parseTitle(title, opt) {
+      var o = opt || {}, ref, listed = {}, cl, i, n, s, m, res, memos = [], inner, gm, guard = 0, toks, kept, last, cn, rest, j, g;
+      var name, flags = [], badDate = false, unlisted = false;
+      ref = (typeof o.refYmd === 'string' && parseYmd(o.refYmd)) ? o.refYmd : kst(Date.now()).ymd;
+      cl = isArr(o.courses) ? o.courses : DEFAULTS.courses;
+      for (i = 0; i < cl.length; i++) { n = normCourse(cl[i]); if (n) listed[n] = true; }
+      res = { name: '', course: '', status: '예약', ins_kind: '일반', ins_round: null, ins_end: null, memo: '', flags: [] };
+      s = typeof title === 'string' ? title : '';
+      s = s.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/（/g, '(').replace(/）/g, ')');
+      m = RE_END1.exec(s) || RE_END2.exec(s);
+      if (m) {                                                  /* 기간끝은 자보에만 있는 말 */
+        s = s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length);
+        res.ins_kind = '자보';
+        res.ins_end = pickYear(+m[1], +m[2], ref);
+        if (!res.ins_end) badDate = true;
+      }
+      while ((gm = RE_GROUP.exec(s)) && guard++ < 50) {         /* (괄호) 안: (킵)은 상태, 나머지는 메모 */
+        inner = trim(gm[1].replace(/\s+/g, ' '));
+        s = s.slice(0, gm.index) + ' ' + s.slice(gm.index + gm[0].length);
+        if (inner === '킵') res.status = '킵';
+        else if (inner) memos.push(inner);
+      }
+      m = RE_INS.exec(s);
+      if (m) {
+        s = s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length);
+        res.ins_kind = '자보';
+        if (m[1] !== undefined) { n = parseInt(m[1], 10); res.ins_round = (n >= 1 && n <= 999) ? n : null; }
+      }
+      s = s.replace(/\s*\+\s*/g, '+');
+      toks = trim(s.replace(/\s+/g, ' ')).split(' ');
+      if (toks.length === 1 && toks[0] === '') toks = [];
+      kept = [];
+      for (i = 0; i < toks.length; i++) { if (toks[i] === '킵') res.status = '킵'; else kept.push(toks[i]); }
+      toks = kept;
+      if (toks.length) {                                        /* 코스는 맨 끝 토큰 — 따로 있거나, 한글 이름 바로 뒤에 붙어 있거나 */
+        last = toks[toks.length - 1];
+        cn = normCourse(last);
+        rest = toks.slice(0, -1).join(' ');
+        if (cn) {
+          if (has(listed, cn) || RE_HANGUL.test(rest)) {        /* 영문 이름("Mary Jane")은 목록에 없는 코드를 코스로 보지 않음 */
+            res.course = cn; if (!has(listed, cn)) unlisted = true;
+            toks.pop();
+          }
+        } else {
+          for (j = 1; j < last.length; j++) {
+            if (last.length - j > 30 || !RE_HANGUL.test(last.charAt(j - 1)) || !/[A-Za-z]/.test(last.charAt(j))) continue;
+            g = normCourse(last.slice(j));
+            if (g && (has(listed, g) || /\d/.test(g))) {
+              res.course = g; if (!has(listed, g)) unlisted = true;
+              toks[toks.length - 1] = last.slice(0, j);
+              break;
+            }
+          }
+        }
+      }
+      name = trim(toks.join(' ').replace(/\s+/g, ' '));
+      res.name = name;
+      if (!name) flags.push('noname');
+      else {
+        if (name.length > 12) flags.push('longname');
+        if (!RE_NAME.test(name)) flags.push('oddname');
+      }
+      if (badDate) flags.push('baddate');
+      if (unlisted) flags.push('unlisted');
+      res.flags = flags;
+      res.memo = memos.join(' ');
+      return res;
+    }
+    /* 블록에 쓰는 한 줄 제목 — 다시 해석해도 같은 값이 나옵니다 */
+    function itemTitle(it) {
+      var parts = [], t, e;
+      if (!it) return '';
+      if (trim(it.patient_name)) parts.push(trim(it.patient_name));
+      if (it.course) parts.push(it.course);
+      if (it.ins_kind === '자보') {
+        t = '자보' + (it.ins_round ? it.ins_round : '');
+        e = typeof it.ins_end === 'string' ? /^\d{4}-(\d{2})-(\d{2})$/.exec(it.ins_end) : null;
+        if (e) t += ' ~' + e[1] + '/' + e[2];
+        parts.push(t);
+      }
+      if (it.status === '킵') parts.push('(킵)');
+      return parts.join(' ');
+    }
+
+    /* ---- 운영 시간 · 점심 · 보이는 범위 ---- */
+    function hours(settings, therapistId, dow) {
+      var key = String(dow), hs = settings && settings.hours, th = null, v, a, b;
+      if (hs && typeof hs === 'object' && therapistId !== undefined && therapistId !== null && has(hs, therapistId)) th = hs[therapistId];
+      if (th && typeof th === 'object' && has(th, key)) v = th[key];
+      else if (hs && hs.all && typeof hs.all === 'object' && has(hs.all, key)) v = hs.all[key];
+      else v = DEFAULTS.hours.all[key];
+      if (!v || v.length !== 2) return null;                    /* null = 쉬는 날 (깨진 값도 쉬는 날로 봄) */
+      a = parseHm(v[0]); b = parseHm(v[1]);
+      if (a === null || b === null || a >= b) return null;
+      return [a, b];
+    }
+    function lunch(settings) {
+      var L = (settings && settings.lunch) ? settings.lunch : DEFAULTS.lunch, a, b;
+      if (!L || L.on === false) return null;
+      a = parseHm(L.start); b = parseHm(L.end);
+      if (a === null || b === null || a >= b) return null;
+      return [a, b];
+    }
+    function spanOf(it) {
+      var s, e, k;
+      if (!it) return null;
+      s = toMs(it.start_at); e = toMs(it.end_at); k = kst(s);
+      if (!k || typeof e !== 'number' || !isFinite(e)) return null;
+      return { ymd: k.ymd, dow: k.dow, s: k.min, e: k.min + Math.round((e - s) / 60000), ms: s, me: e };
+    }
+    function visible(settings, items) {
+      var a = parseHm(settings && settings.view_start), b = parseHm(settings && settings.view_end), list = toList(items), i, it, sp;
+      if (a === null) a = 480;
+      if (b === null) b = 1260;
+      if (a >= b) { a = 480; b = 1260; }
+      for (i = 0; i < list.length; i++) {
+        it = list[i];
+        if (!it || it.deleted_at) continue;
+        sp = spanOf(it);
+        if (!sp) continue;
+        a = Math.min(a, Math.floor(sp.s / 60) * 60);
+        b = Math.max(b, Math.ceil(sp.e / 60) * 60);
+      }
+      return [Math.max(0, a), Math.min(1440, b)];
+    }
+
+    /* ---- 저장 전 경고: 막지 않고 알려만 줍니다 (순서 고정: 겹침·같은환자·운영시간·점심·휴무·기간끝) ---- */
+    function therName(list, id) {
+      var a = toList(list), i;
+      for (i = 0; i < a.length; i++) { if (a[i] && a[i].id === id) return trim(a[i].name); }
+      return '';
+    }
+    function samePatient(a, b) {
+      var an, ac, bc;
+      if (a.patient_id && b.patient_id) return a.patient_id === b.patient_id;
+      an = trim(a.patient_name);
+      if (!an || an !== trim(b.patient_name)) return false;
+      ac = trim(a.chart_no); bc = trim(b.chart_no);
+      return !(ac && bc && ac !== bc);
+    }
+    function byStart(x, y) { return (x.sp.ms - y.sp.ms) || (x.it.id < y.it.id ? -1 : (x.it.id > y.it.id ? 1 : 0)); }
+    function label(p) { return (trim(p.it.patient_name) || '이름 없음') + ' ' + hm(p.sp.s) + '–' + hm(p.sp.e); }
+    function idOf(p) { return p.it.id; }
+    function warnings(cand, ctx) {
+      var out = [], c = ctx || {}, cs, ce, ck, cMin, eMin, th, items, blocks, i, it, sp, b, bs, be, ov = [], pt = [], bm = [], names = [], hr, lu, nm, ie;
+      if (!cand || typeof cand !== 'object') return out;
+      if (cand.status === '취소' || cand.status === '노쇼') return out;
+      cs = toMs(cand.start_at); ce = toMs(cand.end_at);
+      if (!(cs < ce) || !isFinite(cs) || !isFinite(ce)) return out;
+      ck = kst(cs);
+      cMin = ck.min; eMin = cMin + Math.round((ce - cs) / 60000);
+      th = therName(c.therapists, cand.therapist_id);
+      items = toList(c.items);
+      for (i = 0; i < items.length; i++) {
+        it = items[i];
+        if (!it || it.deleted_at || it.status === '취소' || it.status === '노쇼') continue;
+        if (cand.id && it.id === cand.id) continue;
+        sp = spanOf(it);
+        if (!sp || !(sp.ms < ce && cs < sp.me)) continue;
+        if (it.therapist_id === cand.therapist_id) ov.push({ it: it, sp: sp });
+        else if (samePatient(cand, it)) pt.push({ it: it, sp: sp });
+      }
+      if (ov.length) {
+        ov.sort(byStart);
+        out.push({ code: 'overlap', text: (th ? th + ' 선생님' : '같은 치료사') + '의 같은 시간대에 예약이 있습니다: ' + ov.map(label).join(', '), refs: ov.map(idOf) });
+      }
+      if (pt.length) {
+        pt.sort(byStart);
+        for (i = 0; i < pt.length; i++) {
+          nm = therName(c.therapists, pt[i].it.therapist_id);
+          if (nm && names.indexOf(nm) < 0) names.push(nm);
+        }
+        out.push({ code: 'patient', text: '같은 환자(' + trim(cand.patient_name) + ')가 같은 시간에 다른 치료사' + (names.length ? '(' + names.join(', ') + ')' : '') + '에게 예약돼 있습니다: ' + pt.map(label).join(', '), refs: pt.map(idOf) });
+      }
+      hr = hours(c.settings, cand.therapist_id, ck.dow);
+      if (!hr) out.push({ code: 'hours', text: '쉬는 요일입니다 (' + DOWN[ck.dow] + '요일)', refs: [] });
+      else if (cMin < hr[0] || eMin > hr[1]) out.push({ code: 'hours', text: (th ? th + ' 선생님 ' : '') + '운영 시간(' + hm(hr[0]) + '–' + hm(hr[1]) + ')이 아닙니다', refs: [] });
+      lu = lunch(c.settings);
+      if (lu && cMin < lu[1] && lu[0] < eMin) out.push({ code: 'lunch', text: '점심시간(' + hm(lu[0]) + '–' + hm(lu[1]) + ')과 겹칩니다', refs: [] });
+      blocks = toList(c.blocks);
+      for (i = 0; i < blocks.length; i++) {
+        b = blocks[i];
+        if (!b || b.deleted_at) continue;
+        if (b.therapist_id && b.therapist_id !== cand.therapist_id) continue;       /* 치료사 칸이 비어 있으면 병원 전체 */
+        bs = toMs(b.start_at); be = toMs(b.end_at);
+        if (bs < ce && cs < be) bm.push(b);
+      }
+      if (bm.length) {
+        bm.sort(function (x, y) { return (toMs(x.start_at) - toMs(y.start_at)) || (x.id < y.id ? -1 : (x.id > y.id ? 1 : 0)); });
+        out.push({
+          code: 'block',
+          text: '휴무·마감과 겹칩니다: ' + bm.map(function (x) { return trim(x.reason) || '휴무'; }).join(', '),
+          refs: bm.map(function (x) { return x.id; })
+        });
+      }
+      if (cand.ins_kind === '자보' && typeof cand.ins_end === 'string') {
+        ie = /^\d{4}-(\d{2})-(\d{2})$/.exec(cand.ins_end);
+        if (ie && ck.ymd > cand.ins_end) out.push({ code: 'insend', text: '자보 기간끝(' + ie[1] + '/' + ie[2] + ')이 지난 날짜입니다', refs: [] });
+      }
+      return out;
+    }
+
+    /* ---- 되돌리기: 방금 한 일을 거꾸로 하는 서버 호출 (할 수 없으면 null) ---- */
+    var UNDO_KEYS = ['therapist_id', 'patient_name', 'chart_no', 'start_at', 'end_at', 'status', 'ins_kind', 'ins_round', 'ins_end', 'course', 'memo'];
+    function undoOf(en) {
+      var d, i, v, hasVer, ver;
+      if (!en || typeof en !== 'object' || !en.id) return null;
+      if (en.op === 'delete') return { rpc: 'rsv_item_restore', args: { p_id: en.id } };
+      hasVer = typeof en.ver === 'number' && isFinite(en.ver);
+      if (!hasVer) return null;
+      ver = (typeof en.exp === 'number' && isFinite(en.exp)) ? en.exp : en.ver;   // exp = 앞의 동작을 되돌린 뒤 서버에 있을 버전 (undoRebase)
+      if (en.op === 'create' || en.op === 'restore') return { rpc: 'rsv_item_delete', args: { p_id: en.id, p_version: ver } };
+      if (en.op === 'save' || en.op === 'move' || en.op === 'status') {
+        if (!en.before || typeof en.before !== 'object') return null;
+        d = { id: en.id, version: ver };
+        for (i = 0; i < UNDO_KEYS.length; i++) { v = en.before[UNDO_KEYS[i]]; d[UNDO_KEYS[i]] = (v === undefined) ? null : v; }
+        return { rpc: 'rsv_item_save', args: { p_data: d } };
+      }
+      return null;
+    }
+
+    /* 목록의 i 번째 동작을 되돌려 서버 버전이 newVer 가 되었을 때: 같은 예약의 바로 아래(이전) 동작이 "이어지는 변경"(그 동작의 ver 가 이 동작의 ver − 1 = 사이에 다른 직원의 변경이 없었음)이면
+       그 동작이 되돌릴 때 기대할 버전(exp)을 newVer 로 옮김. 이어지지 않으면 그대로 두어 서버가 충돌로 거절 → 다른 직원의 변경을 덮어쓰지 않음 */
+    function undoRebase(list, i, newVer) {
+      var en, j;
+      if (!list || typeof list !== 'object' || typeof i !== 'number' || i % 1 !== 0 || i < 0 || i >= list.length) return;
+      en = list[i];
+      if (!en || typeof en.ver !== 'number' || !isFinite(en.ver) || typeof newVer !== 'number' || !isFinite(newVer)) return;
+      for (j = i - 1; j >= 0; j--) {
+        if (list[j] && list[j].id === en.id) { if (list[j].ver === en.ver - 1) list[j].exp = newVer; return; }
+      }
+    }
+
+    /* ---- 변경 기록 한 줄 → { head, detail } (⋯ → 변경 기록 · 예약 상세 "기록"). 메모 글은 적지 않고 "메모 변경"만 ---- */
+    function logObj(x) { return (x && typeof x === 'object' && !Array.isArray(x)) ? x : null; }
+    function logMd(x) { var k = kst(x); return k ? pad(k.m) + '/' + pad(k.d) : ''; }
+    function logSame(x, y) { return x === y || (x !== x && y !== y); }
+    function logName(it) { return trim(it.patient_name) || '(이름 없음)'; }
+    function logTher(thers, id) { return id ? (therName(thers, id) || '(알 수 없음)') : ''; }
+    function logLen(it) { var s = toMs(it.start_at), e = toMs(it.end_at); return (typeof s === 'number' && typeof e === 'number' && isFinite(s) && isFinite(e)) ? Math.round((e - s) / 60000) : NaN; }
+    function logSpan(it) {   // 11/24 14:00–14:30
+      var a = kst(it.start_at), len = logLen(it), e;
+      if (!a) return '';
+      if (len !== len) return logMd(it.start_at) + ' ' + hm(a.min);
+      e = a.min + len; if (e > 1440) e -= 1440;
+      return logMd(it.start_at) + ' ' + hm(a.min) + '–' + hm(e);
+    }
+    function logInsDay(v) { var m = /^\d{4}-(\d{2})-(\d{2})$/.exec(v || ''); return m ? m[1] + '/' + m[2] : (trim(v) || '(없음)'); }
+    function logNone(v) { return (v === null || v === undefined || trim(v) === '') ? '(없음)' : trim(v); }
+    function logJoin(list) { return list.filter(function (x) { return x !== ''; }).join(' · '); }
+    function logItemWhere(it, thers) {   // 만들기·삭제·복원: 어떤 예약이었는지
+      var ins = it.ins_kind === '자보' ? '자보' + (it.ins_round ? ' ' + it.ins_round + '회차' : '') + (it.ins_end ? ' ~' + logInsDay(it.ins_end) : '') : '';
+      return logJoin([logSpan(it), logTher(thers, it.therapist_id), trim(it.course), ins]);
+    }
+    function logItemDiff(b, a, thers) {   // 바뀐 칸만 (순서 고정)
+      var out = [], x, y;
+      if (trim(b.patient_name) !== trim(a.patient_name)) out.push('이름 ' + logName(b) + ' → ' + logName(a));
+      if (trim(b.chart_no) !== trim(a.chart_no)) out.push('차트번호 ' + logNone(b.chart_no) + ' → ' + logNone(a.chart_no));
+      if (!logSame(toMs(b.start_at), toMs(a.start_at))) {
+        x = kst(b.start_at); y = kst(a.start_at);
+        out.push('시작 ' + (x ? logMd(b.start_at) + ' ' + hm(x.min) : '(알 수 없음)') + ' → ' + (y ? logMd(a.start_at) + ' ' + hm(y.min) : '(알 수 없음)'));
+      }
+      x = logLen(b); y = logLen(a);
+      if (!logSame(x, y)) out.push('길이 ' + (x === x ? x + '분' : '(알 수 없음)') + ' → ' + (y === y ? y + '분' : '(알 수 없음)'));
+      if ((b.therapist_id || '') !== (a.therapist_id || '')) out.push('치료사 ' + (logTher(thers, b.therapist_id) || '(없음)') + ' → ' + (logTher(thers, a.therapist_id) || '(없음)'));
+      if (trim(b.status) !== trim(a.status)) out.push('상태 ' + logNone(b.status) + ' → ' + logNone(a.status));
+      if ((b.ins_kind || '일반') !== (a.ins_kind || '일반')) out.push('구분 ' + (b.ins_kind || '일반') + ' → ' + (a.ins_kind || '일반'));
+      if (logNone(b.ins_round) !== logNone(a.ins_round)) out.push('회차 ' + logNone(b.ins_round) + ' → ' + logNone(a.ins_round));
+      if (trim(b.ins_end) !== trim(a.ins_end)) out.push('기간끝 ' + (trim(b.ins_end) ? logInsDay(b.ins_end) : '(없음)') + ' → ' + (trim(a.ins_end) ? logInsDay(a.ins_end) : '(없음)'));
+      if (trim(b.course) !== trim(a.course)) out.push('코스 ' + logNone(b.course) + ' → ' + logNone(a.course));
+      if (trim(b.memo) !== trim(a.memo)) out.push('메모 변경');
+      return out;
+    }
+    function logBlockWhere(b, thers) {   // 11/25 종일 · 병원 전체 · 연차
+      var s = kst(b.start_at), ms = toMs(b.start_at), me = toMs(b.end_at), last, when = '', len, e;
+      if (s && typeof me === 'number' && isFinite(me) && me > ms) {
+        len = Math.round((me - ms) / 60000);
+        if (b.all_day === true) {
+          last = kst(me - 1);
+          when = (last && last.ymd !== s.ymd ? logMd(b.start_at) + '~' + logMd(me - 1) : logMd(b.start_at)) + ' 종일';
+        } else if (s.min + len <= 1440) when = logMd(b.start_at) + ' ' + hm(s.min) + '–' + hm(s.min + len);
+        else { e = kst(me); when = logMd(b.start_at) + ' ' + hm(s.min) + ' → ' + (e ? logMd(me) + ' ' + hm(e.min) : ''); }
+      } else if (s) when = logMd(b.start_at) + ' ' + hm(s.min);
+      return logJoin([when, b.therapist_id ? (therName(thers, b.therapist_id) || '(알 수 없음)') : '병원 전체', trim(b.reason)]);
+    }
+    function logRange(d) { return (parseHm(d.view_start) === null || parseHm(d.view_end) === null) ? '' : d.view_start + '–' + d.view_end; }
+    function logSettingsDiff(b, a) {
+      var out = [];
+      if (logRange(b) !== logRange(a)) out.push('보이는 시간 범위 ' + (logRange(b) || '(없음)') + ' → ' + (logRange(a) || '(없음)'));
+      if (b.default_len !== a.default_len) out.push('기본 길이 ' + b.default_len + '분 → ' + a.default_len + '분');
+      if (b.snap !== a.snap) out.push('이동 단위 ' + b.snap + '분 → ' + a.snap + '분');
+      if (b.week_start !== a.week_start) out.push('주 시작 ' + (b.week_start === 0 ? '일요일' : '월요일') + ' → ' + (a.week_start === 0 ? '일요일' : '월요일'));
+      if (JSON.stringify(b.courses) !== JSON.stringify(a.courses)) out.push('코스 목록');
+      if (JSON.stringify(b.lunch) !== JSON.stringify(a.lunch)) out.push('점심시간');
+      if (JSON.stringify(b.hours) !== JSON.stringify(a.hours)) out.push('운영 시간');
+      return out;
+    }
+    function logText(en, thers) {
+      var act, a, b, it, name, out, t;
+      if (!en || typeof en !== 'object') return { head: '', detail: '' };
+      act = typeof en.action === 'string' ? en.action : '';
+      a = logObj(en.after); b = logObj(en.before);
+      thers = toList(thers);
+      if (act === 'create' || act === 'delete' || act === 'restore') {
+        it = a || b || {};
+        return { head: logName(it) + ' 예약 ' + (act === 'create' ? '만들기' : act === 'delete' ? '삭제' : '복원'), detail: logItemWhere(it, thers) };
+      }
+      if (act === 'update' || act === 'move' || act === 'status') {
+        it = a || b || {};
+        out = logItemDiff(b || {}, a || {}, thers);
+        return { head: logName(it) + (act === 'status' ? ' 상태 변경' : act === 'move' ? ' 예약 이동' : ' 예약 수정'), detail: out.length ? out.join(' · ') : '바뀐 내용 없음' };
+      }
+      if (act === 'block_create' || act === 'block_update' || act === 'block_delete') {
+        it = a || b || {};
+        return { head: '휴무·마감 ' + (act === 'block_create' ? '만들기' : act === 'block_update' ? '수정' : '삭제'), detail: logBlockWhere(it, thers) };
+      }
+      if (act === 'therapist') {
+        name = trim((a || b || {}).name);
+        if (!b) return { head: '치료사 추가', detail: name };
+        t = [];
+        if (trim(b.name) !== trim((a || {}).name)) t.push('이름 ' + trim(b.name) + ' → ' + trim((a || {}).name));
+        if (trim(b.color).toLowerCase() !== trim((a || {}).color).toLowerCase()) t.push('색 변경');
+        if (String(b.sort) !== String((a || {}).sort)) t.push('순서 ' + b.sort + ' → ' + (a || {}).sort);
+        if ((b.active !== false) !== ((a || {}).active !== false)) t.push((b.active !== false ? '사용' : '중지') + ' → ' + ((a || {}).active !== false ? '사용' : '중지'));
+        if ((b.profile_id || '') !== ((a || {}).profile_id || '')) t.push('직원 계정 연결 변경');
+        return { head: '치료사 수정', detail: name + ': ' + (t.length ? t.join(' · ') : '바뀐 내용 없음') };
+      }
+      if (act === 'settings') {
+        b = b && logObj(b.data); a = a && logObj(a.data);
+        if (!b && a) return { head: '예약 설정 변경', detail: '처음 저장' };
+        out = (a && b) ? logSettingsDiff(b, a) : [];
+        return { head: '예약 설정 변경', detail: out.length ? out.join(' · ') : '바뀐 내용 없음' };
+      }
+      return { head: act, detail: '' };
+    }
+
+    /* ---- 변경 기록을 치료사로 걸러 보기: 이 기록이 그 치료사와 관련 있나 (치료사를 고르지 않았으면 걸러 보지 않으므로 true).
+       예약은 앞·뒤 어느 쪽이든 그 치료사면 관련 · 휴무·마감은 치료사 칸이 비면(병원 전체) 모두에게 관련 · 설정 변경은 치료사와 무관 ---- */
+    function logSideHas(x, thId, blankHits) {
+      var t;
+      x = logObj(x);
+      if (!x) return false;
+      t = x.therapist_id;
+      return t === thId || (blankHits === true && (t === null || t === undefined || t === ''));
+    }
+    function logHas(en, thId) {
+      var act, a, b;
+      if (typeof thId !== 'string' || thId === '') return true;
+      if (!en || typeof en !== 'object') return false;
+      act = typeof en.action === 'string' ? en.action : '';
+      a = logObj(en.after); b = logObj(en.before);
+      if (act === 'create' || act === 'update' || act === 'move' || act === 'status' || act === 'delete' || act === 'restore') return logSideHas(a, thId, false) || logSideHas(b, thId, false);
+      if (act === 'block_create' || act === 'block_update' || act === 'block_delete') return logSideHas(a, thId, true) || logSideHas(b, thId, true);
+      if (act === 'therapist') return !!((a && a.id === thId) || (b && b.id === thId));
+      return false;
+    }
+
+    /* ---- 휴지통: 삭제한 지 지난 날수(내림)를 30에서 뺀 "복원할 수 있는 남은 날수" (0~30). 시각이 어긋나면 NaN ---- */
+    function trashLeft(deletedAt, nowMs) {
+      var ms = toMs(deletedAt), left;
+      if (typeof ms !== 'number' || !isFinite(ms) || typeof nowMs !== 'number' || !isFinite(nowMs)) return NaN;
+      left = 30 - Math.floor((nowMs - ms) / 86400000);
+      return left > 30 ? 30 : left < 0 ? 0 : left;
+    }
+
+    /* ---- 설정 창(관리자): 서버 설정 ⇄ 창에서 다루는 모양 · 달라진 항목 · 검사 ----
+       창 모양 f = { view_start, view_end, default_len, snap, week_start, courses[], lunch{on,start,end},
+                     hours{ all[7칸: 0=일 ~ 6=토], th{ 치료사번호: [7칸] } } }  (칸 = { k: 'on'|'off'|'def', s, e } · def = 전체의 그 요일을 따름 · 치료사 칸에만) */
+    var SET_KEYS = ['view_start', 'view_end', 'default_len', 'snap', 'week_start', 'courses', 'lunch', 'hours'];
+    var SET_DOW = [1, 2, 3, 4, 5, 6, 0];   /* 창에 보이는 요일 순서 (월~일) */
+    function okHm(v, a24) { return typeof v === 'string' && (/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(v) || (a24 === true && v === '24:00')); }
+    function isObj(v) { return !!v && typeof v === 'object' && !Array.isArray(v); }
+    function setCell(v, s0, e0) { return v ? { k: 'on', s: hm(v[0]), e: hm(v[1]) } : { k: 'off', s: s0, e: e0 }; }
+    function setForm(st) {
+      var s = isObj(st) ? st : {}, L = isObj(s.lunch) ? s.lunch : DEFAULTS.lunch, hs = isObj(s.hours) ? s.hours : DEFAULTS.hours, cl = Array.isArray(s.courses) ? s.courses : DEFAULTS.courses,
+        f = { courses: [], hours: { all: [], th: {} } }, w = { hours: hs }, i, c, k, rows, a;
+      f.view_start = okHm(s.view_start) ? s.view_start : DEFAULTS.view_start;
+      f.view_end = okHm(s.view_end, true) ? s.view_end : DEFAULTS.view_end;
+      f.default_len = (typeof s.default_len === 'number' && s.default_len >= 5 && s.default_len <= 240 && s.default_len % 5 === 0) ? s.default_len : DEFAULTS.default_len;
+      f.snap = (s.snap === 5 || s.snap === 10 || s.snap === 15 || s.snap === 30) ? s.snap : DEFAULTS.snap;
+      f.week_start = s.week_start === 0 ? 0 : 1;
+      for (i = 0; i < cl.length; i++) { c = normCourse(cl[i]); if (c && f.courses.indexOf(c) < 0) f.courses.push(c); }
+      f.lunch = { on: L.on !== false, start: okHm(L.start) ? L.start : DEFAULTS.lunch.start, end: okHm(L.end, true) ? L.end : DEFAULTS.lunch.end };
+      for (i = 0; i < 7; i++) f.hours.all.push(setCell(hours(w, null, i), '09:00', '20:00'));
+      for (k in hs) {
+        if (has(hs, k) && k !== 'all' && isObj(hs[k])) {
+          rows = [];
+          for (i = 0; i < 7; i++) {
+            a = f.hours.all[i];
+            rows.push(has(hs[k], String(i)) ? setCell(hours(w, k, i), a.s, a.e) : { k: 'def', s: a.s, e: a.e });
+          }
+          f.hours.th[k] = rows;
+        }
+      }
+      return f;
+    }
+    function setRows(f, id) {   /* 그 치료사의 요일 7칸 (없으면 모두 "전체를 따름"으로 만들어 창 모양에 넣음) */
+      var o = f.hours.th, r, i;
+      if (!has(o, id)) { r = []; for (i = 0; i < 7; i++) r.push({ k: 'def', s: f.hours.all[i].s, e: f.hours.all[i].e }); o[id] = r; }
+      return o[id];
+    }
+    function setOut(f) {   /* 창 모양 → 서버에 저장되는 모양 (치료사는 "전체를 따름"이 아닌 요일이 있을 때만) */
+      var o = { view_start: f.view_start, view_end: f.view_end, default_len: f.default_len, snap: f.snap, week_start: f.week_start, courses: f.courses.slice(),
+        lunch: { on: f.lunch.on === true, start: f.lunch.start, end: f.lunch.end }, hours: { all: {} } }, i, k, rows, t, any, r;
+      for (i = 0; i < 7; i++) { r = f.hours.all[i]; o.hours.all[String(i)] = r.k === 'on' ? [r.s, r.e] : null; }
+      for (k in f.hours.th) {
+        if (has(f.hours.th, k)) {
+          rows = f.hours.th[k]; t = {}; any = false;
+          for (i = 0; i < 7; i++) { r = rows[i]; if (r.k !== 'def') { any = true; t[String(i)] = r.k === 'on' ? [r.s, r.e] : null; } }
+          if (any) o.hours[k] = t;
+        }
+      }
+      return o;
+    }
+    function canonStr(v) {   /* 키 순서와 상관없이 같은 값이면 같은 글 */
+      var k, a = [];
+      if (Array.isArray(v)) return '[' + v.map(canonStr).join(',') + ']';
+      if (v && typeof v === 'object') {
+        for (k in v) { if (has(v, k)) a.push(k); }
+        a.sort();
+        return '{' + a.map(function (x) { return JSON.stringify(x) + ':' + canonStr(v[x]); }).join(',') + '}';
+      }
+      return JSON.stringify(v);
+    }
+    function setDiff(f0, f1) {   /* 달라진 항목만 서버 모양으로 (운영 시간·점심은 통째로) */
+      var a = setOut(f0), b = setOut(f1), d = {}, n = 0, i, k;
+      for (i = 0; i < SET_KEYS.length; i++) { k = SET_KEYS[i]; if (canonStr(a[k]) !== canonStr(b[k])) { d[k] = b[k]; n++; } }
+      return { data: d, n: n };
+    }
+    function rowBad(r) { return r.k === 'on' && (!okHm(r.s) || !okHm(r.e, true) || parseHm(r.s) >= parseHm(r.e)); }
+    function setCheck(f) {   /* 서버가 거절할 값을 미리 찾음: null = 통과 · 아니면 { err, f(칸 번호 또는 'hr'), tgt, dow } — 창에 보이는 순서대로 처음 틀린 곳 */
+      var i, k, d, vm = '보이는 시간이 올바르지 않습니다 (시작이 끝보다 1시간 이상 빨라야 합니다).', hr = '운영 시간이 올바르지 않습니다 (여는 시각이 닫는 시각보다 빨라야 합니다).', L = f.lunch;
+      if (!okHm(f.view_start)) return { err: vm, f: 'rsvSVs' };
+      if (!okHm(f.view_end, true) || parseHm(f.view_end) - parseHm(f.view_start) < 60) return { err: vm, f: 'rsvSVe' };
+      if (L.on === true && (!okHm(L.start) || !okHm(L.end, true) || parseHm(L.start) >= parseHm(L.end))) return { err: '점심시간이 올바르지 않습니다 (시작이 끝보다 빨라야 합니다).', f: 'rsvSLs' };
+      for (i = 0; i < 7; i++) { d = SET_DOW[i]; if (rowBad(f.hours.all[d])) return { err: hr, f: 'hr', tgt: 'all', dow: d }; }
+      for (k in f.hours.th) {
+        if (has(f.hours.th, k)) { for (i = 0; i < 7; i++) { d = SET_DOW[i]; if (rowBad(f.hours.th[k][d])) return { err: hr, f: 'hr', tgt: k, dow: d }; } }
+      }
+      if (typeof f.default_len !== 'number' || f.default_len < 5 || f.default_len > 240 || f.default_len % 5 !== 0) return { err: '기본 길이는 5~240분 사이의 5분 단위로 입력해 주세요.', f: 'rsvSLen' };
+      if (f.courses.length > 60) return { err: '코스는 60개까지 등록할 수 있습니다.', f: 'rsvSCourses' };
+      return null;
+    }
+    function parseCourses(text) {   /* 코스 칸의 글 → { list: 정리한 이름(중복 없이 순서대로), bad: 어긋난 글 } — 줄·공백·쉼표·세미콜론으로 나누고 "J15 + C5" 처럼 같은 줄 안의 + 주변 공백은 이름 안으로(줄바꿈은 이어 붙이지 않음) */
+      var o = { list: [], bad: [] }, a, i, c;
+      if (typeof text !== 'string') return o;
+      a = text.replace(/[^\S\r\n]*\+[^\S\r\n]*/g, '+').split(/[\s,;，、]+/);
+      for (i = 0; i < a.length; i++) {
+        if (!a[i]) continue;
+        c = normCourse(a[i]);
+        if (!c) { if (o.bad.indexOf(a[i]) < 0) o.bad.push(a[i]); }
+        else if (o.list.indexOf(c) < 0) o.list.push(c);
+      }
+      return o;
+    }
+
+    return {
+      rsvKst: kst, rsvAt: at, rsvIso: iso, rsvAddDays: addDays, rsvWeekStart: weekStart, rsvMonthGrid: monthGrid, rsvRange: range,
+      rsvDefaultView: defaultView, rsvLanes: lanes, rsvSnap: snap, rsvMove: move, rsvResize: resize, rsvNormCourse: normCourse,
+      rsvParseTitle: parseTitle, rsvItemTitle: itemTitle, rsvHours: hours, rsvLunch: lunch, rsvVisible: visible, rsvWarnings: warnings,
+      rsvUndoOf: undoOf, rsvUndoRebase: undoRebase, rsvLogText: logText, rsvLogHas: logHas, rsvTrashLeft: trashLeft, rsvHm: hm, rsvParseHm: parseHm,
+      rsvSetForm: setForm, rsvSetRows: setRows, rsvSetOut: setOut, rsvSetDiff: setDiff, rsvSetCheck: setCheck, rsvParseCourses: parseCourses, RSV_SET_DOW: SET_DOW, RSV_DEFAULTS: DEFAULTS, RSV_STATUS: STATUS
+    };
+  })();
+  var rsvKst = RSV.rsvKst, rsvAt = RSV.rsvAt, rsvIso = RSV.rsvIso, rsvAddDays = RSV.rsvAddDays, rsvWeekStart = RSV.rsvWeekStart,
+    rsvMonthGrid = RSV.rsvMonthGrid, rsvRange = RSV.rsvRange, rsvDefaultView = RSV.rsvDefaultView, rsvLanes = RSV.rsvLanes,
+    rsvSnap = RSV.rsvSnap, rsvMove = RSV.rsvMove, rsvResize = RSV.rsvResize, rsvNormCourse = RSV.rsvNormCourse,
+    rsvParseTitle = RSV.rsvParseTitle, rsvItemTitle = RSV.rsvItemTitle, rsvHours = RSV.rsvHours, rsvLunch = RSV.rsvLunch,
+    rsvVisible = RSV.rsvVisible, rsvWarnings = RSV.rsvWarnings, rsvUndoOf = RSV.rsvUndoOf, rsvUndoRebase = RSV.rsvUndoRebase, rsvLogText = RSV.rsvLogText, rsvLogHas = RSV.rsvLogHas, rsvTrashLeft = RSV.rsvTrashLeft, rsvHm = RSV.rsvHm,
+    rsvParseHm = RSV.rsvParseHm, rsvSetForm = RSV.rsvSetForm, rsvSetRows = RSV.rsvSetRows, rsvSetOut = RSV.rsvSetOut, rsvSetDiff = RSV.rsvSetDiff, rsvSetCheck = RSV.rsvSetCheck, rsvParseCourses = RSV.rsvParseCourses, RSV_SET_DOW = RSV.RSV_SET_DOW,
+    RSV_DEFAULTS = RSV.RSV_DEFAULTS, RSV_STATUS = RSV.RSV_STATUS;
+  /* ===== RSV-CORE-END ===== */
+
+  /* ================= 예약 (v48): 화면 틀 · 서버에서 불러오기 · 실시간 =================
+     S.rsv = { loaded, err, missing, stale, ther[], settings, items{id→행}, blocks{id→행}, view, date, filters, undo[], … }
+     · 화면을 열 때마다 보이는 범위(앞뒤 7일 더)를 서버에서 불러오고, 열려 있는 동안 1분마다 · 창이 다시 보일 때 · 인터넷이 다시 연결될 때 다시 확인
+     · 다른 직원의 변경은 실시간 알림 내용으로 바로 반영(같거나 옛 버전은 무시). 불러오는 도중에 알림이 끼어들면 그 응답은 옛 모습일 수 있어 버리고 다시 불러옴
+     · 서버는 한 번에 1000건까지만 돌려주고 나머지는 말없이 자르므로, 쪽을 나눠 빠짐없이 받음 */
+  var RSV_VIEWS = ['day', 'week', 'month'], RSV_PAGE = 1000;
+  function rsvToday() { var k = rsvKst(Date.now()); return k ? k.ymd : ymd(new Date()); }
+  function rsvWidth() { var m = $('#main'), w = m ? m.clientWidth : 0; return w || (NARROW.matches ? 390 : 1100); }   // 아직 화면에 배치되기 전(0)이면 좁은 창인지로 대신 판단
+  function rsvShown() { return !!$('#rsvbody'); }
+  function rsvInit() {
+    if (S.rsv) return S.rsv;
+    var sv = lsGet('noble-rsv-view');
+    S.rsv = {
+      loaded: false, err: '', missing: false, stale: false, ther: [], settings: RSV_DEFAULTS, items: {}, blocks: {},
+      view: RSV_VIEWS.indexOf(sv) > -1 ? sv : rsvDefaultView(rsvWidth()), date: rsvToday(), filters: { ther: {} }, undo: [],
+      loading: null, again: false, dirty: false, tries: 0, watch: null, soon: null, onOnline: null, purged: false,
+      win: null, fresh: false, narrow: false, scrollNow: true, sv: '', onResize: null,   // win = 지금 받아 둔 기간(ms) · fresh = 날짜를 옮긴 뒤 아직 응답 전 · narrow/sv/scrollNow = 그리기 상태
+      busy: {}, open: null,                                                              // busy = 상태·삭제·이동을 서버에 보내는 중인 예약 · open = 지금 열려 있는 예약 창(수정·상세)
+      drag: null, swallow: 0, undoing: false, set: null                                  // drag = 끌고 있는 중(6단계) · swallow = 끌기를 끝낸 시각(이어 오는 click 을 한 번 삼킴) · undoing = 되돌리기를 서버에 보내 답을 기다리는 중 · set = 열려 있는 설정 창(7단계)
+    };
+    return S.rsv;
+  }
+  function rsvFetchAll(make) {   // make(a, z): 그 번째 줄들(a~z)을 요청하는 질의 → 모든 쪽을 이어 붙여 { data, error } 로
+    var all = [];
+    function next(i) {
+      return make(i * RSV_PAGE, i * RSV_PAGE + RSV_PAGE - 1).then(function (r) {
+        if (r.error) return r;
+        var d = r.data || []; all = all.concat(d);
+        if (d.length < RSV_PAGE || i >= 19) return { data: all, error: null };   // 마지막 쪽이거나 안전 장치(최대 20쪽 = 2만 건)
+        return next(i + 1);
+      });
+    }
+    return next(0);
+  }
+  function rsvLoad() {
+    var R = rsvInit();
+    if (R.loading) { R.again = true; return R.loading; }   // 이미 불러오는 중이면 그것이 끝난 뒤 한 번 더 (요청이 겹치지 않게)
+    var rg = rsvRange(R.view, R.date, R.settings.week_start);
+    R.dirty = false;
+    function win(q) { return q.is('deleted_at', null).lt('start_at', rg.fetchTo).gt('end_at', rg.fetchFrom).order('start_at', { ascending: true }).order('id', { ascending: true }); }
+    R.loading = Promise.all([
+      sb.from('rsv_therapists').select('*').order('sort', { ascending: true }).order('name', { ascending: true }),
+      sb.from('rsv_settings').select('*').eq('id', 1).maybeSingle(),
+      rsvFetchAll(function (a, z) { return win(sb.from('rsv_items').select('*')).range(a, z); }),
+      rsvFetchAll(function (a, z) { return win(sb.from('rsv_blocks').select('*')).range(a, z); })
+    ]).then(function (r) { return { r: r, e: null }; }, function (e) { return { r: null, e: e }; }).then(function (x) {
+      R.loading = null;
+      if (x.r) rsvLoaded(x.r, rg); else rsvFailed(x.e);
+      if (R.again) { R.again = false; rsvLoad(); }
+    });
+    return R.loading;
+  }
+  function rsvLoaded(r, rg) {
+    var R = S.rsv, bad = r[0].error || r[1].error || r[2].error || r[3].error;
+    if (bad) { rsvFailed(bad); return; }
+    if (R.dirty && R.tries < 2) { R.tries++; R.again = true; return; }   // 불러오는 사이 실시간 알림이 끼어들었음 → 이 응답은 그 변경보다 옛 모습일 수 있으니 버리고 다시 (알림이 계속 와도 2번까지만)
+    R.tries = 0;
+    R.ther = r[0].data || [];
+    var st = r[1].data && r[1].data.data;
+    R.settings = Object.assign({}, RSV_DEFAULTS, st && typeof st === 'object' ? st : {});
+    R.items = {}; (r[2].data || []).forEach(function (x) { R.items[x.id] = x; });
+    R.blocks = {}; (r[3].data || []).forEach(function (x) { R.blocks[x.id] = x; });
+    R.loaded = true; R.err = ''; R.missing = false; R.stale = false; R.fresh = false;
+    R.win = rg ? { from: Date.parse(rg.fetchFrom), to: Date.parse(rg.fetchTo) } : null;   // 이 응답이 덮는 기간
+    if (rsvShown()) rsvRender();
+    rsvSetRefresh(R);
+    rsvCheckOpen();
+    rsvPurgeOnce();
+  }
+  function rsvFailed(e) {
+    var R = S.rsv, m = errMsg(e) + ' ' + ((e && e.code) || '');
+    R.fresh = false;
+    if (qMissing(m)) { R.missing = true; R.loaded = false; R.err = ''; R.stale = false; R.items = {}; R.blocks = {}; R.ther = []; R.win = null; }   // 업데이트 12(SQL)를 아직 안 올림
+    else if (!R.loaded) { R.missing = false; R.err = errMsg(e); }                                                                      // 처음부터 못 불러옴
+    else R.stale = true;                                                                                                              // 보던 내용은 그대로 두고 경고만
+    if (rsvShown()) rsvRender();
+  }
+  function rsvLoadSoon() { var R = S.rsv; if (!R) return; clearTimeout(R.soon); R.soon = setTimeout(function () { if (S.me && S.rsv) rsvLoad(); }, 120); }
+  /* 하루에 한 번(이 기기 기준), 첫 불러오기에 성공한 뒤 오래된 휴지통·기록 정리. 청소일 뿐이라 실패해도 조용히(내일 다시) */
+  function rsvPurgeOnce() {
+    var R = S.rsv, today = rsvToday();
+    if (R.purged) return; R.purged = true;
+    if (lsGet('noble-rsv-purge') === today) return;
+    lsSet('noble-rsv-purge', today);
+    sb.rpc('rsv_purge_old').then(function () {}, function () {});
+  }
+  /* 다른 직원의 변경 (실시간) */
+  function rsvApply(table, p) {
+    var R = S.rsv; if (!S.me || !R) return;
+    R.dirty = true;                                        // 불러오는 중이던 응답은 옛 모습일 수 있음 (rsvLoaded 가 보고 다시 불러옴)
+    if (!R.loaded) return;                                 // 아직 한 번도 못 불러왔으면 알림 내용은 쓰지 않음 (불러올 때 서버 기준으로 받음)
+    var row = p.new || {}, old = p.old || {}, id = row.id || old.id;
+    if (table === 'rsv_items' || table === 'rsv_blocks') {
+      var map = table === 'rsv_items' ? R.items : R.blocks;
+      if (!id) return;
+      if (p.eventType === 'DELETE' || row.deleted_at) delete map[id];                                 // 휴지통으로 갔거나 완전히 지워짐
+      else if (row.id) {
+        var cur = map[id];
+        if (cur && typeof cur.version === 'number' && typeof row.version === 'number' && cur.version >= row.version) return;   // 같거나 옛 버전 (내가 방금 저장한 것의 되돌아온 알림 포함)
+        map[id] = row;
+      }
+    } else if (table === 'rsv_therapists') {
+      if (p.eventType === 'DELETE' || !row.id) { rsvLoadSoon(); return; }
+      var found = false;
+      R.ther = R.ther.map(function (t) { if (t.id === row.id) { found = true; return row; } return t; });
+      if (!found) R.ther.push(row);
+      R.ther.sort(function (a, b) { return (a.sort - b.sort) || String(a.name).localeCompare(String(b.name), 'ko'); });
+      rsvSetRefresh(R);
+    } else if (table === 'rsv_settings') {
+      if (!row.data || typeof row.data !== 'object') { rsvLoadSoon(); return; }                      // 내용이 오지 않았으면 서버에서 다시
+      R.settings = Object.assign({}, RSV_DEFAULTS, row.data);
+    }
+    if (rsvShown()) rsvRender();
+    rsvCheckOpen();
+  }
+  /* 화면: 일·주·월 달력 (v48 4단계)
+     · 시간 눈금은 1분 = 1.4px. 주·일 보기는 열마다 예약을 한국 시간 기준으로 얹고, 겹치면 좌우 칸으로 나눔
+     · 보이는 시간 범위는 설정값에 "이 기간의(치료사 단추와 상관없이) 모든 예약"이 들어가도록 늘림 → 단추를 눌러도 눈금이 흔들리지 않음
+     · 아직 받아 두지 않은 기간은 빈 달력 대신 "불러오는 중"/"불러오지 못했습니다"를 보여 줌 (예약이 없는 것처럼 보이면 안 되므로) */
+  var RSV_PXM = 1.4, RSV_MINH = 18, RSV_SHORT = 36, RSV_GRAY = '#6b7280', RSV_DOWN = ['일', '월', '화', '수', '목', '금', '토'];
+  function rsvPx(n) { return (Math.round(n * 100) / 100) + 'px'; }
+  function rsvPct(n) { return (Math.round(n * 100) / 100) + '%'; }
+  function rsvColor(c) { return typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c) ? c : RSV_GRAY; }   // 스타일에 직접 넣는 값이라 모양이 맞는 것만
+  function rsvNarrow() { return rsvWidth() < 720; }
+  function rsvMs(x) { var k = rsvKst(x); return k ? rsvAt(k.ymd, k.min) : NaN; }                         // 분 단위로 맞춘 시각(ms)
+  function rsvParts(d) { return rsvKst(rsvAt(d, 0)) || { y: 0, m: 0, d: 0, dow: 0 }; }
+  function rsvDow(d) { return rsvParts(d).dow; }
+  function rsvAddMonths(d, n) {                                                                           // 같은 일(없으면 그 달 마지막 날)로 n달 옮김
+    var p = rsvParts(d), t = p.y * 12 + (p.m - 1) + n, y = Math.floor(t / 12), m = t % 12 + 1, last = new Date(Date.UTC(y, m, 0)).getUTCDate(), dd = Math.min(p.d, last);
+    return y + '-' + (m < 10 ? '0' : '') + m + '-' + (dd < 10 ? '0' : '') + dd;
+  }
+  function rsvSpan(it) {   // 한 예약이 놓이는 날짜(한국 시간)와 그날의 시작·끝(분). 못 읽으면 null
+    var a = rsvKst(it.start_at), b = rsvKst(it.end_at), len;
+    if (!a || !b) return null;
+    len = Math.round((rsvAt(b.ymd, b.min) - rsvAt(a.ymd, a.min)) / 60000);
+    return { ymd: a.ymd, s: a.min, e: a.min + (len > 0 ? len : 1) };
+  }
+  function rsvByDay(days) {   // { 날짜: [{ it, sp }] } — 그 날짜에 시작하는 예약(치료사 단추와 상관없이 전부), 시간 순(같은 시각은 먼저 만든 순)
+    var R = S.rsv, out = {};
+    days.forEach(function (d) { out[d] = []; });
+    Object.keys(R.items).forEach(function (k) { var it = R.items[k], sp = rsvSpan(it); if (sp && out[sp.ymd]) out[sp.ymd].push({ it: it, sp: sp }); });
+    days.forEach(function (d) {
+      out[d].sort(function (a, b) {
+        var ca = a.it.created_at || '', cb = b.it.created_at || '';
+        return (a.sp.s - b.sp.s) || (ca < cb ? -1 : ca > cb ? 1 : 0) || (a.it.id < b.it.id ? -1 : 1);
+      });
+    });
+    return out;
+  }
+  function rsvTher(id) { var L = S.rsv.ther, i; for (i = 0; i < L.length; i++) { if (L[i].id === id) return L[i]; } return null; }
+  function rsvOn(id) { return S.rsv.filters.ther[id] !== false; }   // 단추로 끄지 않았으면 켜짐 (목록에 없는 치료사도 켜짐)
+  function rsvChips(byDay) {   // 단추로 보이는 치료사: 쓰는 치료사 + (안 써도) 이 기간에 예약이 있는 치료사
+    var used = {};
+    Object.keys(byDay).forEach(function (d) { byDay[d].forEach(function (x) { used[x.it.therapist_id] = true; }); });
+    return S.rsv.ther.filter(function (t) { return t.active !== false || used[t.id]; });
+  }
+  function rsvAxis(byDay, days) {   // 보이는 시간 범위 [시작분, 끝분]
+    var list = [];
+    days.forEach(function (d) { byDay[d].forEach(function (x) { list.push(x.it); }); });
+    return rsvVisible(S.rsv.settings, list);
+  }
+  function rsvOpen(ids, d) {   // 그 날의 운영 시간 [시작분, 끝분] | null(쉬는 날). 여러 치료사가 보이면 합침
+    var st = S.rsv.settings, dow = rsvDow(d), lo = null, hi = null, i, h;
+    if (!ids.length) return rsvHours(st, null, dow);
+    for (i = 0; i < ids.length; i++) {
+      h = rsvHours(st, ids[i], dow);
+      if (h) { lo = lo === null ? h[0] : Math.min(lo, h[0]); hi = hi === null ? h[1] : Math.max(hi, h[1]); }
+    }
+    return lo === null ? null : [lo, hi];
+  }
+  function rsvOffHtml(open, vs, ve) {   // 운영 시간 밖(또는 쉬는 날) 음영
+    var a, b, out = '';
+    function box(f, t) { return '<div class="rsv-off" style="top:' + rsvPx((f - vs) * RSV_PXM) + ';height:' + rsvPx((t - f) * RSV_PXM) + '"></div>'; }
+    if (!open) return box(vs, ve);
+    a = Math.max(open[0], vs); b = Math.min(open[1], ve);
+    if (b <= a) return box(vs, ve);
+    if (a > vs) out += box(vs, a);
+    if (b < ve) out += box(b, ve);
+    return out;
+  }
+  function rsvBlockList() {   // 휴무·마감 블록을 시작 순으로 (시각을 못 읽거나 끝이 시작보다 이르면 뺌)
+    var R = S.rsv;
+    return Object.keys(R.blocks).map(function (k) { var b = R.blocks[k]; return { b: b, s: rsvMs(b.start_at), e: rsvMs(b.end_at) }; })
+      .filter(function (x) { return x.e > x.s; }).sort(function (p, q) { return (p.s - q.s) || (p.b.id < q.b.id ? -1 : 1); });
+  }
+  function rsvBlockText(b) { return String(b.reason || '').replace(/^\s+|\s+$/g, '') || '휴무'; }
+  function rsvBlocksHtml(c, x) {   // 한 열 안의 휴무·마감 (그날 보이는 범위로 잘라서). 병원 전체 휴무는 모든 열에, 치료사 휴무는 그 치료사 열(주 보기는 켜진 치료사)에만
+    var a = rsvAt(c.date, x.vs), z = rsvAt(c.date, x.ve), out = '';
+    x.blocks.forEach(function (k) {
+      var b = k.b, tid = b.therapist_id, cs, ce, th;
+      if (tid && (c.th === null ? !rsvOn(tid) : tid !== c.th)) return;
+      cs = Math.max(k.s, a); ce = Math.min(k.e, z);
+      if (!(ce > cs)) return;
+      th = rsvTher(tid);
+      out += '<div class="rsv-blk' + (tid ? '' : ' all') + '" data-bid="' + esc(b.id) + '" role="button" tabindex="0" aria-label="' + esc('휴무·마감: ' + rsvBlockText(b) + ' · ' + (tid ? (th ? th.name : '(알 수 없음)') : '병원 전체') + ', 눌러서 수정') + '" style="top:' + rsvPx((cs - a) / 60000 * RSV_PXM) + ';height:' + rsvPx((ce - cs) / 60000 * RSV_PXM) + '"><span class="rsv-blk-t">' + esc(rsvBlockText(b)) + '</span>' +
+        (x.week && tid ? '<span class="rsv-blk-s">' + esc(th ? th.name : '(알 수 없음)') + '</span>' : '') + '</div>';
+    });
+    return out;
+  }
+  function rsvEvHtml(r, l, x) {   // 예약 블록 한 개 (이름·코스 한 줄 · 높이가 36px 이상이면 시간(·치료사) · 취소/노쇼는 글자 · 그 밖에는 ✓ 내원 단추)
+    var it = r.it, sp = r.sp, th = rsvTher(it.therapist_id), tn = th ? th.name : '(알 수 없음)', ln = l || { lane: 0, lanes: 1 },
+      top = (sp.s - x.vs) * RSV_PXM, hh = Math.max(RSV_MINH, (sp.e - sp.s) * RSV_PXM), name = rsvItemTitle(it) || '(이름 없음)', stt = it.status,
+      time = rsvHm(sp.s) + '–' + rsvHm(sp.e > 1440 ? sp.e - 1440 : sp.e), tail;
+    if (top + hh > x.H) hh = Math.max(1, x.H - top);   // 열 밖으로 삐져나가지 않게
+    tail = (stt === '취소' || stt === '노쇼') ? '<span class="rsv-ev-st">' + esc(stt) + '</span>'
+      : '<button type="button" class="rsv-ok" data-rsv-ok aria-pressed="' + (stt === '내원' ? 'true' : 'false') + '" aria-label="내원 확인">' + svg('check') + '</button>';
+    return '<div class="rsv-ev' + (ln.lanes >= 4 ? ' tight' : '') + (S.rsv.busy[it.id] ? ' pending' : '') + '" data-id="' + esc(it.id) + '" data-th="' + esc(it.therapist_id || '') + '" data-status="' + esc(stt) + '" role="button" tabindex="0" aria-label="' + esc(name + ', ' + time + ', ' + tn + ', ' + stt) +
+      '" style="top:' + rsvPx(top) + ';height:' + rsvPx(hh) + ';left:' + rsvPct(ln.lane / ln.lanes * 100) + ';width:' + rsvPct(100 / ln.lanes) + ';--c:' + rsvColor(th && th.color) + '">' +
+      '<span class="rsv-ev-t">' + esc(name) + '</span>' + (hh >= RSV_SHORT ? '<span class="rsv-ev-s">' + esc(time + (x.week ? ' · ' + tn : '')) + '</span>' : '') + tail + '<span class="rsv-rz" aria-hidden="true"></span></div>';
+  }
+  function rsvColHtml(c, x) {   // 날짜(또는 날짜+치료사) 한 열
+    var s = rsvOffHtml(c.open, x.vs, x.ve), isT = c.date === x.today, ln, a, b;
+    if (c.open && x.lu) {
+      a = Math.max(x.lu[0], x.vs); b = Math.min(x.lu[1], x.ve);
+      if (b > a) s += '<div class="rsv-lunch" style="top:' + rsvPx((a - x.vs) * RSV_PXM) + ';height:' + rsvPx((b - a) * RSV_PXM) + '"></div>';
+    }
+    s += rsvBlocksHtml(c, x);
+    ln = rsvLanes(c.rows.map(function (r) { return { id: r.it.id, s: r.sp.s, e: r.sp.e }; }));
+    c.rows.forEach(function (r) { s += rsvEvHtml(r, ln[r.it.id], x); });
+    if (isT && x.nowMin >= x.vs && x.nowMin < x.ve) s += '<div class="rsv-now" style="top:' + rsvPx((x.nowMin - x.vs) * RSV_PXM) + '"></div>';
+    return '<div class="rsv-col' + (isT ? ' today' : '') + (c.open ? '' : ' closed') + '" data-date="' + c.date + '"' + (c.th === null ? '' : ' data-th="' + esc(c.th) + '"') + ' style="height:' + rsvPx(x.H) + '">' + s + '</div>';
+  }
+  function rsvGridHtml(R, rg, byDay, chips) {   // 주 보기(날짜마다 한 열) · 일 보기(치료사마다 한 열)
+    var week = R.view === 'week', days = rg.days, ax = rsvAxis(byDay, days), st = R.settings, nk = rsvKst(Date.now()), cols = [], hdr = '', gut = '', body = '', h, d0, seen, unk,
+      onIds = chips.filter(function (t) { return rsvOn(t.id); }).map(function (t) { return t.id; }),
+      x = { vs: ax[0], ve: ax[1], H: (ax[1] - ax[0]) * RSV_PXM, week: week, today: rsvToday(), nowMin: nk ? nk.min : -1, lu: rsvLunch(st), blocks: rsvBlockList() };
+    if (week) {
+      days.forEach(function (d) {
+        cols.push({ date: d, th: null, name: '', color: '', open: rsvOpen(onIds, d), rows: byDay[d].filter(function (y) { return rsvOn(y.it.therapist_id); }) });
+      });
+    } else {
+      d0 = days[0]; seen = {}; unk = [];
+      chips.forEach(function (t) {
+        if (rsvOn(t.id)) cols.push({ date: d0, th: t.id, name: t.name, color: t.color, open: rsvHours(st, t.id, rsvDow(d0)), rows: byDay[d0].filter(function (y) { return y.it.therapist_id === t.id; }) });
+      });
+      byDay[d0].forEach(function (y) { var k = y.it.therapist_id || ''; if (!rsvTher(k) && !seen[k]) { seen[k] = 1; unk.push(k); } });   // 치료사 정보가 없는 예약도 숨기지 않고 열을 따로
+      unk.sort();
+      unk.forEach(function (k) { cols.push({ date: d0, th: k, name: '(알 수 없음)', color: RSV_GRAY, open: rsvHours(st, null, rsvDow(d0)), rows: byDay[d0].filter(function (y) { return (y.it.therapist_id || '') === k; }) }); });
+    }
+    if (!cols.length) return '<div class="rsv-empty muted">표시할 치료사가 없습니다. 위의 치료사 단추를 눌러 켜 주세요.</div>';
+    cols.forEach(function (c) {
+      var p = rsvParts(c.date);
+      if (week) hdr += '<button type="button" class="rsv-dh' + (c.date === x.today ? ' today' : '') + '" data-date="' + c.date + '" aria-label="' + esc(p.m + '월 ' + p.d + '일 ' + RSV_DOWN[p.dow] + '요일 하루 보기') + '"><span class="rsv-dn">' + p.d + '</span><span class="rsv-dw">' + RSV_DOWN[p.dow] + '</span></button>';
+      else hdr += '<div class="rsv-dh" data-th="' + esc(c.th) + '"><i class="rsv-dot" style="background:' + rsvColor(c.color) + '"></i><span>' + esc(c.name) + '</span></div>';
+      body += rsvColHtml(c, x);
+    });
+    for (h = Math.ceil(x.vs / 60); h * 60 < x.ve; h++) gut += '<span class="rsv-hr" style="top:' + rsvPx((h * 60 - x.vs) * RSV_PXM) + '">' + rsvHm(h * 60) + '</span>';
+    return '<div class="rsv-grid" data-vs="' + x.vs + '" data-ve="' + x.ve + '" style="--n:' + cols.length + '"><div class="rsv-hdrow"><div class="rsv-corner"></div>' + hdr + '</div>' +
+      '<div class="rsv-cols"><div class="rsv-gutter" style="height:' + rsvPx(x.H) + '" aria-hidden="true">' + gut + '</div>' + body + '</div></div>';
+  }
+  function rsvMonthHtml(R, rg, byDay) {   // 6주 × 7일 · 날짜마다 건수 · 앞 3건 미리보기 + "+N" · 휴무 이유 · 칸을 누르면 그날 하루 보기
+    var today = rsvToday(), cm = rsvParts(R.date).m, days = rg.days, blocks = rsvBlockList(), head = '', cells = '', i;
+    for (i = 0; i < 7; i++) head += '<div class="rsv-dh">' + RSV_DOWN[rsvDow(days[i])] + '</div>';
+    days.forEach(function (d) {
+      var rows = byDay[d].filter(function (y) { return rsvOn(y.it.therapist_id); }), n = rows.length, p = rsvParts(d), a = rsvAt(d, 0), z = rsvAt(d, 1440), bl = [], mb = '', lab;
+      blocks.forEach(function (k) { if (k.s < z && k.e > a && !(k.b.therapist_id && !rsvOn(k.b.therapist_id))) bl.push(rsvBlockText(k.b)); });
+      bl.slice(0, 2).forEach(function (t) { mb += '<span class="rsv-mb">' + esc(t) + '</span>'; });
+      lab = p.m + '월 ' + p.d + '일 ' + RSV_DOWN[p.dow] + '요일' + (n ? ', 예약 ' + n + '건' : '') + (bl.length ? ', ' + bl.join(', ') : '');
+      cells += '<button type="button" class="rsv-cell' + (d === today ? ' today' : '') + (p.m !== cm ? ' out' : '') + '" data-date="' + d + '" aria-label="' + esc(lab) + '"><span class="rsv-dn">' + p.d + '</span>' +
+        (n ? '<span class="rsv-cnt">' + n + '</span>' : '') + mb +
+        rows.slice(0, 3).map(function (y) {
+          var th = rsvTher(y.it.therapist_id);
+          return '<span class="rsv-mi" data-id="' + esc(y.it.id) + '" data-status="' + esc(y.it.status) + '" style="--c:' + rsvColor(th && th.color) + '"><b>' + rsvHm(y.sp.s) + '</b> ' + esc(rsvItemTitle(y.it) || '(이름 없음)') + '</span>';
+        }).join('') + (n > 3 ? '<span class="rsv-more">+' + (n - 3) + '</span>' : '') + '</button>';
+    });
+    return '<div class="rsv-days">' + head + '</div><div class="rsv-month">' + cells + '</div>';
+  }
+  function rsvTitle(R, rg) {
+    var a, b;
+    if (R.view === 'month') { a = rsvParts(R.date); return a.y + '년 ' + a.m + '월'; }
+    if (R.view === 'day') { a = rsvParts(R.date); return a.y + '년 ' + a.m + '월 ' + a.d + '일 (' + RSV_DOWN[a.dow] + ')'; }
+    a = rsvParts(rg.days[0]); b = rsvParts(rg.days[6]);
+    return a.y + '년 ' + a.m + '월 ' + a.d + '일 – ' + (a.y !== b.y ? b.y + '년 ' + b.m + '월 ' : a.m !== b.m ? b.m + '월 ' : '') + b.d + '일';
+  }
+  function rsvStripHtml(R) {   // 좁은 화면 하루 보기: 이번 주 7일 날짜 띠
+    var today = rsvToday(), days = rsvRange('week', R.date, R.settings.week_start).days;
+    return '<div class="rsv-strip" role="group" aria-label="이번 주 날짜">' + days.map(function (d) {
+      var p = rsvParts(d);
+      return '<button type="button" data-date="' + d + '" aria-pressed="' + (d === R.date ? 'true' : 'false') + '"' + (d === today ? ' aria-current="date"' : '') + ' aria-label="' + esc(p.m + '월 ' + p.d + '일 ' + RSV_DOWN[p.dow] + '요일') + '"><span>' + RSV_DOWN[p.dow] + '</span><b>' + p.d + '</b></button>';
+    }).join('') + '</div>';
+  }
+  function rsvTopHtml(R, rg, chips, narrow) {   // 머리글: 이전·오늘·다음 / 날짜 글자 / 일·주·월 / 되돌리기·예약 추가·더보기 / 치료사 단추 / (좁은 화면) 날짜 띠
+    var h = '<div class="rsv-top"><div class="rsv-head"><div class="rsv-nav" role="group" aria-label="날짜 이동">';
+    [['prev', '이전', '‹'], ['today', '오늘', '오늘'], ['next', '다음', '›']].forEach(function (n) { h += '<button type="button" class="btn btn-line sm" data-rnav="' + n[0] + '" aria-label="' + n[1] + '">' + n[2] + '</button>'; });
+    h += '</div><h2 class="rsv-title" aria-live="polite">' + esc(rsvTitle(R, rg)) + '</h2><div class="rsv-views" role="group" aria-label="보기">';
+    [['day', '일'], ['week', '주'], ['month', '월']].forEach(function (v) { h += '<button type="button" data-rv="' + v[0] + '" aria-pressed="' + (R.view === v[0] ? 'true' : 'false') + '">' + v[1] + '</button>'; });
+    h += '</div><div class="rsv-acts"><button type="button" class="icon-btn" id="rsvUndo" aria-label="되돌리기" title="' + esc(rsvUndoTitle(R)) + '"' + (R.undo.length ? '' : ' disabled') + '>' + svg('undo') + '</button>' +
+      '<button type="button" class="btn btn-navy sm" id="rsvAdd">' + svg('plus') + '<span>예약</span></button>' +
+      '<button type="button" class="icon-btn" id="rsvMore" aria-label="더보기" aria-haspopup="menu">' + svg('more') + '</button></div></div>';
+    if (chips.length) {
+      h += '<div class="rsv-thers" role="group" aria-label="치료사 표시">';
+      chips.forEach(function (t) { h += '<button type="button" class="rsv-ther' + (t.active === false ? ' inactive' : '') + '" data-th="' + esc(t.id) + '" aria-pressed="' + (rsvOn(t.id) ? 'true' : 'false') + '"><i class="rsv-dot" style="background:' + rsvColor(t.color) + '"></i>' + esc(t.name) + '</button>'; });
+      h += '</div>';
+    }
+    if (narrow && R.view === 'day') h += rsvStripHtml(R);
+    return h + '</div>';
+  }
+  function rsvCovered(rg) { var w = S.rsv.win; return !!(w && w.from <= rsvAt(rg.from, 0) && rsvAt(rg.to, 0) <= w.to); }   // 보이는 기간이 받아 둔 기간 안인가
+  function rsvScreenHtml() {
+    var R = S.rsv, rg = rsvRange(R.view, R.date, R.settings.week_start), byDay = rsvByDay(rg.days), chips = rsvChips(byDay), narrow = R.narrow, covered = rsvCovered(rg),
+      gap = !covered && R.stale && !(R.loading || R.again || R.fresh), inner;   // 못 받은 기간: 받는 중이면 "불러오는 중", 받기에 실패했으면 "불러오지 못했습니다"
+    if (!covered) inner = gap ? '<div class="rsv-gap"><p>이 기간의 예약을 아직 불러오지 못했습니다.</p><button class="btn btn-line" id="rsvRetry">다시 불러오기</button></div>' : '<div class="rsv-loading muted">불러오는 중…</div>';
+    else if (R.view === 'month') inner = rsvMonthHtml(R, rg, byDay);
+    else inner = rsvGridHtml(R, rg, byDay, chips);
+    return rsvTopHtml(R, rg, chips, narrow) +
+      (R.stale ? '<div class="rsv-stale" role="status">최신 상태가 아닐 수 있습니다. 인터넷 연결을 확인하는 중이며 자동으로 다시 시도합니다.' + (gap ? '' : ' <button class="btn btn-line sm" id="rsvRetry">다시 불러오기</button>') + '</div>' : '') +
+      '<div class="rsv-sc"><div class="rsv-view' + (narrow ? ' rsv-narrow' : '') + '">' + inner + '</div></div>';
+  }
+  function rsvFocusSel(body) {   // 다시 그리기 전에 포커스가 있던 단추를 찾아 둠 (키보드로 쓰는 사람이 자리를 잃지 않게)
+    var a = document.activeElement, v;
+    if (!a || a === document.body || !body.contains(a)) return '';
+    if (a.id && /^rsv[A-Za-z]+$/.test(a.id)) return '#' + a.id;
+    if ((v = a.getAttribute('data-rv'))) return '[data-rv="' + v + '"]';
+    if ((v = a.getAttribute('data-rnav'))) return '[data-rnav="' + v + '"]';
+    v = a.getAttribute('data-th') || ''; if (a.classList.contains('rsv-ther') && /^[\w-]+$/.test(v)) return '.rsv-ther[data-th="' + v + '"]';
+    v = a.getAttribute('data-id') || ''; if (a.classList.contains('rsv-ev') && /^[\w-]+$/.test(v)) return '.rsv-ev[data-id="' + v + '"]';
+    v = a.getAttribute('data-date') || ''; if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return (a.closest('.rsv-strip') ? '.rsv-strip ' : a.classList.contains('rsv-cell') ? '.rsv-cell' : '.rsv-dh') + '[data-date="' + v + '"]';
+    return '';
+  }
+  function rsvFocusEl(el) { if (!el) return; try { el['focus']({ preventScroll: true }); } catch (e) { try { el['focus'](); } catch (e2) { /* 포커스를 못 옮겨도 그림은 그대로 */ } } }
+  function renderRsv() {
+    var main = $('#main'), R; main.style.justifyContent = '';
+    R = rsvInit(); R.scrollNow = true; R.sv = '';   // 화면을 열 때마다 맨 위에서 시작해 지금 시각 쪽으로
+    main.innerHTML = header('예약') + '<div class="pane-body rsv-body" id="rsvbody"></div>';
+    $('#rsvbody', main).addEventListener('click', rsvClick);
+    $('#rsvbody', main).addEventListener('keydown', rsvBodyKey);
+    $('#rsvbody', main).addEventListener('pointerdown', rsvPointerDown);
+    rsvRender();      // 이미 불러온 내용이 있으면 먼저 보여 주고
+    rsvLoad(); rsvWatch();   // 서버 내용으로 맞춤
+  }
+  function rsvRender() {
+    var body = $('#rsvbody'); if (!body) return;
+    var R = S.rsv, html, fk, sc, st, sl, now, a, b, gone;
+    if (R.drag) {   // 끄는 중에는 화면을 다시 그리지 않음(끄는 블록이 사라지지 않게) — 끝난 뒤 한 번에. 끌던 예약이 바뀌었거나 사라졌으면 끌기를 취소하고 그림
+      if (rsvDragGone(R)) { gone = R.drag.id; rsvDragEnd(false, true); toast(R.items[gone] ? '끌던 예약이 다른 직원에 의해 바뀌어 옮기기를 취소했습니다.' : '끌던 예약이 삭제되었거나 다른 날짜로 옮겨졌습니다. 옮기기를 취소했습니다.'); }
+      else { R.drag.late = true; return; }
+    }
+    fk = rsvFocusSel(body); sc = $('.rsv-sc', body); st = sc ? sc.scrollTop : 0; sl = sc ? sc.scrollLeft : 0;
+    R.narrow = rsvNarrow();
+    if (R.sv !== R.view) { st = 0; sl = 0; R.sv = R.view; }   // 보기를 바꾸면 맨 위부터 (날짜만 넘길 때는 보던 시간대 그대로)
+    body.setAttribute('data-view', R.view);
+    if (R.missing) html = '<div class="rsv-notice"><p>예약 기능 업데이트(SQL)가 아직 적용되지 않았습니다. 관리자에게 알려 주세요.</p><button class="btn btn-line" id="rsvRetry">다시 확인</button></div>';
+    else if (!R.loaded) html = R.err ? '<div class="rsv-error"><p>' + esc(R.err) + '</p><button class="btn btn-line" id="rsvRetry">다시 불러오기</button></div>' : '<div class="rsv-loading muted">불러오는 중…</div>';
+    else html = rsvScreenHtml();
+    body.innerHTML = html;
+    sc = $('.rsv-sc', body);
+    if (sc) {
+      sc.scrollTop = st; sc.scrollLeft = sl;
+      if (R.scrollNow && $('.rsv-grid', body)) {   // 처음 열었을 때·"오늘"을 눌렀을 때: 지금 시각 줄이 화면 위쪽 1/3 쯤에 오게 (실제 화면에서만 의미 있음)
+        R.scrollNow = false; now = $('.rsv-now', body);
+        if (now) { a = now.getBoundingClientRect(); b = sc.getBoundingClientRect(); sc.scrollTop += (a.top - b.top) - Math.round(sc.clientHeight / 3); }
+      }
+    }
+    if (fk) rsvFocusEl($(fk, body));
+  }
+  /* 눌림 처리 (한 곳에서) */
+  function rsvClick(e) {
+    var R = S.rsv, t = e.target, b;
+    if (!R || !t || !t.closest) return;
+    if (R.swallow) { b = Date.now() - R.swallow; R.swallow = 0; if (b < 400) return; }   // 끌기를 끝낸 직후 브라우저가 이어 보내는 click 은 무시 (새 예약·상세 창이 뜨지 않게)
+    if (t.closest('#rsvRetry')) { rsvLoad(); return; }
+    if ((b = t.closest('[data-rnav]'))) { rsvStep(b.getAttribute('data-rnav')); return; }
+    if ((b = t.closest('[data-rv]'))) { rsvGo(b.getAttribute('data-rv'), R.date, true); return; }          // 보기 단추: 고른 보기를 이 기기에 기억
+    if ((b = t.closest('.rsv-ther'))) { rsvToggle(b.getAttribute('data-th')); return; }
+    if ((b = t.closest('.rsv-strip [data-date]'))) { rsvGo('day', b.getAttribute('data-date'), false); return; }
+    if ((b = t.closest('.rsv-dh[data-date]'))) { rsvGo('day', b.getAttribute('data-date'), false); return; }   // 날짜를 눌러 들어간 하루 보기는 기억하지 않음
+    if (t.closest('#rsvAdd')) { rsvItemSheet({}); return; }
+    if (t.closest('#rsvUndo')) { rsvUndo(); return; }
+    if (t.closest('#rsvMore')) { rsvMoreMenu(); return; }
+    if ((b = t.closest('[data-rsv-ok]'))) { rsvToggleOk(b); return; }                                      // ✓ 내원 단추는 예약 블록 안에 있으므로 블록보다 먼저
+    if ((b = t.closest('.rsv-ev') || t.closest('.rsv-mi'))) { rsvDetailSheet(b.getAttribute('data-id')); return; }   // 월 보기의 미리보기 줄도 같은 상세 창 (칸 전체를 누르는 것보다 먼저)
+    if ((b = t.closest('.rsv-blk'))) { b = R.blocks[b.getAttribute('data-bid')]; if (b) rsvBlockSheet({ block: b }); return; }   // 휴무·마감 블록 = 수정 창 (새 예약이 아님)
+    if ((b = t.closest('.rsv-cell'))) { rsvGo('day', b.getAttribute('data-date'), false); return; }
+    if ((b = t.closest('.rsv-col'))) { rsvBlankClick(b, e); }                                              // 빈 곳 = 그 자리에 새 예약
+  }
+  function rsvGo(view, date, persist) {
+    var R = S.rsv; if (!R) return;
+    if (RSV_VIEWS.indexOf(view) < 0) view = R.view;
+    if (persist) lsSet('noble-rsv-view', view);
+    R.view = view; R.date = date; R.fresh = true;
+    rsvRender();   // 이미 받아 둔 기간이면 바로 그리고, 아니면 "불러오는 중"
+    rsvLoad();     // 어느 쪽이든 서버에서 다시 (다음에 넘길 때를 위한 앞뒤 여분도 함께 받아 둠)
+  }
+  function rsvStep(kind) {
+    var R = S.rsv, n = kind === 'prev' ? -1 : 1, d = R.date;
+    if (kind === 'today') { R.scrollNow = true; d = rsvToday(); }
+    else if (R.view === 'month') d = rsvAddMonths(d, n);
+    else d = rsvAddDays(d, (R.view === 'week' ? 7 : 1) * n);
+    rsvGo(R.view, d, false);
+  }
+  function rsvToggle(id) { var f = S.rsv.filters.ther; if (!id) return; f[id] = (f[id] === false); rsvRender(); }
+  /* 키보드: ← → 로 이전·다음, T(한글 자판이면 ㅅ)로 오늘. 예약 화면이 열려 있고 열린 창·입력칸이 없을 때만 */
+  function rsvKey(e) {
+    var k = e.key, a = document.activeElement, t;
+    if (!S.rsv || !S.me || !rsvShown() || S.rsv.drag || e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey || e.isComposing || $('.modal')) return;   // 끄는 중에는 날짜를 넘기지 않음
+    if (a && (/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || a['isContentEditable'])) return;
+    if (k === 'ArrowLeft') t = 'prev'; else if (k === 'ArrowRight') t = 'next';
+    else if (k === 't' || k === 'T' || k === 'ㅅ') t = 'today'; else return;
+    e.preventDefault(); rsvStep(t);
+  }
+  document.addEventListener('keydown', rsvKey);
+  /* Ctrl+Z · ⌘+Z (한글 자판이면 ㅋ): 되돌리기. 예약 화면이 열려 있고 열린 창·입력칸 커서·끌기가 없을 때만 (입력칸 안의 Ctrl+Z 는 글자 되돌리기라서 건드리지 않음) */
+  function rsvUndoKey(e) {
+    var k = e.key, a = document.activeElement;
+    if (!S.rsv || !S.me || !rsvShown() || S.rsv.drag || e.defaultPrevented || e.isComposing || e.altKey || e.shiftKey || !(e.ctrlKey || e.metaKey) || $('.modal')) return;
+    if (k !== 'z' && k !== 'Z' && k !== 'ㅋ') return;
+    if (a && (/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || a['isContentEditable'])) return;
+    e.preventDefault(); rsvUndo();
+  }
+  document.addEventListener('keydown', rsvUndoKey);
+  /* 창 폭이 바뀌어 좁은 화면 ↔ 넓은 화면이 달라지면 다시 그림 (날짜 띠·글자 크기). 고른 보기는 그대로 */
+  function rsvLayout() { var R = S.rsv; if (R && rsvShown() && rsvNarrow() !== R.narrow) rsvRender(); }
+  /* 예약 화면이 열려 있는 동안만: 1분마다 다시 확인(실시간 연결이 끊겼을 때 대비) · 인터넷이 다시 연결되면 바로. 화면을 벗어나면 rsvLeave 가 정리 */
+  function rsvWatch() {
+    var R = S.rsv;
+    if (R.watch) { clearInterval(R.watch); R.watch = null; }
+    R.watch = setInterval(function () {
+      if (!rsvShown()) { rsvLeave(); return; }   // 다른 화면으로 갔으면 스스로 정리
+      if (document.visibilityState !== 'visible') return;
+      rsvLoad();
+    }, 60000);
+    if (!R.onOnline) { R.onOnline = function () { if (rsvShown()) rsvLoad(); }; window.addEventListener('online', R.onOnline); }
+    if (!R.onResize) { R.onResize = rsvLayout; window.addEventListener('resize', R.onResize); }
+  }
+  function rsvLeave() {
+    var R = S.rsv; if (!R) return;
+    if (R.drag) rsvDragEnd(false, true);   // 다른 화면으로 가면 끌기·미리보기·타이머를 모두 정리 (이동 없음)
+    if (R.watch) { clearInterval(R.watch); R.watch = null; }
+    if (R.onOnline) { window.removeEventListener('online', R.onOnline); R.onOnline = null; }
+    if (R.onResize) { window.removeEventListener('resize', R.onResize); R.onResize = null; }
+    clearTimeout(R.soon); R.soon = null;
+  }
+
+  /* ================= 예약 (v48 5단계): 예약 만들기 · 수정 · 상세 · 상태 · 삭제 =================
+     · 저장·상태·삭제는 서버가 받아들인 뒤에만 화면에 반영 (되돌아온 실시간 알림은 같은 버전이라 무시됨). 서버가 거절하면 이유를 보여 주고 창은 그대로
+     · 새 예약 창을 열 때마다 client_id 를 한 번만 만듦 → 저장이 실패해 다시 눌러도 같은 요청이라 서버에 두 건이 생기지 않음
+     · 저장 전 경고(겹침·같은 환자·운영 시간·점심·휴무·기간끝)는 막지 않고 알려만 줌. 받아 둔 기간 밖 날짜는 그 날만 서버에서 따로 확인
+     · 열어 둔 예약을 다른 직원이 바꾸면 창에 "바뀜" 표시. 내가 본 버전이 낡아 저장이 거절되면 최신 내용으로 창을 다시 엶
+     · 창 안의 글은 모두 esc 하거나 textContent/value 로만 넣음 (이름·메모·서버 오류 글에 태그가 있어도 글자 그대로) */
+  var RSV_LENS = [15, 30, 45, 60, 90], RSV_KEYS = ['therapist_id', 'patient_name', 'chart_no', 'start_at', 'end_at', 'status', 'ins_kind', 'ins_round', 'ins_end', 'course', 'memo'];
+  function rsvUuid() {   // 무작위 식별 번호 (v4)
+    var a = [], i, c = window.crypto, u;
+    try { if (c && c.getRandomValues) { u = new Uint8Array(16); c.getRandomValues(u); for (i = 0; i < 16; i++) a.push(u[i]); } } catch (e) { a = []; }
+    if (a.length !== 16) { a = []; for (i = 0; i < 16; i++) a.push(Math.floor(Math.random() * 256)); }
+    a[6] = (a[6] & 15) | 64; a[8] = (a[8] & 63) | 128;
+    return a.map(function (x, k) { return ((k === 4 || k === 6 || k === 8 || k === 10) ? '-' : '') + (x < 16 ? '0' : '') + x.toString(16); }).join('');
+  }
+  function rsvTrim(v) { return String(v == null ? '' : v).replace(/^\s+|\s+$/g, ''); }
+  function rsvVal(m, sel) { var e = $(sel, m); return e ? rsvTrim(e.value) : ''; }
+  function rsvOne(d) { return Array.isArray(d) ? d[0] : d; }
+  function rsvMD(s) { return /^\d{4}-\d{2}-\d{2}$/.test(s || '') ? s.slice(5, 7) + '/' + s.slice(8, 10) : ''; }
+  function rsvBefore(it) { var o = {}, i; for (i = 0; i < RSV_KEYS.length; i++) o[RSV_KEYS[i]] = (it[RSV_KEYS[i]] === undefined ? null : it[RSV_KEYS[i]]); return o; }   // 되돌리기용: 그때의 전체 모습
+  function rsvPress(box, attr, val) { if (!box) return; $$('[' + attr + ']', box).forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute(attr) === String(val) ? 'true' : 'false'); }); }
+  function rsvPressed(box, attr) { var b = box ? $('[' + attr + '][aria-pressed="true"]', box) : null; return b ? b.getAttribute(attr) : ''; }
+  function rsvTimeMin(v) { var s = String(v || ''); if (/^\d{2}:\d{2}:\d{2}/.test(s)) s = s.slice(0, 5); return rsvParseHm(s); }
+  function rsvErrRaw(e) { return String((e && (e.message || e.error_description || e.error)) || e || ''); }
+  function rsvIsConflict(e) { return /VERSION_CONFLICT/.test(rsvErrRaw(e)); }
+  function rsvErrText(e) {   // 서버 오류 → 사람이 읽을 글 (내부 표시 VERSION_CONFLICT: 는 떼고, SQL 미적용이면 안내)
+    var raw = rsvErrRaw(e) + ' ' + ((e && e.code) || '');
+    if (qMissing(raw)) return '예약 기능 업데이트(SQL)가 아직 적용되지 않았습니다. 관리자에게 알려 주세요.';
+    return errMsg(e).replace(/^VERSION_CONFLICT:\s*/, '');
+  }
+  function rsvSetErr(m, msg) { var e = $('#rsvErr', m); if (e) e.textContent = msg || ''; }
+  function rsvFocusId(m, id) { var e = id ? $('#' + id, m) : null; if (e && /^(INPUT|TEXTAREA)$/.test(e.tagName)) rsvFocusEl(e); }
+  function rsvPickTher(want) {   // 쓰는 치료사 중: 원하는 치료사 → 지금 켜져 있는 첫 치료사 → 첫 치료사
+    var L = S.rsv.ther.filter(function (t) { return t.active !== false; }), i;
+    if (want) { for (i = 0; i < L.length; i++) { if (L[i].id === want) return want; } }
+    for (i = 0; i < L.length; i++) { if (rsvOn(L[i].id)) return L[i].id; }
+    return L.length ? L[0].id : '';
+  }
+  function rsvThChoices(cur) {   // 고를 수 있는 치료사: 쓰는 치료사 + (수정 중이면) 그 예약의 지금 치료사
+    var L = S.rsv.ther.filter(function (t) { return t.active !== false || t.id === cur; });
+    if (cur && !rsvTher(cur)) L.push({ id: cur, name: '(알 수 없음)', color: RSV_GRAY });
+    return L;
+  }
+  function rsvDefaults(o) {   // 새 예약의 처음 값: 날짜(보이는 기간에 오늘이 있으면 오늘, 없으면 보고 있는 날짜) · 치료사 · 그날 운영 시작 시각 · 기본 길이
+    var R = S.rsv, st = R.settings, today = rsvToday(), date = o.date, th, hr, len, min, a, b, vs;
+    if (!date) {
+      if (R.view === 'month') { a = rsvParts(today); b = rsvParts(R.date); date = (a.y === b.y && a.m === b.m) ? today : R.date; }
+      else date = rsvRange(R.view, R.date, st.week_start).days.indexOf(today) > -1 ? today : R.date;
+    }
+    th = rsvPickTher(o.th || '');
+    hr = rsvHours(st, th || null, rsvDow(date));
+    vs = rsvParseHm(st.view_start);
+    min = typeof o.min === 'number' ? o.min : (hr ? hr[0] : (vs !== null && vs < 1440 ? vs : 540));
+    len = (typeof o.len === 'number' && o.len >= 1 && o.len <= 720) ? Math.round(o.len)   // 끌어서 지정한 길이
+      : ((typeof st.default_len === 'number' && st.default_len >= 1 && st.default_len <= 720) ? Math.round(st.default_len) : 30);
+    if (min + len > 1440) min = Math.max(0, 1440 - len);
+    return { th: th, date: date, min: min, len: len };
+  }
+  function rsvFromRow(it) {   // 예약 한 건 → 창의 칸 값
+    var a = rsvKst(it.start_at), len = Math.round((rsvMs(it.end_at) - rsvMs(it.start_at)) / 60000);
+    return { th: it.therapist_id || '', date: a ? a.ymd : '', start: a ? rsvHm(a.min) : '', len: len > 0 ? len : 30, name: it.patient_name || '', chart: it.chart_no || '',
+      ins: it.ins_kind === '자보' ? '자보' : '일반', round: it.ins_round ? String(it.ins_round) : '', end: it.ins_end || '', course: it.course || '', status: it.status || '예약', memo: it.memo || '' };
+  }
+  function rsvSheetBody(isEdit, thList, courses) {
+    var h = '<div class="rsv-form">';
+    h += '<div class="rsv-changed" id="rsvChanged" role="status" hidden><span id="rsvChangedT"></span> <button type="button" class="btn btn-line sm" id="rsvReload">최신 내용 보기</button></div>';
+    if (!isEdit) h += '<div class="field"><label for="rsvQuick">빠른 입력</label><div class="rsv-quick"><input class="input" id="rsvQuick" autocomplete="off" enterkeyhint="done" placeholder="예) 홍길동 C10 · 홍길동 자보도수-5회 · 홍길동 킵"><button type="button" class="btn btn-line sm" id="rsvQuickGo">채우기</button></div><p class="muted small rsv-hint" id="rsvQuickHint" role="status"></p></div>';
+    h += '<div class="field"><label id="rsvThL">치료사</label><div class="seg sm" id="rsvTh" role="group" aria-labelledby="rsvThL">' +
+      (thList.length ? thList.map(function (t) { return '<button type="button" data-th="' + esc(t.id) + '" aria-pressed="false"><span class="rsv-dot" style="background:' + rsvColor(t.color) + '"></span>' + esc(t.name) + '</button>'; }).join('')
+        : '<span class="muted small">사용 중인 치료사가 없습니다. 설정에서 치료사를 먼저 추가해 주세요.</span>') + '</div></div>';
+    h += '<div class="row2"><div class="field"><label for="rsvDate">날짜</label><input class="input" type="date" id="rsvDate"></div><div class="field"><label for="rsvStart">시작</label><input class="input" type="time" id="rsvStart"></div></div>';
+    h += '<div class="field"><label for="rsvLenN">길이(분)</label><div class="rsv-lenrow"><div class="seg sm" id="rsvLen" role="group" aria-label="길이">' +
+      RSV_LENS.map(function (n) { return '<button type="button" data-len="' + n + '" aria-pressed="false">' + n + '</button>'; }).join('') +
+      '</div><input class="input rsv-lenn" id="rsvLenN" inputmode="numeric" maxlength="3" autocomplete="off"><span class="muted rsv-end" id="rsvEnd" aria-live="polite"></span></div></div>';
+    h += '<div class="field rsv-namef"><label for="rsvName">환자 이름</label><input class="input" id="rsvName" maxlength="40" autocomplete="off"><div class="rsv-sug" id="rsvSug" role="listbox" aria-label="환자 목록" hidden></div></div>';
+    h += '<div class="field"><label for="rsvChart">차트번호 <span class="muted small">(선택)</span></label><input class="input" id="rsvChart" maxlength="30" autocomplete="off"></div>';
+    h += '<div class="field"><label id="rsvInsL">구분</label><div class="seg sm" id="rsvIns" role="group" aria-labelledby="rsvInsL"><button type="button" data-ins="일반" aria-pressed="true">일반</button><button type="button" data-ins="자보" aria-pressed="false">자보</button></div></div>';
+    h += '<div class="row2" id="rsvInsRow" hidden><div class="field"><label for="rsvRound">자보 회차</label><input class="input" id="rsvRound" inputmode="numeric" maxlength="3" autocomplete="off"></div><div class="field"><label for="rsvInsEnd">기간끝</label><input class="input" type="date" id="rsvInsEnd"></div></div>';
+    h += '<div class="field"><label for="rsvCourse">코스</label><input class="input" id="rsvCourse" maxlength="30" autocomplete="off" autocapitalize="characters" placeholder="예) C10, J15+C5"><div class="rsv-courses" id="rsvCourses">' +
+      courses.map(function (c) { return '<button type="button" class="rsv-chip" data-course="' + esc(c) + '" aria-pressed="false">' + esc(c) + '</button>'; }).join('') + '</div><p class="muted small rsv-hint" id="rsvCourseHint" role="status"></p></div>';
+    h += '<div class="field"><label id="rsvStL">상태</label><div class="seg sm" id="rsvSt" role="group" aria-labelledby="rsvStL">' +
+      RSV_STATUS.map(function (s) { return '<button type="button" data-st="' + s + '" aria-pressed="false">' + s + '</button>'; }).join('') + '</div></div>';
+    h += '<div class="field"><label for="rsvMemo">메모</label><textarea class="input rsv-memo" id="rsvMemo" rows="2" maxlength="500"></textarea><p class="muted small">진단명·주민번호 같은 민감한 개인정보는 적지 마세요.</p></div>';
+    return h + '<p class="err" id="rsvErr" role="alert"></p><div class="sheet-actions"><button type="button" class="btn btn-line" data-close>취소</button><button type="button" class="btn btn-navy" id="rsvSave">저장</button></div></div>';
+  }
+  function rsvFormSet(ctx, f) {   // 창의 칸을 한꺼번에 채움 (프로그램으로 넣는 값이라 입력 알림은 가지 않음)
+    var m = ctx.el;
+    rsvPress($('#rsvTh', m), 'data-th', f.th);
+    $('#rsvDate', m).value = f.date; $('#rsvStart', m).value = f.start; $('#rsvLenN', m).value = String(f.len);
+    $('#rsvName', m).value = f.name; $('#rsvChart', m).value = f.chart; $('#rsvRound', m).value = f.round; $('#rsvInsEnd', m).value = f.end;
+    $('#rsvCourse', m).value = f.course; $('#rsvMemo', m).value = f.memo;
+    rsvPress($('#rsvIns', m), 'data-ins', f.ins); rsvPress($('#rsvSt', m), 'data-st', f.status);
+    rsvFormSync(ctx);
+  }
+  function rsvFormSync(ctx) {   // 칸 값에서 따라 나오는 표시: 끝 시각 · 길이 단추 · 자보 칸 · 코스 단추와 안내
+    var m = ctx.el, s = rsvTimeMin(rsvVal(m, '#rsvStart')), ls = rsvVal(m, '#rsvLenN'), n = /^\d{1,3}$/.test(ls) ? parseInt(ls, 10) : 0, norm = rsvNormCourse(rsvVal(m, '#rsvCourse'));
+    $('#rsvEnd', m).textContent = (s !== null && s < 1440 && n >= 1) ? (s + n > 1440 ? '자정을 넘깁니다' : '끝 ' + rsvHm(s + n)) : '';
+    rsvPress($('#rsvLen', m), 'data-len', n);
+    $('#rsvInsRow', m).hidden = rsvPressed($('#rsvIns', m), 'data-ins') !== '자보';
+    rsvPress($('#rsvCourses', m), 'data-course', norm);
+    $('#rsvCourseHint', m).textContent = (norm && ctx.courses.indexOf(norm) < 0) ? '목록에 없는 코스입니다 (그대로 저장됩니다).' : '';
+  }
+  function rsvFormRead(ctx) {   // 칸 → 서버로 보낼 값. 틀린 곳이 있으면 { err, f(칸 id) }
+    var m = ctx.el, th = rsvPressed($('#rsvTh', m), 'data-th'), date = rsvVal(m, '#rsvDate'), s = rsvTimeMin(rsvVal(m, '#rsvStart')), ls = rsvVal(m, '#rsvLenN'),
+      len = /^\d{1,3}$/.test(ls) ? parseInt(ls, 10) : 0, name = rsvVal(m, '#rsvName'), chart = rsvVal(m, '#rsvChart'), cs = rsvVal(m, '#rsvCourse'), course = rsvNormCourse(cs),
+      kind = rsvPressed($('#rsvIns', m), 'data-ins') === '자보' ? '자보' : '일반', rs = rsvVal(m, '#rsvRound'), ie = rsvVal(m, '#rsvInsEnd'), status = rsvPressed($('#rsvSt', m), 'data-st'),
+      memo = rsvVal(m, '#rsvMemo'), round = null, iend = null, data;
+    function bad(msg, id) { return { err: msg, f: id }; }
+    if (!th) return bad('치료사를 선택해 주세요.', 'rsvTh');
+    if (!date) return bad('날짜를 입력해 주세요.', 'rsvDate');
+    if (!isFinite(rsvAt(date, 0))) return bad('날짜 형식을 확인해 주세요.', 'rsvDate');
+    if (s === null || s >= 1440) return bad('시작 시각을 입력해 주세요.', 'rsvStart');
+    if (!(len >= 1 && len <= 720)) return bad('길이(분)는 1~720 사이의 숫자로 입력해 주세요.', 'rsvLenN');
+    if (s + len > 1440) return bad('자정을 넘길 수 없습니다. 시작 시각이나 길이를 줄여 주세요.', 'rsvLenN');
+    if (!name) return bad('환자 이름을 입력해 주세요.', 'rsvName');
+    if (name.length > 40) return bad('환자 이름은 40자 이하로 입력해 주세요.', 'rsvName');
+    if (chart.length > 30) return bad('차트번호는 30자 이하로 입력해 주세요.', 'rsvChart');
+    if (cs && !course) return bad('코스 형식이 올바르지 않습니다. 영문·숫자로 입력해 주세요 (예: C10, J15+C5).', 'rsvCourse');
+    if (kind === '자보') {
+      if (rs) { if (!/^\d{1,3}$/.test(rs) || parseInt(rs, 10) < 1) return bad('자보 회차는 1~999 사이의 숫자로 입력해 주세요.', 'rsvRound'); round = parseInt(rs, 10); }
+      if (ie) { if (!isFinite(rsvAt(ie, 0))) return bad('자보 기간끝 날짜를 확인해 주세요.', 'rsvInsEnd'); iend = ie; }
+    }
+    if (memo.length > 500) return bad('메모는 500자 이하로 입력해 주세요.', 'rsvMemo');
+    if (RSV_STATUS.indexOf(status) < 0) status = '예약';
+    data = { therapist_id: th, patient_name: name, chart_no: chart || null, start_at: rsvIso(date, s), end_at: rsvIso(date, s + len), status: status, ins_kind: kind, ins_round: round, ins_end: iend, course: course || null, memo: memo || null };
+    return { data: data, cand: { id: ctx.id || undefined, therapist_id: th, patient_name: name, chart_no: chart || null, start_at: data.start_at, end_at: data.end_at, status: status, ins_kind: kind, ins_end: iend } };
+  }
+  function rsvItemSheet(o) {   // 새 예약({ date, th, min, len }) 또는 수정({ item }) 창
+    var R = S.rsv, it = o.item || null, isEdit = !!it, d = isEdit ? null : rsvDefaults(o), m, ctx, courses = [];
+    (Array.isArray(R.settings.courses) ? R.settings.courses : RSV_DEFAULTS.courses).forEach(function (c) { var n = rsvNormCourse(c); if (n && courses.indexOf(n) < 0) courses.push(n); });
+    m = sheet(isEdit ? '예약 수정' : '새 예약', rsvSheetBody(isEdit, rsvThChoices(isEdit ? it.therapist_id : ''), courses));
+    ctx = { el: m, isEdit: isEdit, id: isEdit ? it.id : '', ver: isEdit ? it.version : 0, base: isEdit ? rsvBefore(it) : null, cid: isEdit ? '' : rsvUuid(), courses: courses,
+      busy: false, gone: false, warnEl: null, seq: 0, deb: null, sug: {}, auto: { ins: false, course: false } };
+    R.open = { kind: isEdit ? 'edit' : 'new', id: ctx.id, el: m, ctx: ctx };
+    rsvFormSet(ctx, isEdit ? rsvFromRow(it) : { th: d.th, date: d.date, start: rsvHm(d.min), len: d.len, name: '', chart: '', ins: '일반', round: '', end: '', course: '', status: '예약', memo: '' });
+    m.addEventListener('click', function (e) {
+      var t = e.target, b;
+      if (!t || !t.closest) return;
+      if ((b = t.closest('#rsvTh [data-th]'))) { rsvPress($('#rsvTh', m), 'data-th', b.getAttribute('data-th')); return; }
+      if ((b = t.closest('#rsvLen [data-len]'))) { $('#rsvLenN', m).value = b.getAttribute('data-len'); rsvFormSync(ctx); return; }
+      if ((b = t.closest('#rsvIns [data-ins]'))) { ctx.auto.ins = false; rsvPress($('#rsvIns', m), 'data-ins', b.getAttribute('data-ins')); rsvFormSync(ctx); return; }
+      if ((b = t.closest('#rsvSt [data-st]'))) { rsvPress($('#rsvSt', m), 'data-st', b.getAttribute('data-st')); return; }
+      if ((b = t.closest('#rsvCourses [data-course]'))) { ctx.auto.course = false; $('#rsvCourse', m).value = b.getAttribute('aria-pressed') === 'true' ? '' : b.getAttribute('data-course'); rsvFormSync(ctx); return; }
+      if ((b = t.closest('.rsv-sug-i'))) { rsvPick(ctx, b.getAttribute('data-pid')); return; }
+      if (t.closest('#rsvQuickGo')) { rsvQuickApply(ctx); return; }
+      if (t.closest('#rsvReload')) { rsvReloadForm(ctx); return; }
+      if (t.closest('#rsvSave')) { rsvSaveClick(ctx); }
+    });
+    function onInput(e) {
+      var id = e.target && e.target.id;
+      if (id === 'rsvName') rsvSuggest(ctx);
+      else if (id === 'rsvLenN' || id === 'rsvStart') rsvFormSync(ctx);
+      else if (id === 'rsvCourse') { ctx.auto.course = false; rsvFormSync(ctx); }
+      else if (id === 'rsvRound' || id === 'rsvInsEnd') ctx.auto.ins = false;
+    }
+    m.addEventListener('input', onInput); m.addEventListener('change', onInput);
+    m.addEventListener('keydown', function (e) {
+      var t = e.target;
+      if (e.key === 'Enter' && t && t.id === 'rsvQuick' && !e.isComposing) { e.preventDefault(); rsvQuickApply(ctx); return; }
+      if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && t && (t.id === 'rsvName' || (t.classList && t.classList.contains('rsv-sug-i')))) rsvSugMove(ctx, t, e.key === 'ArrowDown' ? 1 : -1, e);
+    });
+    return ctx;
+  }
+  /* 빠른 입력: "홍길동 자보도수-5회(12.04기간끝)" 같은 한 줄을 칸별 값으로 풀어 채움 (저장은 하지 않음 · 이 칸들은 통째로 바꿈) */
+  function rsvQuickApply(ctx) {
+    var R = S.rsv, m = ctx.el, txt = $('#rsvQuick', m) ? $('#rsvQuick', m).value : '', hint = $('#rsvQuickHint', m), p, parts = [], fl;
+    if (!rsvTrim(txt)) { if (hint) hint.textContent = ''; return; }
+    p = rsvParseTitle(txt, { refYmd: rsvVal(m, '#rsvDate'), courses: R.settings.courses });
+    $('#rsvName', m).value = p.name; $('#rsvCourse', m).value = p.course; $('#rsvMemo', m).value = p.memo;
+    rsvPress($('#rsvSt', m), 'data-st', p.status); rsvPress($('#rsvIns', m), 'data-ins', p.ins_kind);
+    $('#rsvRound', m).value = p.ins_round ? String(p.ins_round) : ''; $('#rsvInsEnd', m).value = p.ins_end || '';
+    ctx.auto.ins = false; ctx.auto.course = false; clearTimeout(ctx.deb); ctx.seq++; rsvSugShow(ctx, []);
+    rsvFormSync(ctx);
+    fl = p.flags || [];
+    parts.push(p.name ? '이름 ' + p.name : '이름을 찾지 못했습니다');
+    if (p.course) parts.push('코스 ' + p.course + (fl.indexOf('unlisted') > -1 ? ' (목록에 없는 코스)' : ''));
+    if (p.ins_kind === '자보') parts.push('자보' + (p.ins_round ? ' ' + p.ins_round + '회차' : '') + (p.ins_end ? ' · 기간끝 ' + rsvMD(p.ins_end) : ''));
+    if (p.status === '킵') parts.push('킵');
+    if (p.memo) parts.push('메모 ' + p.memo);
+    if (fl.indexOf('longname') > -1) parts.push('이름이 깁니다(12자 넘음)');
+    if (fl.indexOf('oddname') > -1) parts.push('이름에 이상한 글자가 있습니다');
+    if (fl.indexOf('baddate') > -1) parts.push('기간끝 날짜를 읽지 못했습니다');
+    if (hint) hint.textContent = parts.join(' · ');
+  }
+  /* 환자 이름 자동완성: 글자를 치다 잠깐 멈추면 환자 목록에서 찾고, 그 환자들의 마지막 예약(취소·노쇼 제외)을 함께 보여 줌.
+     늦게 도착한 옛 질문의 답이나 창이 닫힌 뒤의 답은 버림 (질문마다 번호를 매겨 가장 나중 것만 씀) */
+  function rsvLike(s) { return s.replace(/[\\%_]/g, '\\$&'); }
+  function rsvSuggest(ctx) {
+    var m = ctx.el, q = rsvVal(m, '#rsvName'), seq = ++ctx.seq;
+    clearTimeout(ctx.deb);
+    if (!q) { rsvSugShow(ctx, []); return; }
+    ctx.deb = setTimeout(function () {
+      if (seq !== ctx.seq || !document.body.contains(m)) return;
+      sb.from('rsv_patients').select('*').ilike('name', '%' + rsvLike(q) + '%').order('name', { ascending: true }).limit(8).then(function (r) {
+        var ps, ids;
+        if (seq !== ctx.seq || !document.body.contains(m)) return;
+        ps = (!r.error && r.data) || [];
+        if (!ps.length) { rsvSugShow(ctx, []); return; }
+        ids = ps.map(function (p) { return p.id; });
+        sb.from('rsv_items').select('*').in('patient_id', ids).is('deleted_at', null).order('start_at', { ascending: false }).limit(200).then(function (r2) {
+          var last = {}, known = !r2.error;
+          if (seq !== ctx.seq || !document.body.contains(m)) return;
+          ((known && r2.data) || []).forEach(function (x) { if (x.status !== '취소' && x.status !== '노쇼' && !last[x.patient_id]) last[x.patient_id] = x; });
+          rsvSugShow(ctx, ps.map(function (p) { return { p: p, last: known ? (last[p.id] || null) : false }; }));
+        }, function () { if (seq === ctx.seq && document.body.contains(m)) rsvSugShow(ctx, ps.map(function (p) { return { p: p, last: false }; })); });
+      }, function () { if (seq === ctx.seq && document.body.contains(m)) rsvSugShow(ctx, []); });
+    }, 250);
+  }
+  function rsvSugShow(ctx, list) {
+    var box = $('#rsvSug', ctx.el);
+    if (!box) return;
+    ctx.sug = {};
+    if (!list.length) { box.innerHTML = ''; box.hidden = true; return; }
+    box.innerHTML = list.map(function (x) {
+      var l = x.last, info = l ? '마지막 ' + (rsvKst(l.start_at) ? rsvMD(rsvKst(l.start_at).ymd) : '') + ' · ' + (l.ins_kind === '자보' ? '자보' + (l.ins_round ? ' ' + l.ins_round + '회차' : '') : '일반') + (l.course ? ' · ' + l.course : '') : (l === null ? '이전 예약 없음' : '');
+      ctx.sug[x.p.id] = x;
+      return '<button type="button" class="rsv-sug-i" role="option" data-pid="' + esc(x.p.id) + '"><span class="rsv-sug-n">' + esc(x.p.name) + '</span>' + (x.p.chart_no ? '<span class="rsv-sug-c">' + esc(x.p.chart_no) + '</span>' : '') + (info ? '<span class="rsv-sug-l">' + esc(info) + '</span>' : '') + '</button>';
+    }).join('');
+    box.hidden = false;
+  }
+  function rsvSugMove(ctx, t, dir, e) {   // ↑ ↓ 로 목록 위를 오감
+    var L = $$('.rsv-sug-i', ctx.el), n;
+    if (!L.length) return;
+    n = t.id === 'rsvName' ? (dir > 0 ? 0 : -1) : L.indexOf(t) + dir;
+    e.preventDefault();
+    if (n < 0) rsvFocusEl($('#rsvName', ctx.el)); else if (n < L.length) rsvFocusEl(L[n]);
+  }
+  function rsvPick(ctx, pid) {   // 목록에서 환자를 고름 → 이름·차트번호 + 마지막 예약 기준 구분·회차(+1)·기간끝·코스
+    var m = ctx.el, x = ctx.sug[pid], l, kind, round;
+    if (!x) return;
+    clearTimeout(ctx.deb); ctx.seq++;
+    $('#rsvName', m).value = x.p.name; $('#rsvChart', m).value = x.p.chart_no || '';
+    l = x.last;
+    if (l) {
+      kind = l.ins_kind === '자보' ? '자보' : '일반';
+      round = (kind === '자보' && l.ins_round >= 1) ? Math.min(999, l.ins_round + 1) : '';
+      rsvPress($('#rsvIns', m), 'data-ins', kind);
+      $('#rsvRound', m).value = round === '' ? '' : String(round); $('#rsvInsEnd', m).value = kind === '자보' ? (l.ins_end || '') : '';
+      ctx.auto.ins = true;
+      if (!rsvVal(m, '#rsvCourse') || ctx.auto.course) { $('#rsvCourse', m).value = l.course || ''; ctx.auto.course = !!l.course; }
+    } else {   // 이전 예약이 없으면: 앞 환자를 골라 자동으로 채웠던 값만 되돌림 (내가 직접 고른 값은 그대로)
+      if (ctx.auto.ins) { rsvPress($('#rsvIns', m), 'data-ins', '일반'); $('#rsvRound', m).value = ''; $('#rsvInsEnd', m).value = ''; ctx.auto.ins = false; }
+      if (ctx.auto.course) { $('#rsvCourse', m).value = ''; ctx.auto.course = false; }
+    }
+    rsvSugShow(ctx, []);
+    rsvFormSync(ctx);
+  }
+  /* 저장 전 경고 */
+  function rsvWarnList(cand) {   // → Promise<경고 목록>. 받아 둔 기간 안의 날짜는 가진 내용으로, 밖이면 그 날만 서버에서 따로 받아 확인
+    var R = S.rsv, k = rsvKst(cand.start_at), a, z, c0 = { items: R.items, blocks: R.blocks, settings: R.settings, therapists: R.ther }, unchecked;
+    if (!k) return Promise.resolve([]);
+    a = rsvAt(k.ymd, 0); z = rsvAt(rsvAddDays(k.ymd, 1), 0);
+    if (R.loaded && R.win && R.win.from <= a && z <= R.win.to) return Promise.resolve(rsvWarnings(cand, c0));
+    unchecked = { code: 'unchecked', text: '그 날짜의 기존 예약을 확인하지 못했습니다 (인터넷 연결을 확인해 주세요). 겹침 여부는 확인되지 않았습니다.', refs: [] };
+    function day(q) { return q.is('deleted_at', null).lt('start_at', rsvIso(rsvAddDays(k.ymd, 1), 0)).gt('end_at', rsvIso(k.ymd, 0)).limit(1000); }
+    return Promise.all([day(sb.from('rsv_items').select('*')), day(sb.from('rsv_blocks').select('*'))]).then(function (r) {
+      if (r[0].error || r[1].error) return rsvWarnings(cand, c0).concat([unchecked]);
+      return rsvWarnings(cand, { items: r[0].data || [], blocks: r[1].data || [], settings: R.settings, therapists: R.ther });
+    }, function () { return rsvWarnings(cand, c0).concat([unchecked]); });
+  }
+  function rsvConfirmWarn(ctx, list, onOk, o) {   // 확인창: 돌아가기(기본 · Esc 도 같음) / 그래도 저장·이동. ctx 가 없으면(끌어서 옮길 때) 저장 창 관련 처리는 건너뜀
+    var op = o || {}, w = sheet(op.title || '저장 전 확인', '<p class="muted small">' + esc(op.note || '아래 내용을 확인해 주세요. 그래도 저장할 수 있습니다.') + '</p><ul class="rsv-warns">' +
+      list.map(function (x) { return '<li data-code="' + esc(x.code) + '">' + esc(x.text) + '</li>'; }).join('') +
+      '</ul><div class="sheet-actions"><button type="button" class="btn btn-line" id="rsvWarnBack">돌아가기</button><button type="button" class="btn btn-navy" id="rsvWarnOk">' + esc(op.ok || '그래도 저장') + '</button></div>');
+    if (ctx) ctx.warnEl = w;
+    function onClick(e) {
+      var t = e.target;
+      if (!t || !t.closest) return;
+      if (t.closest('#rsvWarnOk')) { closeSheet(w); onOk(); }
+      else if (t.closest('#rsvWarnBack')) { closeSheet(w); if (ctx) rsvFocusEl($('#rsvSave', ctx.el)); }
+    }
+    w.addEventListener('click', onClick);
+    rsvFocusEl($('#rsvWarnBack', w));   // Esc 가 이 확인창만 닫도록 포커스를 안으로 (아래 창이 아니라)
+  }
+  function rsvSaveClick(ctx) {
+    var R = S.rsv, m = ctx.el, btn = $('#rsvSave', m), r;
+    if (!R || ctx.busy || ctx.gone || (ctx.warnEl && document.body.contains(ctx.warnEl))) return;
+    r = rsvFormRead(ctx);
+    if (r.err) { rsvSetErr(m, r.err); rsvFocusId(m, r.f); return; }
+    rsvSetErr(m, '');
+    ctx.busy = true; if (btn) btn.disabled = true;
+    rsvWarnList(r.cand).then(function (list) {
+      ctx.busy = false; if (btn) btn.disabled = ctx.gone;
+      if (S.rsv !== R || !document.body.contains(m)) return;
+      if (!list.length) rsvDoSave(ctx, r.data);
+      else rsvConfirmWarn(ctx, list, function () { rsvDoSave(ctx, r.data); });
+    });
+  }
+  function rsvDoSave(ctx, data) {
+    var R = S.rsv, m = ctx.el, btn = $('#rsvSave', m), p = {}, k;
+    for (k in data) { if (Object.prototype.hasOwnProperty.call(data, k)) p[k] = data[k]; }
+    if (ctx.isEdit) { p.id = ctx.id; p.version = ctx.ver; } else p.client_id = ctx.cid;
+    ctx.busy = true; if (btn) btn.disabled = true; rsvSetErr(m, '');
+    sb.rpc('rsv_item_save', { p_data: p }).then(function (r) { return r; }, function (e) { return { data: null, error: e }; }).then(function (r) {
+      var row;
+      ctx.busy = false; if (btn) btn.disabled = ctx.gone;
+      if (S.rsv !== R) return;
+      if (r.error) { rsvSaveFailed(ctx, r.error); return; }
+      row = rsvOne(r.data);
+      if (!row || !row.id) { rsvSetErr(m, '저장 결과를 확인하지 못했습니다. 화면을 새로 고쳐 확인해 주세요.'); rsvLoad(); return; }
+      rsvSaved(ctx, row);
+    });
+  }
+  function rsvSaved(ctx, row) {
+    var R = S.rsv, m = ctx.el, same = ctx.isEdit && row.version === ctx.ver, sp = rsvSpan(row), md = sp ? rsvMD(sp.ymd) : '', outside = !!sp && rsvRange(R.view, R.date, R.settings.week_start).days.indexOf(sp.ymd) < 0;
+    if (R.open && R.open.el === m) R.open = null;
+    closeSheet(m);
+    if (same) { toast('바뀐 내용이 없습니다.'); return; }
+    rsvPut(row);
+    rsvPushUndo(R, ctx.isEdit ? { op: 'save', id: row.id, ver: row.version, before: ctx.base, after: row, label: row.patient_name + ' 예약 수정' } : { op: 'create', id: row.id, ver: row.version, label: row.patient_name + ' 예약 만들기' });
+    toast(esc(row.patient_name) + ' 예약을 ' + (ctx.isEdit ? '수정했습니다' : '만들었습니다') + (sp ? ' (' + md + ' ' + rsvHm(sp.s) + ')' : '') + (outside ? ' · 눌러서 보기' : ''),
+      outside ? function () { if (S.rsv === R && rsvShown()) rsvGo(R.view, sp.ymd, false); } : null);
+  }
+  function rsvSaveFailed(ctx, e) {
+    var R = S.rsv, m = ctx.el;
+    if (rsvIsConflict(e)) {   // 내가 본 버전이 낡음 → 안내하고 최신으로 다시 불러와 그 내용으로 창을 다시 엶
+      toast(esc(rsvErrText(e)) + ' 최신 내용으로 다시 엽니다.');
+      rsvLoad().then(function () {
+        var cur;
+        if (S.rsv !== R || !document.body.contains(m)) return;
+        cur = R.items[ctx.id];
+        if (R.open && R.open.el === m) R.open = null;
+        closeSheet(m);
+        if (cur) rsvItemSheet({ item: cur }); else toast('이 예약을 찾을 수 없습니다. 삭제되었거나 다른 날짜로 옮겨졌을 수 있습니다.');
+      });
+      return;
+    }
+    rsvSetErr(m, rsvErrText(e));
+    rsvCheckOpen();
+  }
+  function rsvReloadForm(ctx) {   // 열어 둔 사이 다른 직원이 바꾼 내용으로 칸을 다시 채움
+    var cur = S.rsv.items[ctx.id];
+    if (!cur) return;
+    ctx.ver = cur.version; ctx.base = rsvBefore(cur);
+    rsvFormSet(ctx, rsvFromRow(cur));
+    ctx.auto.ins = false; ctx.auto.course = false;   // 이제 칸의 값은 서버가 준 값 — 환자를 다시 고를 때 "자동으로 채웠던 값"으로 지우면 안 됨
+    $('#rsvChanged', ctx.el).hidden = true; rsvSetErr(ctx.el, '');
+  }
+  function rsvUndoTitle(R) { var en = R.undo[R.undo.length - 1]; return en ? '되돌리기: ' + (en.label || '') + ' (Ctrl+Z)' : '되돌리기 (Ctrl+Z)'; }   // 단추 이름표: 무엇을 되돌리는지
+  function rsvUndoSync(R) { var b = $('#rsvUndo'); if (!b) return; b.disabled = !R.undo.length; b.title = rsvUndoTitle(R); }
+  function rsvPushUndo(R, en) { R.undo.push(en); while (R.undo.length > 20) R.undo.shift(); rsvUndoSync(R); }
+  /* 되돌리기: 맨 위 동작 하나를 거꾸로 하는 서버 호출. 서버가 받아들인 뒤에만 화면에 반영 · 연타해도 1번 · 그 예약이 처리 중이면 미룸.
+     같은 예약을 연달아 되돌려도 서버 버전이 어긋나지 않게 아래 동작의 기대 버전을 이어 달음(rsvUndoRebase). 되돌림도 서버 기록에 남음 */
+  function rsvUndo() {
+    var R = S.rsv, en, u, id;
+    if (!R || R.undoing) return;
+    if (!R.undo.length) { toast('되돌릴 내용이 없습니다.'); return; }
+    en = R.undo[R.undo.length - 1]; id = en.id;
+    if (R.busy[id]) { toast('이 예약을 처리하는 중입니다. 잠시 뒤에 다시 눌러 주세요.'); return; }
+    u = rsvUndoOf(en);
+    if (!u) { R.undo.pop(); rsvUndoSync(R); toast('이 동작은 되돌릴 수 없어 목록에서 뺐습니다.'); return; }
+    R.undoing = true; R.busy[id] = true; if (rsvShown()) rsvRender();
+    sb.rpc(u.rpc, u.args).then(function (r) { return r; }, function (e) { return { data: null, error: e }; }).then(function (r) {
+      var row, i, sp, outside;
+      delete R.busy[id]; R.undoing = false;
+      if (S.rsv !== R) return;   // 그 사이 로그아웃·다른 사람 로그인: 이 결과를 새 화면에 쓰지 않음
+      i = R.undo.lastIndexOf(en);
+      if (r.error) { rsvUndoFailed(R, en, i, r.error); return; }
+      row = rsvOne(r.data);
+      if (i >= 0) { if (row && row.id) rsvUndoRebase(R.undo, i, row.version); R.undo.splice(i, 1); }
+      rsvUndoSync(R);
+      if (!row || !row.id) { toast('되돌린 결과를 확인하지 못했습니다. 화면을 확인해 주세요.'); rsvLoad(); if (rsvShown()) rsvRender(); return; }
+      rsvPut(row);
+      sp = row.deleted_at ? null : rsvSpan(row);
+      outside = !!sp && rsvRange(R.view, R.date, R.settings.week_start).days.indexOf(sp.ymd) < 0;
+      toast('되돌렸습니다: ' + esc(en.label || '') + (outside ? ' · 눌러서 보기' : ''), outside ? function () { if (S.rsv === R && rsvShown()) rsvGo(R.view, sp.ymd, false); } : null);
+    });
+  }
+  function rsvUndoFailed(R, en, i, e) {
+    var lab = esc(en.label || '');
+    if (rsvIsConflict(e)) { if (i >= 0) R.undo.splice(i, 1); toast(lab + ': 다른 직원이 이미 바꿨습니다 (되돌리지 않음)'); rsvLoad(); }   // 덮어쓰지 않음 · 이 항목은 빼고 최신 내용을 다시 받음
+    else if (e && e.code) { if (i >= 0) R.undo.splice(i, 1); toast(lab + ': ' + esc(rsvErrText(e)) + ' (되돌리지 않음)'); }                    // 서버가 이유를 대고 거절 → 다시 해도 같으므로 뺌
+    else toast('되돌리지 못했습니다. 인터넷 연결을 확인한 뒤 다시 눌러 주세요.');                                                              // 서버에 닿지 못함 → 목록에 남겨 다시 누르면 되도록
+    rsvUndoSync(R); if (rsvShown()) rsvRender();
+  }
+  function rsvPut(row) {   // 서버가 돌려준 최신 모습을 화면에 반영 (더 새 버전이 이미 있으면 그대로 둠)
+    var R = S.rsv, cur;
+    if (!R || !row || !row.id) return;
+    if (row.deleted_at) delete R.items[row.id];
+    else { cur = R.items[row.id]; if (!(cur && typeof cur.version === 'number' && typeof row.version === 'number' && cur.version > row.version)) R.items[row.id] = row; }
+    if (rsvShown()) rsvRender();
+    rsvCheckOpen();
+  }
+  /* 상세 창 · 상태 · 삭제 */
+  function rsvDetailFill(m, it) {
+    var th = rsvTher(it.therapist_id), sp = rsvSpan(it), p = sp ? rsvParts(sp.ymd) : null, h = '', t;
+    h += '<h3 class="rsv-det-n">' + esc(it.patient_name || '(이름 없음)') + (it.course ? ' <span class="rsv-det-c">' + esc(it.course) + '</span>' : '') + '</h3>';
+    if (sp) h += '<p class="rsv-det-t">' + esc(p.m + '/' + p.d + ' (' + RSV_DOWN[p.dow] + ') ' + rsvHm(sp.s) + '–' + rsvHm(sp.e > 1440 ? sp.e - 1440 : sp.e) + ' · ' + (sp.e - sp.s) + '분') + '</p>';
+    h += '<p class="rsv-det-th"><span class="rsv-dot" style="background:' + rsvColor(th && th.color) + '"></span>' + esc(th ? th.name : '(알 수 없음)') + '</p>';
+    if (it.chart_no) h += '<p class="rsv-det-r"><span class="muted">차트번호</span> ' + esc(it.chart_no) + '</p>';
+    if (it.ins_kind === '자보') h += '<p class="rsv-det-r">' + esc('자보' + (it.ins_round ? ' ' + it.ins_round + '회차' : '') + (it.ins_end ? ' · 기간끝 ' + rsvMD(it.ins_end) : '')) + '</p>';
+    if (it.memo) h += '<p class="rsv-det-m">' + esc(it.memo) + '</p>';
+    t = $('#rsvDet', m); if (t) t.innerHTML = h;
+    rsvPress($('#rsvDetSt', m), 'data-st', it.status);
+  }
+  function rsvDetailSheet(id) {
+    var R = S.rsv, it = R && R.items[id], m;
+    if (!it) return;
+    m = sheet('예약 상세', '<div class="rsv-det" id="rsvDet"></div><div class="field"><label id="rsvDetL">상태</label><div class="seg sm rsv-detst" id="rsvDetSt" role="group" aria-labelledby="rsvDetL">' +
+      RSV_STATUS.map(function (s) { return '<button type="button" data-st="' + s + '" aria-pressed="false">' + s + '</button>'; }).join('') +
+      '</div></div><p class="err" id="rsvErr" role="alert"></p><div class="sheet-actions"><button type="button" class="btn btn-danger" id="rsvDel">삭제</button><button type="button" class="btn btn-line" id="rsvDetHist">기록</button><button type="button" class="btn btn-navy" id="rsvEdit">수정</button></div>');
+    R.open = { kind: 'detail', id: id, el: m, ctx: null };
+    rsvDetailFill(m, it);
+    m.addEventListener('click', function (e) {
+      var t = e.target, b, cur;
+      if (!t || !t.closest) return;
+      if ((b = t.closest('#rsvDetSt [data-st]'))) { rsvSetStatus(id, b.getAttribute('data-st')); return; }
+      if (t.closest('#rsvDetHist')) { rsvHistorySheet(id); return; }
+      if (t.closest('#rsvEdit')) { cur = R.items[id]; if (!cur) return; if (R.open && R.open.el === m) R.open = null; closeSheet(m); rsvItemSheet({ item: cur }); return; }
+      if ((b = t.closest('#rsvDel'))) { if (!confirmInline(b, '한 번 더 누르면 삭제됩니다')) return; rsvDeleteItem(id); }
+    });
+  }
+  function rsvFail(R, e) {   // 상태·삭제가 거절·실패했을 때: 이유 안내 (내가 본 버전이 낡았으면 최신으로 다시 불러옴)
+    if (rsvIsConflict(e)) { toast(esc(rsvErrText(e)) + ' 최신 내용으로 다시 불러옵니다.'); rsvLoad(); return; }
+    toast(esc(rsvErrText(e)));
+  }
+  function rsvSetStatus(id, st) {
+    var R = S.rsv, it = R && R.items[id], before;
+    if (!it || R.busy[id] || it.status === st || RSV_STATUS.indexOf(st) < 0) return;
+    R.busy[id] = true; before = rsvBefore(it);
+    sb.rpc('rsv_item_status', { p_id: id, p_status: st, p_version: it.version }).then(function (r) { return r; }, function (e) { return { data: null, error: e }; }).then(function (r) {
+      var row;
+      delete R.busy[id];
+      if (S.rsv !== R) return;
+      if (r.error) { rsvFail(R, r.error); return; }
+      row = rsvOne(r.data);
+      if (!row || !row.id) { rsvLoad(); return; }
+      if (row.version !== it.version) rsvPushUndo(R, { op: 'status', id: id, ver: row.version, before: before, after: row, label: (row.patient_name || '') + ' 상태 ' + st });
+      rsvPut(row);
+    });
+  }
+  function rsvToggleOk(btn) {   // ✓ 단추: 내원 ↔ 예약
+    var ev = btn.closest('.rsv-ev'), id = ev && ev.getAttribute('data-id'), it = id && S.rsv.items[id];
+    if (it) rsvSetStatus(id, it.status === '내원' ? '예약' : '내원');
+  }
+  function rsvDeleteItem(id) {
+    var R = S.rsv, it = R && R.items[id];
+    if (!it || R.busy[id]) return;
+    R.busy[id] = true;
+    sb.rpc('rsv_item_delete', { p_id: id, p_version: it.version }).then(function (r) { return r; }, function (e) { return { data: null, error: e }; }).then(function (r) {
+      var row;
+      delete R.busy[id];
+      if (S.rsv !== R) return;
+      if (r.error) { rsvFail(R, r.error); return; }
+      row = rsvOne(r.data);
+      if (R.open && R.open.id === id) { closeSheet(R.open.el); R.open = null; }
+      rsvPushUndo(R, { op: 'delete', id: id, ver: row && row.version, label: (it.patient_name || '') + ' 예약 삭제' });
+      if (row && row.id) rsvPut(row); else { delete R.items[id]; if (rsvShown()) rsvRender(); }
+      toast('예약을 삭제했습니다. 30일 안에는 휴지통에서 되살릴 수 있습니다.');
+    });
+  }
+  /* 열어 둔 창과 실시간 변경: 상세는 바로 새 내용으로 · 수정 창은 "바뀜" 표시(내가 쓰던 칸은 건드리지 않음) · 지워졌으면 알림 */
+  function rsvCheckOpen() {
+    var R = S.rsv, o = R && R.open, cur, bn, tx, rl, sv;
+    if (!o) return;
+    if (!o.el || !document.body.contains(o.el)) { R.open = null; return; }
+    if (o.kind === 'new') return;
+    cur = R.items[o.id];
+    if (o.kind === 'detail') {
+      if (!cur) { closeSheet(o.el); R.open = null; toast('이 예약이 삭제되었거나 다른 날짜로 옮겨졌습니다.'); return; }
+      rsvDetailFill(o.el, cur);
+      return;
+    }
+    if (o.ctx.busy) return;   // 내 저장이 오가는 중 되돌아온 알림은 곧 결과가 정리하므로 표시하지 않음
+    bn = $('#rsvChanged', o.el); tx = $('#rsvChangedT', o.el); rl = $('#rsvReload', o.el); sv = $('#rsvSave', o.el);
+    if (!cur) {
+      o.ctx.gone = true; tx.textContent = '이 예약이 삭제되었거나 다른 날짜로 옮겨졌습니다. 더 이상 저장할 수 없습니다.'; rl.hidden = true; sv.disabled = true; bn.hidden = false;
+    } else if (cur.version !== o.ctx.ver) {
+      tx.textContent = '이 예약이 다른 직원에 의해 바뀌었습니다. 아래는 바뀌기 전 모습입니다.'; rl.hidden = false; bn.hidden = false;
+    }
+  }
+  /* 달력에서: 빈 칸을 누르면 그 자리(이동 단위로 내림)의 새 예약 · 예약 블록에서 Enter/Space 면 상세 */
+  function rsvBlankClick(col, e) {
+    var R = S.rsv, g = col.closest('.rsv-grid'), date = col.getAttribute('data-date'), vs = g ? parseInt(g.getAttribute('data-vs'), 10) : NaN, ve = g ? parseInt(g.getAttribute('data-ve'), 10) : NaN,
+      unit = R.settings.snap, y, min;
+    if (!isFinite(rsvAt(date, 0))) return;
+    if (isFinite(vs) && isFinite(ve) && typeof e.clientY === 'number') {
+      y = e.clientY - col.getBoundingClientRect().top;
+      if (y === y) {
+        min = vs + Math.round(y / RSV_PXM * 100) / 100;   // 소수 오차로 정각이 한 칸 밀리지 않게 두 자리에서 반올림한 뒤 내림
+        if (min < vs) min = vs; if (min > ve - 1) min = ve - 1;
+        min = rsvSnap(min, typeof unit === 'number' && unit > 0 ? unit : 15, 'floor');
+      }
+    }
+    rsvItemSheet({ date: date, th: col.getAttribute('data-th') || '', min: min });
+  }
+  function rsvBodyKey(e) {
+    var t = e.target, ev;
+    if (!t || !t.closest || e.defaultPrevented || e.isComposing || e.ctrlKey || e.altKey || e.metaKey) return;
+    if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+    if (t.closest('[data-rsv-ok]')) return;   // ✓ 단추는 자기 동작대로
+    ev = t.closest('.rsv-ev');
+    if (!ev) {
+      ev = t.closest('.rsv-blk'); if (!ev || !S.rsv) return;
+      e.preventDefault(); ev = S.rsv.blocks[ev.getAttribute('data-bid')]; if (ev) rsvBlockSheet({ block: ev });
+      return;
+    }
+    e.preventDefault(); rsvDetailSheet(ev.getAttribute('data-id'));
+  }
+
+  /* ================= 예약 (v48 7단계): ⋯ 메뉴 · 휴무·마감 · 변경 기록 · 휴지통 · 설정 =================
+     · ⋯ 메뉴("예약 메뉴" 창): 휴무·마감 추가 · 변경 기록 · 휴지통 · (내 계정에 치료사가 연결돼 있으면) 내 예약만 보기 · (관리자만) 설정
+     · 휴무·마감: 대상(병원 전체 / 치료사 한 명) · 종일(시작~끝 날짜, 끝 날짜 포함) 또는 시간 지정 · 이유(40자). 달력의 블록을 누르면 수정·삭제 창.
+       서버가 받아들인 뒤에만 화면에 반영 · 새로 만들 때 client_id 를 한 번만 만들어 실패 뒤 다시 눌러도 한 건 · 서버가 거절하면 이유를 창 안에 */
+  function rsvMine(R) { var i; if (!S.me) return null; for (i = 0; i < R.ther.length; i++) { if (R.ther[i].profile_id && R.ther[i].profile_id === S.me.id) return R.ther[i]; } return null; }   // 내 계정에 연결된 치료사
+  function rsvMineOn(R, mine) { return R.ther.every(function (t) { return t.id === mine.id ? rsvOn(t.id) : !rsvOn(t.id); }); }                                                                  // 지금 "내 치료사만" 켜져 있나
+  function rsvMineToggle() {
+    var R = S.rsv, mine = R && rsvMine(R), f = {};
+    if (!mine) return;
+    if (!rsvMineOn(R, mine)) R.ther.forEach(function (t) { if (t.id !== mine.id) f[t.id] = false; });
+    R.filters.ther = f; if (rsvShown()) rsvRender();
+  }
+  function rsvMoreMenu() {
+    var R = S.rsv, mine = R && rsvMine(R), on = !!mine && rsvMineOn(R, mine), m, h;
+    if (!R) return;
+    h = '<div class="rsv-menu" role="menu"><button type="button" role="menuitem" id="rsvMBlock" data-m="block">휴무·마감 추가</button><button type="button" role="menuitem" id="rsvMHist" data-m="hist">변경 기록</button>' +
+      '<button type="button" role="menuitem" id="rsvMTrash" data-m="trash">휴지통</button>' +
+      (mine ? '<button type="button" role="menuitem" id="rsvMMine" data-m="mine">' + (on ? '모든 치료사 보기' : '내 예약만 보기') + '</button>' : '') +
+      (S.me && S.me.role === 'admin' ? '<button type="button" role="menuitem" id="rsvMSet" data-m="set">설정</button>' : '') + '</div>';
+    m = sheet('예약 메뉴', h);
+    m.addEventListener('click', function (e) {
+      var b = e.target && e.target.closest && e.target.closest('.rsv-menu [data-m]'), k;
+      if (!b) return;
+      k = b.getAttribute('data-m'); closeSheet(m);
+      if (k === 'block') rsvBlockSheet({}); else if (k === 'hist') rsvHistorySheet(); else if (k === 'trash') rsvTrashSheet(); else if (k === 'mine') rsvMineToggle(); else if (k === 'set') rsvSettingsSheet();
+    });
+    rsvFocusEl($('#rsvMBlock', m));
+  }
+  /* 휴무·마감 */
+  function rsvPutBlock(row) {   // 서버가 돌려준 블록을 화면에 반영 (지워진 것이면 뺌)
+    var R = S.rsv;
+    if (!R || !row || !row.id) return;
+    if (row.deleted_at) delete R.blocks[row.id]; else R.blocks[row.id] = row;
+    if (rsvShown()) rsvRender();
+  }
+  function rsvBlockBody(isEdit, thList) {
+    var h = '<div class="rsv-form"><div class="field"><label id="rsvBThL">대상</label><div class="seg sm" id="rsvBTh" role="group" aria-labelledby="rsvBThL"><button type="button" data-th="" aria-pressed="false">병원 전체</button>' +
+      thList.map(function (t) { return '<button type="button" data-th="' + esc(t.id) + '" aria-pressed="false"><span class="rsv-dot" style="background:' + rsvColor(t.color) + '"></span>' + esc(t.name) + '</button>'; }).join('') + '</div></div>';
+    h += '<div class="field"><label id="rsvBKL">시간</label><div class="seg sm" id="rsvBK" role="group" aria-labelledby="rsvBKL"><button type="button" data-k="all" aria-pressed="false">종일</button><button type="button" data-k="time" aria-pressed="false">시간 지정</button></div></div>';
+    h += '<div class="row2"><div class="field"><label for="rsvBD1">시작 날짜</label><input class="input" type="date" id="rsvBD1"></div><div class="field"><label for="rsvBD2">끝 날짜</label><input class="input" type="date" id="rsvBD2"></div></div>';
+    h += '<div class="row2" id="rsvBTimes"><div class="field"><label for="rsvBT1">시작 시각</label><input class="input" type="time" id="rsvBT1"></div><div class="field"><label for="rsvBT2">끝 시각</label><input class="input" type="time" id="rsvBT2"></div></div>';
+    h += '<div class="field"><label for="rsvBReason">이유 <span class="muted small">(선택)</span></label><input class="input" id="rsvBReason" maxlength="40" autocomplete="off" placeholder="예) 연차, 교육, 점심, 휴진"></div>';
+    return h + '<p class="err" id="rsvErr" role="alert"></p><div class="sheet-actions">' + (isEdit ? '<button type="button" class="btn btn-danger" id="rsvBDel">삭제</button>' : '<button type="button" class="btn btn-line" data-close>취소</button>') + '<button type="button" class="btn btn-navy" id="rsvBSave">저장</button></div></div>';
+  }
+  function rsvBlockFrom(b, date) {   // 창에 채울 값: 있는 블록이면 그 값, 새 블록이면 처음 값 (끝 날짜는 "그 날 포함")
+    var R = S.rsv, f = { th: '', kind: 'all', d1: date || '', d2: '', t1: '12:00', t2: '13:00', reason: '' }, a, z, today, rg;
+    if (b) {
+      a = rsvKst(b.start_at);
+      if (a) {
+        f.th = b.therapist_id || ''; f.reason = b.reason || ''; f.d1 = a.ymd;
+        if (b.all_day === true) { z = rsvKst(rsvMs(b.end_at) - 60000); f.d2 = z ? z.ymd : a.ymd; }
+        else { f.kind = 'time'; z = rsvKst(b.end_at); f.t1 = rsvHm(a.min); if (z) { f.d2 = z.ymd; f.t2 = rsvHm(z.min); } else f.d2 = a.ymd; }
+        return f;
+      }
+    }
+    if (!f.d1) { today = rsvToday(); rg = rsvRange(R.view, R.date, R.settings.week_start); f.d1 = rg.days.indexOf(today) > -1 ? today : R.date; }
+    f.d2 = f.d1;
+    return f;
+  }
+  function rsvBlockSync(m) { var t = $('#rsvBTimes', m); if (t) t.hidden = rsvPressed($('#rsvBK', m), 'data-k') !== 'time'; }
+  function rsvBlockRead(m) {   // 창의 값을 검사해 서버로 보낼 모양으로 → { err, f, data }
+    var th = rsvPressed($('#rsvBTh', m), 'data-th'), time = rsvPressed($('#rsvBK', m), 'data-k') === 'time', d1 = $('#rsvBD1', m).value, d2 = $('#rsvBD2', m).value, reason = rsvTrim($('#rsvBReason', m).value), t1, t2, s, e,
+      okD = function (d) { return /^\d{4}-\d{2}-\d{2}$/.test(d) && isFinite(rsvAt(d, 0)); };
+    if (!okD(d1)) return { err: '시작 날짜를 입력해 주세요.', f: 'rsvBD1' };
+    if (!okD(d2)) return { err: '끝 날짜를 입력해 주세요.', f: 'rsvBD2' };
+    if (d2 < d1) return { err: '끝 날짜는 시작 날짜보다 빠를 수 없습니다.', f: 'rsvBD2' };
+    if (time) {
+      t1 = rsvTimeMin($('#rsvBT1', m).value); t2 = rsvTimeMin($('#rsvBT2', m).value);
+      if (typeof t1 !== 'number' || typeof t2 !== 'number') return { err: '시각을 입력해 주세요.', f: typeof t1 !== 'number' ? 'rsvBT1' : 'rsvBT2' };
+      s = rsvAt(d1, t1); e = rsvAt(d2, t2);
+      if (!(e > s)) return { err: '끝 시각은 시작 시각보다 늦어야 합니다.', f: 'rsvBT2' };
+    } else { s = rsvAt(d1, 0); e = rsvAt(rsvAddDays(d2, 1), 0); }
+    if (e - s > 31 * 86400000) return { err: '휴무·마감은 최대 31일까지 지정할 수 있습니다.', f: 'rsvBD2' };
+    if (reason.length > 40) return { err: '이유는 40자 이하로 입력해 주세요.', f: 'rsvBReason' };
+    return { err: '', f: '', data: { therapist_id: th || null, start_at: new Date(s).toISOString(), end_at: new Date(e).toISOString(), all_day: !time, reason: reason || null } };
+  }
+  function rsvBlockSheet(o) {   // 새 휴무·마감({ date }) 또는 수정({ block }) 창
+    var R = S.rsv, b = o.block || null, isEdit = !!b, m, ctx, f;
+    m = sheet(isEdit ? '휴무·마감 수정' : '휴무·마감 추가', rsvBlockBody(isEdit, rsvThChoices(isEdit ? (b.therapist_id || '') : '')));
+    f = rsvBlockFrom(b, o.date);
+    ctx = { el: m, id: isEdit ? b.id : '', cid: isEdit ? '' : rsvUuid(), busy: false, d1: f.d1 };
+    rsvPress($('#rsvBTh', m), 'data-th', f.th); rsvPress($('#rsvBK', m), 'data-k', f.kind);
+    $('#rsvBD1', m).value = f.d1; $('#rsvBD2', m).value = f.d2; $('#rsvBT1', m).value = f.t1; $('#rsvBT2', m).value = f.t2; $('#rsvBReason', m).value = f.reason;
+    rsvBlockSync(m);
+    m.addEventListener('click', function (e) {
+      var t = e.target, x;
+      if (!t || !t.closest) return;
+      if ((x = t.closest('#rsvBTh [data-th]'))) { rsvPress($('#rsvBTh', m), 'data-th', x.getAttribute('data-th')); return; }
+      if ((x = t.closest('#rsvBK [data-k]'))) { rsvPress($('#rsvBK', m), 'data-k', x.getAttribute('data-k')); rsvBlockSync(m); return; }
+      if (t.closest('#rsvBSave')) { rsvBlockSave(R, ctx); return; }
+      if ((x = t.closest('#rsvBDel'))) { if (!confirmInline(x, '한 번 더 누르면 삭제됩니다')) return; rsvBlockDelete(R, ctx); }
+    });
+    m.addEventListener('input', function (e) {
+      var v;
+      if (!e.target || e.target.id !== 'rsvBD1') return;
+      v = e.target.value;   // 끝 날짜가 시작 날짜와 같았으면(하루짜리) 시작 날짜를 바꿀 때 따라감
+      if (/^\d{4}-\d{2}-\d{2}$/.test(v) && $('#rsvBD2', m).value === ctx.d1) $('#rsvBD2', m).value = v;
+      ctx.d1 = v;
+    });
+  }
+  function rsvBlockSave(R, ctx) {
+    var m = ctx.el, btn = $('#rsvBSave', m), r;
+    if (S.rsv !== R || ctx.busy) return;
+    r = rsvBlockRead(m);
+    if (r.err) { rsvSetErr(m, r.err); rsvFocusId(m, r.f); return; }
+    rsvSetErr(m, '');
+    if (ctx.id) r.data.id = ctx.id; else r.data.client_id = ctx.cid;
+    ctx.busy = true; if (btn) btn.disabled = true;
+    sb.rpc('rsv_block_save', { p_data: r.data }).then(function (x) { return x; }, function (e) { return { data: null, error: e }; }).then(function (x) {
+      var row;
+      ctx.busy = false; if (btn) btn.disabled = false;
+      if (S.rsv !== R) return;
+      if (x.error) { rsvSetErr(m, rsvErrText(x.error)); return; }
+      row = rsvOne(x.data);
+      if (!row || !row.id) { rsvSetErr(m, '저장 결과를 확인하지 못했습니다. 화면을 새로 고쳐 확인해 주세요.'); rsvLoad(); return; }
+      closeSheet(m); rsvPutBlock(row);
+      toast(ctx.id ? '휴무·마감을 수정했습니다' : '휴무·마감을 추가했습니다');
+    });
+  }
+  function rsvBlockDelete(R, ctx) {
+    var m = ctx.el;
+    if (S.rsv !== R || ctx.busy || !ctx.id) return;
+    ctx.busy = true;
+    sb.rpc('rsv_block_delete', { p_id: ctx.id }).then(function (x) { return x; }, function (e) { return { data: null, error: e }; }).then(function (x) {
+      var row;
+      ctx.busy = false;
+      if (S.rsv !== R) return;
+      if (x.error) { rsvSetErr(m, rsvErrText(x.error)); return; }
+      row = rsvOne(x.data);
+      closeSheet(m);
+      if (row && row.id) rsvPutBlock(row); else { delete R.blocks[ctx.id]; if (rsvShown()) rsvRender(); }
+      toast('휴무·마감을 삭제했습니다');
+    });
+  }
+
+  /* 변경 기록 (⋯ → 변경 기록 · 예약 상세의 "기록"): 서버의 rsv_log 를 직접 읽음(읽기만 허용, 쓰기는 서버 함수가 알아서 남김).
+     전체 = 최근 3개월 · 한 예약 = 그 예약의 전체 기록 · 100건씩 "더 보기"(받는 사이 새 기록이 끼어들어도 같은 번호는 한 번만) ·
+     메모 글은 적지 않음(rsvLogText) · 치료사/직원 걸러 보기는 읽어 둔 기록 안에서만(서버에 다시 묻지 않음) */
+  var RSV_LOG_PAGE = 100, RSV_LOG_DAYS = 92;
+  function rsvWho(id) { var p; if (!id) return '시스템'; p = S.profiles && S.profiles[id]; return p && p.name ? p.name : '(알 수 없음)'; }   // 기록 · 휴지통의 "한 사람" (계정 없는 기록 = 시스템)
+  function rsvStamp(at) { var k = rsvKst(at); return k ? rsvMD(k.ymd) + ' ' + rsvHm(k.min) : ''; }                                     // 한국 시각 11/24 09:12
+  function rsvHistBody(item) {
+    var h = '<div class="rsv-hist" id="rsvHist"><p class="muted small" id="rsvHNote">' + (item ? '이 예약의 변경 기록 · 최신순' : '최근 3개월 · 최신순') + '</p>';
+    if (!item) {
+      h += '<div class="row2 rsv-hf"><select class="input" id="rsvHTh" aria-label="치료사"><option value="">전체 치료사</option>' +
+        S.rsv.ther.map(function (t) { return '<option value="' + esc(t.id) + '">' + esc(t.name) + '</option>'; }).join('') + '</select>' +
+        '<select class="input" id="rsvHWho" aria-label="직원"><option value="">전체 직원</option></select></div>';
+    }
+    return h + '<p class="muted small" id="rsvHCount" aria-live="polite"></p><p class="err" id="rsvErr" role="alert"></p><button type="button" class="btn btn-line sm" id="rsvHRetry" hidden>다시 시도</button>' +
+      '<p class="muted" id="rsvHLoad">불러오는 중…</p><ul class="rsv-log" id="rsvHList" aria-label="변경 기록"></ul><p class="muted" id="rsvHEmpty" hidden></p>' +
+      '<button type="button" class="btn btn-line rsv-more" id="rsvHMore" hidden>더 보기</button></div>';
+  }
+  function rsvHistRow(en) {
+    var t = rsvLogText(en, S.rsv.ther);
+    return '<li class="rsv-log-i" data-lid="' + esc(en.id) + '" data-act="' + esc(en.action) + '"><span class="rsv-log-h">' + esc(t.head) + '</span>' + (t.detail ? '<span class="rsv-log-d">' + esc(t.detail) + '</span>' : '') +
+      '<span class="rsv-log-m">' + esc(rsvStamp(en.at)) + ' · ' + esc(rsvWho(en.actor)) + '</span></li>';
+  }
+  function rsvHistWho(ctx) {   // 직원 칸: 읽어 둔 기록에 나온 직원(가나다순). 고른 직원은 그대로 유지
+    var sel = $('#rsvHWho', ctx.el), seen = {}, L = [], i, id;
+    if (!sel) return;
+    for (i = 0; i < ctx.rows.length; i++) {
+      id = ctx.rows[i].actor;
+      if (id && !seen[id] && S.profiles && S.profiles[id] && S.profiles[id].name) { seen[id] = true; L.push({ id: id, name: S.profiles[id].name }); }
+    }
+    L.sort(function (a, b) { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0; });
+    sel.innerHTML = '<option value="">전체 직원</option>' + L.map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.name) + '</option>'; }).join('');
+    sel.value = ctx.who;
+    if (sel.value !== ctx.who) ctx.who = sel.value;
+  }
+  function rsvHistShow(ctx) {
+    var m = ctx.el, f = ctx.rows.filter(function (en) { return (!ctx.who || en.actor === ctx.who) && rsvLogHas(en, ctx.th); }), filt = !!(ctx.th || ctx.who), empty = $('#rsvHEmpty', m), more = $('#rsvHMore', m), retry = $('#rsvHRetry', m);
+    $('#rsvHLoad', m).hidden = !ctx.busy || ctx.rows.length > 0;
+    rsvSetErr(m, ctx.err); retry.hidden = !ctx.err;
+    $('#rsvHCount', m).textContent = ctx.loaded ? f.length + '건' + (ctx.more ? ' · 더 있음' : '') : '';
+    $('#rsvHList', m).innerHTML = f.map(rsvHistRow).join('');
+    empty.hidden = !(ctx.loaded && !f.length);
+    empty.textContent = !filt ? (ctx.item ? '이 예약의 기록이 없습니다' : '최근 3개월 안의 기록이 없습니다') : ctx.more ? '불러온 기록 중에는 없습니다. "더 보기"로 더 찾아 보세요.' : '조건에 맞는 기록이 없습니다';
+    more.hidden = !ctx.more; more.disabled = ctx.busy;
+    rsvKeepFocus(m);
+  }
+  function rsvHistLoad(R, ctx) {
+    var q;
+    if (S.rsv !== R || ctx.busy) return;
+    ctx.busy = true; ctx.err = ''; rsvHistShow(ctx);
+    q = sb.from('rsv_log').select('*');
+    q = ctx.item ? q.eq('item_id', ctx.item) : q.gte('at', new Date(Date.now() - RSV_LOG_DAYS * 86400000).toISOString());
+    q.order('at', { ascending: false }).order('id', { ascending: false }).range(ctx.off, ctx.off + RSV_LOG_PAGE).then(function (r) { return r; }, function (e) { return { data: null, error: e }; }).then(function (r) {
+      var rows, i, en;
+      ctx.busy = false;
+      if (S.rsv !== R || !document.body.contains(ctx.el)) return;   // 그 사이 창을 닫았거나 로그아웃 → 쓰지 않음
+      if (r.error) { ctx.err = '기록을 불러오지 못했습니다. ' + rsvErrText(r.error); rsvHistShow(ctx); return; }
+      rows = Array.isArray(r.data) ? r.data : [];
+      ctx.more = rows.length > RSV_LOG_PAGE;   // 한 건 더 달라고 했으므로 남는 게 있으면 더 있다는 뜻
+      for (i = 0; i < rows.length && i < RSV_LOG_PAGE; i++) {
+        en = rows[i];
+        if (en && typeof en === 'object' && en.id !== undefined && en.id !== null && !ctx.ids[en.id]) { ctx.ids[en.id] = true; ctx.rows.push(en); }   // 받는 사이 새 기록이 끼어들어 밀린 것은 한 번만
+      }
+      ctx.off += RSV_LOG_PAGE; ctx.loaded = true;
+      rsvHistWho(ctx); rsvHistShow(ctx);
+    });
+  }
+  function rsvHistorySheet(itemId) {   // itemId 가 있으면 그 예약의 기록만
+    var R = S.rsv, m, ctx;
+    if (!R) return;
+    m = sheet(itemId ? '예약 기록' : '변경 기록', rsvHistBody(itemId));
+    ctx = { el: m, item: itemId || '', rows: [], ids: {}, off: 0, more: false, busy: false, loaded: false, err: '', th: '', who: '' };
+    m.addEventListener('change', function (e) {
+      var t = e.target;
+      if (!t || (t.id !== 'rsvHTh' && t.id !== 'rsvHWho')) return;
+      ctx.th = $('#rsvHTh', m).value; ctx.who = $('#rsvHWho', m).value; rsvHistShow(ctx);
+    });
+    m.addEventListener('click', function (e) { var t = e.target; if (t && t.closest && t.closest('#rsvHMore, #rsvHRetry')) rsvHistLoad(R, ctx); });
+    rsvFocusEl(itemId ? $('[data-close]', m) : $('#rsvHTh', m));   // Esc 가 이 창만 닫도록 포커스를 안으로
+    rsvHistLoad(R, ctx);
+  }
+
+  function rsvKeepFocus(m) {   // 목록을 다시 그려 누르던 단추가 사라져도 커서가 창 안에 남게 (Esc 가 이 창을 닫도록). 위에 다른 창이 떠 있으면 건드리지 않음
+    var ms = $$('.modal'), a = document.activeElement;
+    if (!m || !document.body.contains(m) || ms[ms.length - 1] !== m || (a && m.contains(a))) return;
+    rsvFocusEl($('[data-close]', m));
+  }
+  /* 휴지통 (⋯ → 휴지통): 삭제한 지 30일 안의 예약을 서버에서 직접 읽어(읽기만 허용) 서버 함수 rsv_item_restore 로 되살림.
+     다른 예약과 겹치면 확인창("그래도 복원") · 서버가 거절하면 이유를 창 안에 + 목록 다시 읽기 · 인터넷 문제는 목록을 그대로 두고 다시 누르면 됨 · 복원도 ↶ 에 쌓임(되돌리면 다시 삭제) */
+  var RSV_TRASH_MAX = 200;
+  function rsvTrashBody() {
+    return '<div class="rsv-hist" id="rsvTrash"><p class="muted small" id="rsvTNote">삭제한 지 30일 안의 예약만 되살릴 수 있습니다 · 최근 삭제 순</p><p class="muted small" id="rsvTCount" aria-live="polite"></p>' +
+      '<p class="err" id="rsvErr" role="alert"></p><button type="button" class="btn btn-line sm" id="rsvTRetry" hidden>다시 시도</button><p class="muted" id="rsvTLoad">불러오는 중…</p>' +
+      '<ul class="rsv-trash" id="rsvTList" aria-label="삭제한 예약"></ul><p class="muted" id="rsvTEmpty" hidden>휴지통이 비어 있습니다</p></div>';
+  }
+  function rsvTrashRow(it, now, off) {
+    var left = rsvTrashLeft(it.deleted_at, now), lt = left !== left ? '' : left <= 1 ? '오늘 안에 만료' : left + '일 남음', name = it.patient_name || '(이름 없음)';
+    return '<li class="rsv-tr-i" data-id="' + esc(it.id) + '"><span class="rsv-tr-n">' + esc(name) + '</span><span class="rsv-tr-w">' + esc(rsvLogText({ action: 'delete', before: it, after: null }, S.rsv.ther).detail) + '</span>' +
+      '<span class="rsv-tr-m">' + esc('삭제 ' + rsvStamp(it.deleted_at) + ' · ' + rsvWho(it.deleted_by) + (lt ? ' · ' + lt : '')) + '</span>' +
+      '<button type="button" class="btn btn-line sm" data-restore="' + esc(it.id) + '" aria-label="' + esc(name) + ' 복원"' + (off ? ' disabled' : '') + '>복원</button></li>';
+  }
+  function rsvTrashShow(ctx) {
+    var m = ctx.el, now = Date.now(), off = !!(ctx.look || ctx.acting);
+    if (!document.body.contains(m)) return;
+    $('#rsvTLoad', m).hidden = !ctx.busy || ctx.loaded;
+    rsvSetErr(m, ctx.err); $('#rsvTRetry', m).hidden = !ctx.loadErr;
+    $('#rsvTCount', m).textContent = ctx.loaded ? ctx.rows.length + '건' + (ctx.cap ? ' · 최근 ' + RSV_TRASH_MAX + '건까지만 보입니다' : '') : '';
+    $('#rsvTList', m).innerHTML = ctx.rows.map(function (x) { return rsvTrashRow(x, now, off); }).join('');
+    $('#rsvTEmpty', m).hidden = !(ctx.loaded && !ctx.rows.length);
+    rsvKeepFocus(m);
+  }
+  function rsvTrashLoad(R, ctx, keepErr) {
+    if (S.rsv !== R || ctx.busy) return;
+    ctx.busy = true; ctx.loadErr = false; if (!keepErr) ctx.err = ''; rsvTrashShow(ctx);
+    sb.from('rsv_items').select('*').gte('deleted_at', new Date(Date.now() - 30 * 86400000).toISOString()).order('deleted_at', { ascending: false }).limit(RSV_TRASH_MAX)
+      .then(function (r) { return r; }, function (e) { return { data: null, error: e }; }).then(function (r) {
+        var rows;
+        ctx.busy = false;
+        if (S.rsv !== R || !document.body.contains(ctx.el)) return;
+        if (r.error) { ctx.err = '휴지통을 불러오지 못했습니다. ' + rsvErrText(r.error); ctx.loadErr = true; rsvTrashShow(ctx); return; }
+        rows = Array.isArray(r.data) ? r.data : [];
+        ctx.cap = rows.length >= RSV_TRASH_MAX; ctx.loaded = true;
+        ctx.rows = rows.filter(function (x) { return x && typeof x === 'object' && x.id && x.deleted_at; });
+        rsvTrashShow(ctx);
+      });
+  }
+  function rsvTrashRestore(R, ctx, id) {   // 겹침을 먼저 확인(겹칠 때만 확인창) → 서버에 복원
+    var it = null, i;
+    if (S.rsv !== R || ctx.look || ctx.acting) return;
+    for (i = 0; i < ctx.rows.length; i++) { if (ctx.rows[i].id === id) it = ctx.rows[i]; }
+    if (!it) return;
+    ctx.look = true; ctx.err = ''; rsvTrashShow(ctx);
+    rsvWarnList(it).then(function (list) {
+      ctx.look = false;
+      if (S.rsv !== R || !document.body.contains(ctx.el)) return;   // 그 사이 창을 닫았거나 로그아웃 → 아무것도 하지 않음
+      rsvTrashShow(ctx);
+      if (!list.length) rsvTrashDo(R, ctx, it);
+      else rsvConfirmWarn(null, list, function () { rsvTrashDo(R, ctx, it); }, { title: '복원 전 확인', ok: '그래도 복원', note: '아래 내용을 확인해 주세요. 그래도 복원할 수 있습니다.' });
+    });
+  }
+  function rsvTrashDo(R, ctx, it) {
+    var id = it.id;
+    if (S.rsv !== R || ctx.look || ctx.acting || !document.body.contains(ctx.el)) return;
+    if (R.busy[id]) { ctx.err = '이 예약을 처리하는 중입니다. 잠시 뒤에 다시 눌러 주세요.'; rsvTrashShow(ctx); return; }
+    ctx.acting = id; R.busy[id] = true; ctx.err = ''; rsvTrashShow(ctx);
+    sb.rpc('rsv_item_restore', { p_id: id }).then(function (r) { return r; }, function (e) { return { data: null, error: e }; }).then(function (r) {
+      var row, sp, outside, here = document.body.contains(ctx.el);
+      delete R.busy[id]; ctx.acting = '';
+      if (S.rsv !== R) return;
+      if (r.error) {
+        if (!here) { toast(esc(rsvErrText(r.error))); return; }
+        ctx.err = rsvErrText(r.error);
+        if (r.error.code) rsvTrashLoad(R, ctx, true); else rsvTrashShow(ctx);   // 서버가 이유를 대고 거절 → 목록이 낡았을 수 있어 다시 읽음 / 인터넷 문제 → 그대로 두고 다시 누르면 됨
+        return;
+      }
+      row = rsvOne(r.data);
+      if (!row || !row.id) {
+        if (here) { ctx.err = '복원 결과를 확인하지 못했습니다. 목록과 달력을 확인해 주세요.'; rsvTrashLoad(R, ctx, true); }
+        rsvLoad(); return;
+      }
+      ctx.rows = ctx.rows.filter(function (x) { return x.id !== id; });
+      rsvPushUndo(R, { op: 'restore', id: id, ver: row.version, label: (row.patient_name || '') + ' 예약 복원' });
+      rsvPut(row); rsvTrashShow(ctx);
+      sp = rsvSpan(row);
+      outside = !!sp && rsvRange(R.view, R.date, R.settings.week_start).days.indexOf(sp.ymd) < 0;
+      toast('복원했습니다: ' + esc(row.patient_name || '') + (outside ? ' · 눌러서 보기' : ''), outside ? function () { if (S.rsv === R && rsvShown()) rsvGo(R.view, sp.ymd, false); } : null);
+    });
+  }
+  function rsvTrashSheet() {
+    var R = S.rsv, m, ctx;
+    if (!R) return;
+    m = sheet('휴지통', rsvTrashBody());
+    ctx = { el: m, rows: [], busy: false, loaded: false, loadErr: false, look: false, acting: '', err: '', cap: false };
+    m.addEventListener('click', function (e) {
+      var t = e.target, b;
+      if (!t || !t.closest) return;
+      if (t.closest('#rsvTRetry')) { rsvTrashLoad(R, ctx, false); return; }
+      b = t.closest('[data-restore]'); if (b) rsvTrashRestore(R, ctx, b.getAttribute('data-restore'));
+    });
+    rsvFocusEl($('[data-close]', m));   // Esc 가 이 창만 닫도록 포커스를 안으로
+    rsvTrashLoad(R, ctx, false);
+  }
+
+  /* 설정 (⋯ → 설정, 관리자만): 치료사 추가·수정(이름 · 색 · 순서 · 사용/중지 · 연결할 직원 계정)
+     · 서버 함수 rsv_therapist_save 로만 저장(서버가 관리자인지 다시 확인) · 수정은 "창을 열었을 때와 달라진 항목"만 보냄(그 사이 남이 바꾼 칸을 덮어쓰지 않음) · 서버가 받아들인 뒤에만 화면에 반영
+     · 열려 있는 설정 창의 목록은 실시간 알림·다시 불러오기로 바뀌어도 따라감 */
+  var RSV_COLORS = ['#2f80ed', '#e0852b', '#27ae60', '#9b51e0', '#eb5757', '#00a5a8', '#d4a017', '#e84393'];
+  var RSV_TABS = [['th', '치료사'], ['hr', '운영 시간'], ['cs', '기본값·코스']], RSV_SNAPS = [5, 10, 15, 30];
+  function rsvThMeta(t) {   // 목록의 둘째 줄: 사용/중지 · 연결된 직원 계정
+    var p = t.profile_id && S.profiles ? S.profiles[t.profile_id] : null;
+    return (t.active === false ? '중지' : '사용') + ' · ' + (t.profile_id ? '계정: ' + (p && p.name ? p.name : '(알 수 없음)') : '계정 연결 없음');
+  }
+  function rsvSetThRow(t) {
+    return '<li class="rsv-set-i' + (t.active === false ? ' off' : '') + '" data-th="' + esc(t.id) + '"><i class="rsv-dot" style="background:' + rsvColor(t.color) + '"></i>' +
+      '<span class="rsv-set-t"><span class="rsv-set-n">' + esc(t.name) + '</span><span class="rsv-set-m">' + esc(rsvThMeta(t)) + '</span></span>' +
+      '<button type="button" class="btn btn-line sm" data-thedit="' + esc(t.id) + '" aria-label="' + esc(t.name + ' 수정') + '">수정</button></li>';
+  }
+  function rsvSetBody() {
+    var tabs = '', i;
+    for (i = 0; i < RSV_TABS.length; i++) tabs += '<button type="button" data-tab="' + RSV_TABS[i][0] + '" aria-pressed="' + (i === 0 ? 'true' : 'false') + '">' + RSV_TABS[i][1] + '</button>';
+    return '<div class="rsv-set" id="rsvSet"><div class="seg sm rsv-set-tabs" id="rsvSTabs" role="group" aria-label="설정 구분">' + tabs + '</div>' +
+      '<div id="rsvSPth"><div class="rsv-set-hd"><h3>치료사</h3><button type="button" class="btn btn-line sm" id="rsvSTAdd">+ 치료사 추가</button></div>' +
+      '<ul class="rsv-set-list" id="rsvSTList" aria-label="치료사 목록"></ul><p class="muted" id="rsvSTEmpty" hidden>등록된 치료사가 없습니다. "+ 치료사 추가"를 눌러 먼저 추가해 주세요.</p>' +
+      '<p class="muted small">순서는 숫자가 작을수록 앞에 나옵니다. 치료사를 "중지"하면 새 예약의 치료사 목록에서 빠지지만 이전 예약은 그대로 남습니다. 치료사는 추가·수정할 때마다 바로 저장됩니다.</p></div>' +
+      '<div id="rsvSPhr" hidden></div><div id="rsvSPcs" hidden></div>' +
+      '<p class="err" id="rsvErr" role="alert"></p><div class="sheet-actions"><button type="button" class="btn btn-line" data-close>닫기</button><button type="button" class="btn btn-navy" id="rsvSSave" hidden>저장</button></div></div>';
+  }
+  function rsvSetThShow(ctx) {
+    var L = S.rsv ? S.rsv.ther : [];
+    $('#rsvSTList', ctx.el).innerHTML = L.map(rsvSetThRow).join('');
+    $('#rsvSTEmpty', ctx.el).hidden = L.length > 0;
+    rsvKeepFocus(ctx.el);
+  }
+  function rsvSetRefresh(R) {   // 열려 있는 설정 창이 있으면 치료사 목록·운영 시간 대상 단추를 지금 상태로 다시 그림 (다른 칸의 입력은 건드리지 않음)
+    var c = R && R.set;
+    if (c && c.el && document.body.contains(c.el)) { rsvSetHtShow(c); rsvSetThShow(c); }   // 마지막에 커서 자리를 챙김
+  }
+  /* ===== 설정 창 2단계 (v48 7단계): 운영 시간 · 점심 · 보이는 시간 · 기본 길이 · 이동 단위 · 주 시작 · 코스 =====
+     · 창은 탭 3개(치료사 / 운영 시간 / 기본값·코스). 치료사 탭은 추가·수정할 때마다 바로 저장, 나머지 두 탭은 "저장" 한 번에 — 바뀐 항목만 서버로
+     · 열 때의 설정(ctx.f0)과 고치는 중인 값(ctx.f)을 따로 둠: 열려 있는 동안 다른 곳에서 설정이 바뀌어도 내 입력은 그대로이고, 보낼 때는 내가 고친 항목만 (남의 변경을 덮어쓰지 않음)
+     · 운영 시간은 대상(전체 / 치료사별)마다 요일 7칸. 대상을 바꾸거나 탭을 오가도 고친 내용은 ctx.f 에 남음. 치료사 칸은 "전체와 같음" · 운영 · 쉼
+     · 24:00(자정)은 시각 칸(type=time)에 담을 수 없어 비어 보임 → 그 칸이 비어 있고 원래 값이 24:00 이면 24:00 으로 봄("자정까지" 표시)
+     · 순수한 계산(모양 바꾸기·달라진 항목·검사)은 위쪽 RSV-CORE 에 있고(rsvSetForm 등), 여기는 화면과 연결만 */
+  function rsvSetTab(ctx, k) {   // 탭 바꾸기: 눌린 표시 · 보이는 판 · 저장 단추(치료사 탭에서는 숨김)
+    var m = ctx.el, i;
+    rsvPress($('#rsvSTabs', m), 'data-tab', k);
+    for (i = 0; i < RSV_TABS.length; i++) $('#rsvSP' + RSV_TABS[i][0], m).hidden = RSV_TABS[i][0] !== k;
+    $('#rsvSSave', m).hidden = k === 'th';
+  }
+  function rsvSetHrBody() {
+    return '<div class="rsv-set-sec"><h3>보이는 시간</h3><div class="row2"><div class="field"><label for="rsvSVs">시작</label><input class="input" type="time" id="rsvSVs"></div>' +
+      '<div class="field"><label for="rsvSVe">끝 <span class="muted small" id="rsvSVeZ" hidden>(비워 두면 자정까지)</span></label><input class="input" type="time" id="rsvSVe"></div></div>' +
+      '<p class="muted small">달력 세로축에 보이는 시간 범위입니다. 이 범위 밖에 예약이 있으면 그만큼 자동으로 넓어집니다.</p></div>' +
+      '<div class="rsv-set-sec"><h3>점심시간</h3><label class="chk-row"><input type="checkbox" id="rsvSLOn"> 점심시간 표시</label>' +
+      '<div class="row2"><div class="field"><label for="rsvSLs">시작</label><input class="input" type="time" id="rsvSLs"></div><div class="field"><label for="rsvSLe">끝</label><input class="input" type="time" id="rsvSLe"></div></div>' +
+      '<p class="muted small">운영일 달력에 점심시간 띠를 표시하고, 그 시간에 예약을 잡으면 저장 전에 알려 줍니다 (막지는 않습니다).</p></div>' +
+      '<div class="rsv-set-sec"><h3>운영 시간</h3><div class="seg sm" id="rsvSHT" role="group" aria-label="운영 시간 대상"></div><div class="rsv-hr" id="rsvSHR"></div>' +
+      '<p class="muted small">쉬는 날과 운영 시간 밖은 달력에 회색으로 보이고, 그 시간에 예약을 잡으면 저장 전에 알려 줍니다. 치료사별로 정하면 그 치료사에게만 적용되고, "전체와 같음"은 전체(기본) 표를 따릅니다.</p></div>';
+  }
+  function rsvSetCsBody() {
+    return '<div class="field"><label for="rsvSLen">새 예약의 기본 길이 <span class="muted small">(분 · 5~240 · 5분 단위)</span></label><input class="input" id="rsvSLen" inputmode="numeric" maxlength="3" autocomplete="off"></div>' +
+      '<div class="field"><label id="rsvSSnapL">끌어서 옮길 때 단위 <span class="muted small">(분)</span></label><div class="seg sm" id="rsvSSnap" role="group" aria-labelledby="rsvSSnapL">' +
+      RSV_SNAPS.map(function (n) { return '<button type="button" data-snap="' + n + '" aria-pressed="false">' + n + '</button>'; }).join('') + '</div></div>' +
+      '<div class="field"><label id="rsvSWkL">한 주의 시작</label><div class="seg sm" id="rsvSWk" role="group" aria-labelledby="rsvSWkL"><button type="button" data-wk="1" aria-pressed="false">월요일</button><button type="button" data-wk="0" aria-pressed="false">일요일</button></div></div>' +
+      '<div class="field"><label for="rsvSCourses">코스 목록</label><textarea class="input" id="rsvSCourses" rows="7" autocomplete="off" spellcheck="false"></textarea>' +
+      '<p class="muted small">한 줄에 하나씩 (쉼표로 나눠도 됩니다). 영문 대문자·숫자, 조합은 +로 이어 씁니다 (예: C10, J15+C5). 새 예약 창의 코스 단추와 빠른 입력에 쓰입니다.</p></div>';
+  }
+  function rsvSetHrList(ctx) { return ctx.tgt ? rsvSetRows(ctx.f, ctx.tgt) : ctx.f.hours.all; }   // 지금 대상의 요일 7칸(고치는 중인 값)
+  function rsvSetHrRowHtml(d, th) {
+    var n = RSV_DOWN[d];
+    return '<div class="rsv-hr-r" data-dow="' + d + '"><span class="rsv-hr-d">' + n + '</span>' +
+      '<select class="input rsv-hr-k" aria-label="' + n + '요일 운영 여부">' + (th ? '<option value="def">전체와 같음</option>' : '') + '<option value="on">운영</option><option value="off">쉼</option></select>' +
+      '<span class="rsv-hr-t"><input class="input rsv-hr-s" type="time" aria-label="' + n + '요일 여는 시각"><span aria-hidden="true">~</span><input class="input rsv-hr-e" type="time" aria-label="' + n + '요일 닫는 시각"><span class="muted small rsv-hr-z" hidden>(자정까지)</span></span>' +
+      '<span class="muted small rsv-hr-n" hidden></span></div>';
+  }
+  function rsvSetHrFill(row, r, a) {   // 한 줄을 고치는 중인 값 r 로 채움 (a = 전체 표의 같은 요일 — "전체와 같음" 옆에 보여 줄 시각)
+    $('.rsv-hr-k', row).value = r.k;
+    $('.rsv-hr-s', row).value = r.s; $('.rsv-hr-e', row).value = r.e === '24:00' ? '' : r.e;
+    $('.rsv-hr-t', row).hidden = r.k !== 'on'; $('.rsv-hr-z', row).hidden = !(r.k === 'on' && r.e === '24:00');
+    $('.rsv-hr-n', row).hidden = r.k !== 'def'; if (r.k === 'def') $('.rsv-hr-n', row).textContent = a.k === 'on' ? a.s + '~' + a.e : '쉼';
+  }
+  function rsvSetHrShow(ctx) {   // 지금 대상의 7줄을 고치는 중인 값대로 그림
+    var box = $('#rsvSHR', ctx.el), L = rsvSetHrList(ctx), a = ctx.f.hours.all, h = '', i, d;
+    for (i = 0; i < 7; i++) h += rsvSetHrRowHtml(RSV_SET_DOW[i], !!ctx.tgt);
+    box.innerHTML = h;
+    for (i = 0; i < 7; i++) { d = RSV_SET_DOW[i]; rsvSetHrFill($('.rsv-hr-r[data-dow="' + d + '"]', box), L[d], a[d]); }
+  }
+  function rsvSetHrReadRow(row, r) {   // 화면의 한 줄 → 고치는 중인 값 (시각은 모양만 보고 담음 — 틀렸는지는 저장할 때 검사. 닫는 시각이 비었고 원래 24:00 이면 24:00)
+    var e = $('.rsv-hr-e', row).value;
+    r.k = $('.rsv-hr-k', row).value; r.s = $('.rsv-hr-s', row).value; r.e = (e === '' && r.e === '24:00') ? '24:00' : e;
+  }
+  function rsvSetHrReadAll(ctx) {
+    var L = rsvSetHrList(ctx), i, d;
+    for (i = 0; i < 7; i++) { d = RSV_SET_DOW[i]; rsvSetHrReadRow($('.rsv-hr-r[data-dow="' + d + '"]', ctx.el), L[d]); }
+  }
+  function rsvSetHrChange(ctx, row) {   // 요일 한 줄의 운영/쉼/전체와 같음을 바꿈
+    var d = Number(row.getAttribute('data-dow')), r = rsvSetHrList(ctx)[d], a = ctx.f.hours.all[d], was = r.k;
+    rsvSetHrReadRow(row, r);
+    if (was === 'def' && r.k === 'on' && a.k === 'on') { r.s = a.s; r.e = a.e; }   // "전체와 같음" → 운영: 전체의 시각에서 시작
+    rsvSetHrFill(row, r, a);
+  }
+  function rsvSetHrGo(ctx, id) {   // 운영 시간 대상(전체 / 치료사) 바꾸기: 보이던 7줄을 담아 두고 새 대상의 7줄을 그림
+    rsvSetHrReadAll(ctx);
+    ctx.tgt = id;
+    rsvPress($('#rsvSHT', ctx.el), 'data-ht', id);
+    rsvSetHrShow(ctx);
+  }
+  function rsvSetHtShow(ctx) {   // 대상 단추: 전체(기본) + 모든 치료사 (중지한 치료사는 "(중지)") — 고른 대상은 그대로
+    var L = S.rsv ? S.rsv.ther : [], box = $('#rsvSHT', ctx.el), h = '<button type="button" data-ht="" aria-pressed="false">전체(기본)</button>', i;
+    for (i = 0; i < L.length; i++) h += '<button type="button" data-ht="' + esc(L[i].id) + '" aria-pressed="false">' + esc(L[i].name) + (L[i].active === false ? ' (중지)' : '') + '</button>';
+    box.innerHTML = h;
+    rsvPress(box, 'data-ht', ctx.tgt);
+  }
+  function rsvSetLunchLock(m) { var off = !$('#rsvSLOn', m).checked; $('#rsvSLs', m).disabled = off; $('#rsvSLe', m).disabled = off; }
+  function rsvSetFill(ctx) {   // 처음 값을 화면에 채움
+    var m = ctx.el, f = ctx.f;
+    $('#rsvSVs', m).value = f.view_start; $('#rsvSVe', m).value = f.view_end === '24:00' ? '' : f.view_end; $('#rsvSVeZ', m).hidden = f.view_end !== '24:00';
+    $('#rsvSLOn', m).checked = f.lunch.on; $('#rsvSLs', m).value = f.lunch.start; $('#rsvSLe', m).value = f.lunch.end === '24:00' ? '' : f.lunch.end; rsvSetLunchLock(m);
+    $('#rsvSLen', m).value = String(f.default_len); rsvPress($('#rsvSSnap', m), 'data-snap', f.snap); rsvPress($('#rsvSWk', m), 'data-wk', f.week_start);
+    $('#rsvSCourses', m).value = f.courses.join('\n');
+    rsvSetHtShow(ctx); rsvSetHrShow(ctx);
+  }
+  function rsvSetRead(ctx) {   // 창의 값 → 고치는 중인 값 f (틀려도 그대로 담음 — 검사는 rsvSetCheck 가) · 코스 이름 중 어긋난 것
+    var m = ctx.el, f = ctx.f, ve = $('#rsvSVe', m).value, le = $('#rsvSLe', m).value, len = rsvTrim($('#rsvSLen', m).value), cp = rsvParseCourses($('#rsvSCourses', m).value);
+    rsvSetHrReadAll(ctx);
+    f.view_start = $('#rsvSVs', m).value; f.view_end = (ve === '' && ctx.f0.view_end === '24:00') ? '24:00' : ve;
+    f.lunch = $('#rsvSLOn', m).checked ? { on: true, start: $('#rsvSLs', m).value, end: (le === '' && ctx.f0.lunch.end === '24:00') ? '24:00' : le } : { on: false, start: ctx.f0.lunch.start, end: ctx.f0.lunch.end };   // 끄면 시각 칸은 보지 않고 원래 시각을 그대로
+    f.default_len = /^\d{1,3}$/.test(len) ? parseInt(len, 10) : null;
+    f.snap = parseInt(rsvPressed($('#rsvSSnap', m), 'data-snap'), 10); f.week_start = rsvPressed($('#rsvSWk', m), 'data-wk') === '0' ? 0 : 1;
+    f.courses = cp.list;
+    return { f: f, bad: cp.bad };
+  }
+  function rsvSetShowErr(ctx, c) {   // 틀린 칸이 있는 탭(·대상)으로 가서 안내 + 그 칸에 커서
+    var m = ctx.el, msg = c.err, tgt, el;
+    if (c.f === 'hr') {
+      tgt = c.tgt === 'all' ? '' : c.tgt;
+      rsvSetTab(ctx, 'hr'); rsvSetHrGo(ctx, tgt);
+      msg = (tgt ? (rsvTher(tgt) ? rsvTher(tgt).name : '(알 수 없음)') : '전체') + ' ' + RSV_DOWN[c.dow] + '요일: ' + msg;
+      el = $('.rsv-hr-r[data-dow="' + c.dow + '"] .rsv-hr-s', m);
+    } else {
+      rsvSetTab(ctx, (c.f === 'rsvSLen' || c.f === 'rsvSCourses') ? 'cs' : 'hr');
+      el = $('#' + c.f, m);
+    }
+    rsvSetErr(m, msg); rsvFocusEl(el);
+    try { if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' }); } catch (e) { /* 스크롤은 덤 */ }
+  }
+  function rsvSetSave(R, ctx) {
+    var m = ctx.el, btn = $('#rsvSSave', m), r, c, d;
+    if (S.rsv !== R || ctx.busy) return;
+    rsvSetErr(m, '');
+    r = rsvSetRead(ctx); c = rsvSetCheck(r.f);
+    if ((!c || c.f === 'rsvSCourses') && r.bad.length) c = { err: '코스 이름이 올바르지 않습니다 (영문 대문자·숫자, 예: C10, J15+C5): ' + r.bad[0], f: 'rsvSCourses' };
+    if (c) { rsvSetShowErr(ctx, c); return; }
+    d = rsvSetDiff(ctx.f0, r.f);
+    if (!d.n) { toast('바뀐 내용이 없습니다'); return; }
+    ctx.busy = true; if (btn) btn.disabled = true;
+    sb.rpc('rsv_settings_save', { p_data: d.data }).then(function (x) { return x; }, function (e) { return { data: null, error: e }; }).then(function (x) {
+      var row;
+      ctx.busy = false; if (btn) btn.disabled = false;
+      if (S.rsv !== R) return;
+      if (x.error) { rsvSetErr(m, rsvErrText(x.error)); return; }
+      row = rsvOne(x.data);
+      if (!row || !row.data || typeof row.data !== 'object') { rsvSetErr(m, '저장 결과를 확인하지 못했습니다. 화면을 새로 고쳐 확인해 주세요.'); rsvLoad(); return; }
+      closeSheet(m);
+      rsvApply('rsv_settings', { eventType: 'UPDATE', new: row, old: { id: row.id } });
+      toast('설정을 저장했습니다');
+    });
+  }
+  function rsvThBody() {
+    return '<div class="rsv-form"><div class="field"><label for="rsvTName">이름</label><input class="input" id="rsvTName" maxlength="20" autocomplete="off" placeholder="예) 나성현"></div>' +
+      '<div class="row2"><div class="field"><label for="rsvTColor">색</label><input class="input rsv-color" type="color" id="rsvTColor"></div>' +
+      '<div class="field"><label for="rsvTSort">순서 <span class="muted small">(작을수록 앞)</span></label><input class="input" id="rsvTSort" inputmode="numeric" autocomplete="off"></div></div>' +
+      '<div class="field"><label id="rsvTActL">사용 여부</label><div class="seg sm" id="rsvTAct" role="group" aria-labelledby="rsvTActL"><button type="button" data-on="1" aria-pressed="false">사용</button><button type="button" data-on="0" aria-pressed="false">중지</button></div></div>' +
+      '<div class="field"><label for="rsvTProf">연결할 직원 계정 <span class="muted small">(선택)</span></label><select class="input" id="rsvTProf"></select>' +
+      '<p class="muted small">연결하면 그 직원은 ⋯ 메뉴에서 "내 예약만 보기"를 쓸 수 있습니다.</p></div>' +
+      '<p class="err" id="rsvErr" role="alert"></p><div class="sheet-actions"><button type="button" class="btn btn-line" data-close>취소</button><button type="button" class="btn btn-navy" id="rsvTSave">저장</button></div></div>';
+  }
+  function rsvThDefaults() {   // 새 치료사의 처음 값: 이름 없음 · 아직 안 쓰는 색 · 순서는 맨 뒤 · 사용 · 계정 연결 없음
+    var R = S.rsv, used = {}, mx = null, i, col = null, n;
+    R.ther.forEach(function (t) { used[String(t.color).toLowerCase()] = true; n = Number(t.sort); if (isFinite(n) && (mx === null || n > mx)) mx = n; });
+    for (i = 0; i < RSV_COLORS.length && col === null; i++) { if (!used[RSV_COLORS[i]]) col = RSV_COLORS[i]; }
+    return { name: '', color: col || RSV_COLORS[R.ther.length % RSV_COLORS.length], sort: String(mx === null ? 1 : Math.min(999, mx + 1)), on: true, prof: '' };
+  }
+  function rsvThProfOptions(t, cur) {   // 연결할 직원 계정: 승인된(사용 중) 직원 · 이미 다른 치료사에 연결된 직원은 고를 수 없음 · 지금 연결된 계정은 (퇴사 등으로 목록에 없어도) 남겨 둠
+    var R = S.rsv, used = {}, L = [], has = false, p;
+    R.ther.forEach(function (x) { if (x.profile_id && (!t || x.id !== t.id)) used[x.profile_id] = x; });
+    Object.keys(S.profiles || {}).forEach(function (k) {
+      p = S.profiles[k];
+      if (p && p.name && p.active !== false && !p.pending) { L.push({ id: k, name: p.name }); if (k === cur) has = true; }
+    });
+    if (cur && !has) { p = S.profiles && S.profiles[cur]; L.push({ id: cur, name: p && p.name ? p.name + ' (사용 중지된 계정)' : '(알 수 없는 계정)' }); }
+    L.sort(function (a, b) { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0; });
+    return '<option value="">연결 안 함</option>' + L.map(function (x) {
+      var u = used[x.id];
+      return '<option value="' + esc(x.id) + '"' + (u ? ' disabled' : '') + '>' + esc(x.name + (u ? ' (' + u.name + '에 연결됨)' : '')) + '</option>';
+    }).join('');
+  }
+  function rsvThRead(m, ctx) {   // 창의 값을 검사 → { err, f } 또는 { same: true } 또는 { data } (새 치료사 = 전부 · 수정 = 번호 + 달라진 항목)
+    var R = S.rsv, d = ctx.d, t = ctx.t, name = rsvTrim($('#rsvTName', m).value), color = String($('#rsvTColor', m).value || '').toLowerCase(), sortS = rsvTrim($('#rsvTSort', m).value),
+      on = rsvPressed($('#rsvTAct', m), 'data-on') !== '0', prof = $('#rsvTProf', m).value || '', sort, i, o = {}, n = 0;
+    if (!name) return { err: '치료사 이름을 입력해 주세요.', f: 'rsvTName' };
+    if (name.length > 20) return { err: '치료사 이름은 20자 이하로 입력해 주세요.', f: 'rsvTName' };
+    for (i = 0; i < R.ther.length; i++) { if (R.ther[i].name === name && (!t || R.ther[i].id !== t.id)) return { err: '이미 같은 이름의 치료사가 있습니다.', f: 'rsvTName' }; }
+    if (!/^-?\d{1,3}$/.test(sortS)) return { err: '순서는 -999~999 사이의 숫자로 입력해 주세요.', f: 'rsvTSort' };
+    sort = parseInt(sortS, 10);
+    if (!/^#[0-9a-f]{6}$/.test(color)) return { err: '색을 다시 골라 주세요.', f: 'rsvTColor' };
+    if (!t) return { data: { name: name, color: color, sort: sort, active: on, profile_id: prof || null } };
+    o.id = t.id;
+    if (name !== d.name) { o.name = name; n++; }
+    if (color !== d.color) { o.color = color; n++; }
+    if (sort !== parseInt(d.sort, 10)) { o.sort = sort; n++; }
+    if (on !== d.on) { o.active = on; n++; }
+    if (prof !== d.prof) { o.profile_id = prof || null; n++; }
+    return n ? { data: o } : { same: true };
+  }
+  function rsvThSave(R, ctx) {
+    var m = ctx.el, btn = $('#rsvTSave', m), r;
+    if (S.rsv !== R || ctx.busy) return;
+    r = rsvThRead(m, ctx);
+    if (r.err) { rsvSetErr(m, r.err); rsvFocusId(m, r.f); return; }
+    rsvSetErr(m, '');
+    if (r.same) { closeSheet(m); toast('바뀐 내용이 없습니다'); return; }
+    ctx.busy = true; if (btn) btn.disabled = true;
+    sb.rpc('rsv_therapist_save', { p_data: r.data }).then(function (x) { return x; }, function (e) { return { data: null, error: e }; }).then(function (x) {
+      var row;
+      ctx.busy = false; if (btn) btn.disabled = false;
+      if (S.rsv !== R) return;
+      if (x.error) { rsvSetErr(m, rsvErrText(x.error)); return; }
+      row = rsvOne(x.data);
+      if (!row || !row.id) { rsvSetErr(m, '저장 결과를 확인하지 못했습니다. 화면을 새로 고쳐 확인해 주세요.'); rsvLoad(); return; }
+      closeSheet(m);
+      rsvApply('rsv_therapists', { eventType: ctx.t ? 'UPDATE' : 'INSERT', new: row, old: { id: row.id } });
+      toast((ctx.t ? '치료사를 수정했습니다: ' : '치료사를 추가했습니다: ') + esc(row.name));
+    });
+  }
+  function rsvThSheet(R, id) {   // 치료사 추가(id 없음) · 수정
+    var t = id ? rsvTher(id) : null, d, m, ctx;
+    if (id && !t) return;
+    d = t ? { name: t.name, color: rsvColor(t.color).toLowerCase(), sort: String(t.sort), on: t.active !== false, prof: t.profile_id || '' } : rsvThDefaults();
+    m = sheet(t ? '치료사 수정' : '치료사 추가', rsvThBody());
+    ctx = { el: m, t: t, d: d, busy: false };
+    $('#rsvTProf', m).innerHTML = rsvThProfOptions(t, d.prof);
+    $('#rsvTName', m).value = d.name; $('#rsvTColor', m).value = d.color; $('#rsvTSort', m).value = d.sort; $('#rsvTProf', m).value = d.prof; rsvPress($('#rsvTAct', m), 'data-on', d.on ? '1' : '0');
+    m.addEventListener('click', function (e) {
+      var x = e.target, b;
+      if (!x || !x.closest) return;
+      b = x.closest('#rsvTAct [data-on]'); if (b) { rsvPress($('#rsvTAct', m), 'data-on', b.getAttribute('data-on')); return; }
+      if (x.closest('#rsvTSave')) rsvThSave(R, ctx);
+    });
+  }
+  function rsvSettingsSheet() {
+    var R = S.rsv, m, ctx;
+    if (!R) return;
+    m = sheet('예약 설정', rsvSetBody());
+    ctx = { el: m, f0: rsvSetForm(R.settings), f: rsvSetForm(R.settings), tgt: '', busy: false };
+    R.set = ctx;
+    $('#rsvSPhr', m).innerHTML = rsvSetHrBody(); $('#rsvSPcs', m).innerHTML = rsvSetCsBody();   // 나머지 두 탭은 창을 만든 뒤에 채움 (창이 열릴 때 첫 입력칸으로 커서를 옮기지 않도록)
+    rsvSetFill(ctx);
+    m.addEventListener('click', function (e) {
+      var t = e.target, b;
+      if (!t || !t.closest) return;
+      if (t.closest('#rsvSTAdd')) { rsvThSheet(R, ''); return; }
+      b = t.closest('[data-thedit]'); if (b) { rsvThSheet(R, b.getAttribute('data-thedit')); return; }
+      b = t.closest('#rsvSTabs [data-tab]'); if (b) { rsvSetTab(ctx, b.getAttribute('data-tab')); return; }
+      b = t.closest('#rsvSHT [data-ht]'); if (b) { rsvSetHrGo(ctx, b.getAttribute('data-ht')); return; }
+      b = t.closest('#rsvSSnap [data-snap]'); if (b) { rsvPress($('#rsvSSnap', m), 'data-snap', b.getAttribute('data-snap')); return; }
+      b = t.closest('#rsvSWk [data-wk]'); if (b) { rsvPress($('#rsvSWk', m), 'data-wk', b.getAttribute('data-wk')); return; }
+      if (t.closest('#rsvSSave')) rsvSetSave(R, ctx);
+    });
+    m.addEventListener('change', function (e) {
+      var t = e.target;
+      if (!t || !t.closest) return;
+      if (t.id === 'rsvSLOn') rsvSetLunchLock(m);
+      else if (t.classList.contains('rsv-hr-k')) rsvSetHrChange(ctx, t.closest('.rsv-hr-r'));
+    });
+    m.addEventListener('input', function (e) {   // 24:00 로 저장돼 있던 끝 시각 칸: 비어 있으면 "자정까지" 표시, 시각을 넣으면 사라짐
+      var t = e.target, row;
+      if (!t || !t.closest) return;
+      if (t.id === 'rsvSVe') $('#rsvSVeZ', m).hidden = !(t.value === '' && ctx.f0.view_end === '24:00');
+      else if (t.classList.contains('rsv-hr-e')) { row = t.closest('.rsv-hr-r'); $('.rsv-hr-z', row).hidden = !(t.value === '' && rsvSetHrList(ctx)[Number(row.getAttribute('data-dow'))].e === '24:00'); }
+    });
+    rsvSetThShow(ctx);
+  }
+
+  /* ================= 예약 (v48 6단계): 마우스로 끌어서 옮기기 · 길이 조절 · 빈 칸을 끌어 새 예약 =================
+     · 마우스 왼쪽 버튼만 (터치·펜은 눌러서 상세). 4px 이상 움직여야 끌기 시작 — 그 전에 놓으면 평소 클릭(상세·빈 칸 새 예약)
+     · 주·하루 보기: 블록을 끌면 날짜·시각(이동 단위 눈금, 길이는 그대로)·(하루 보기는) 치료사가 바뀜 / 블록 아래 손잡이(.rsv-rz)를 끌면 끝 시각만 바뀜
+     · 월 보기: 날짜만 바뀌고 시각·길이·치료사는 그대로 (눈금에 안 맞는 시각도 그대로)
+     · 빈 칸을 세로로 끌면 누른 칸~놓은 칸(이동 단위, 양쪽 포함)이 새 예약의 시작·길이가 됨 (누른 칸을 벗어나지 않으면 평소 빈 칸 클릭)
+     · 끄는 동안: 원래 자리 점선(.dragging) · 놓일 자리 미리보기(.rsv-ghost) · 위·아래 가장자리 근처 자동 스크롤. Esc·영역 밖에서 놓기·창이 포커스를 잃음·다른 화면으로 감 = 취소
+     · 놓으면 저장 전 경고와 같은 검사 → 경고가 있으면 확인창 → 서버 답을 기다리는 동안 새 자리에 먼저 보여 줌 → 거절·충돌이면 원위치 + 이유(글자 그대로) + (충돌이면) 다시 불러옴
+     · 끄는 중에는 화면을 다시 그리지 않음(다른 직원의 변경은 끝난 뒤 한 번에). 끌던 예약이 바뀌거나 사라지면 끌기 취소. 처리 중인 예약은 다시 끌 수 없음 */
+  var RSV_DRAG_PX = 4, RSV_EDGE = 40, RSV_TICK = 30;
+  function rsvDragGone(R) { var d = R.drag, it = d && R.items[d.id]; return !!d && d.kind !== 'select' && (!it || it.version !== d.ver); }   // 끌던 예약이 사라졌거나 다른 버전이 됨
+  function rsvMinOn(ms, ymd) { return Math.round((ms - rsvAt(ymd, 0)) / 60000); }                                                        // 그 날 0시부터 몇 분
+  function rsvCanTo(th) { var t = rsvTher(th); return !!t && t.active !== false; }                                                       // 옮겨 들어갈 수 있는 치료사 (사용 중지·모르는 치료사는 안 됨)
+  function rsvPointerDown(e) {
+    var R = S.rsv, t = e.target, ev, id, it, col, grid, d, u, pm;
+    if (!R) return;
+    R.swallow = 0;   // 새로 누르기 시작하면 앞선 끌기의 click 대기는 끝
+    if (!t || !t.closest || R.drag || e.defaultPrevented) return;
+    if (e.pointerType !== 'mouse' || e.button !== 0 || e.isPrimary === false || $('.modal')) return;   // 마우스 왼쪽 버튼만 · 창이 열려 있으면 안 함
+    if (t.closest('[data-rsv-ok]') || t.closest('#rsvRetry')) return;
+    u = R.settings.snap; u = (typeof u === 'number' && u > 0) ? u : 15;
+    d = { kind: '', id: '', ver: 0, item: null, sp: null, ev: null, col: null, vs: NaN, ve: NaN, unit: u, grab: 0, a: 0, date: '', th: '', phase: 'down', pid: e.pointerId, x0: e.clientX, y0: e.clientY,
+      cx: e.clientX, cy: e.clientY, drop: null, ghost: null, dropEl: null, tick: 0, late: false, off: null };
+    ev = t.closest('.rsv-ev') || t.closest('.rsv-mi');
+    if (ev) {
+      id = ev.getAttribute('data-id'); it = R.items[id];
+      if (!it || R.busy[id]) return;   // 서버 답을 기다리는 예약은 다시 끌 수 없음
+      d.id = id; d.ver = it.version; d.item = it; d.sp = rsvSpan(it); d.ev = ev;
+      if (!d.sp) return;
+      if (!ev.classList.contains('rsv-ev')) d.kind = 'month';
+      else {
+        col = ev.closest('.rsv-col'); grid = ev.closest('.rsv-grid');
+        if (!col || !grid) return;
+        d.vs = parseInt(grid.getAttribute('data-vs'), 10); d.ve = parseInt(grid.getAttribute('data-ve'), 10);
+        if (!isFinite(d.vs) || !isFinite(d.ve)) return;
+        d.kind = t.closest('.rsv-rz') ? 'resize' : 'move'; d.col = col;
+        d.grab = (e.clientY - col.getBoundingClientRect().top - (parseFloat(ev.style.top) || 0)) / RSV_PXM;   // 블록 윗변에서 잡은 곳까지(분) — 놓을 때도 같은 곳을 잡은 채로
+      }
+    } else if ((col = t.closest('.rsv-col')) && (grid = col.closest('.rsv-grid'))) {   // 빈 칸(휴무 음영·점심 줄 위도 포함) → 끌어서 범위 선택
+      d.vs = parseInt(grid.getAttribute('data-vs'), 10); d.ve = parseInt(grid.getAttribute('data-ve'), 10);
+      if (!isFinite(d.vs) || !isFinite(d.ve) || !isFinite(rsvAt(col.getAttribute('data-date'), 0))) return;
+      d.kind = 'select'; d.col = col; d.date = col.getAttribute('data-date'); d.th = col.getAttribute('data-th') || '';
+      d.a = rsvCellAt(d, e.clientY);
+    } else return;
+    R.drag = d; rsvDragBind(d);
+  }
+  function rsvDragBind(d) {
+    var sc = $('.rsv-sc'), f = {
+      cancel: function (e) { var R = S.rsv; if (R && R.drag && e.pointerId === R.drag.pid) rsvDragEnd(false); },
+      key: function (e) { if (e.key === 'Escape' || e.key === 'Esc') { e.preventDefault(); e.stopPropagation(); rsvDragEnd(false); } },
+      blur: function () { rsvDragEnd(false); },
+      scroll: function () { rsvDragUpdate(); },
+      sel: function (e) { e.preventDefault(); }   // 끄는 동안 글자가 선택되지 않게
+    };
+    document.addEventListener('pointermove', rsvDragMove); document.addEventListener('pointerup', rsvDragUp); document.addEventListener('pointercancel', f.cancel);
+    document.addEventListener('keydown', f.key, true); document.addEventListener('selectstart', f.sel); window.addEventListener('blur', f.blur);
+    if (sc) sc.addEventListener('scroll', f.scroll);
+    d.off = function () {   // 끌기를 끝낼 때 한 번에 정리: 리스너 · 자동 스크롤 타이머 · 미리보기 · 표시
+      document.removeEventListener('pointermove', rsvDragMove); document.removeEventListener('pointerup', rsvDragUp); document.removeEventListener('pointercancel', f.cancel);
+      document.removeEventListener('keydown', f.key, true); document.removeEventListener('selectstart', f.sel); window.removeEventListener('blur', f.blur);
+      if (sc) sc.removeEventListener('scroll', f.scroll);
+      if (d.tick) { clearInterval(d.tick); d.tick = 0; }
+      if (d.ghost && d.ghost.parentNode) d.ghost.parentNode.removeChild(d.ghost);
+      rsvDropMark(d, null);
+      $$('.dragging').forEach(function (x) { x.classList.remove('dragging'); });
+      document.body.classList.remove('rsv-dragging');
+    };
+  }
+  function rsvCellAt(d, y) {   // 세로 위치 → 그 칸(이동 단위)의 시작 분 (정각이 소수 오차로 한 칸 밀리지 않게 두 자리에서 반올림한 뒤 내림)
+    var r = d.col.getBoundingClientRect(), pm = Math.round((d.vs + (y - r.top) / RSV_PXM) * 100) / 100;
+    if (pm > d.ve - 1) pm = d.ve - 1;
+    if (pm < d.vs) pm = d.vs;
+    return Math.floor(pm / d.unit) * d.unit;
+  }
+  function rsvDragMove(e) {
+    var R = S.rsv, d = R && R.drag, dx, dy;
+    if (!d || e.pointerId !== d.pid) return;
+    if (e.buttons === 0) { rsvDragEnd(false); return; }   // 창 밖에서 버튼을 뗀 채 돌아옴 → 취소
+    d.cx = e.clientX; d.cy = e.clientY;
+    if (d.phase === 'down') {
+      dx = Math.abs(d.cx - d.x0); dy = Math.abs(d.cy - d.y0);
+      if (d.kind === 'select' ? !(dy >= RSV_DRAG_PX && rsvCellAt(d, d.cy) !== d.a) : !(dx >= RSV_DRAG_PX || dy >= RSV_DRAG_PX)) return;   // 빈 칸: 세로 4px + 누른 칸 벗어남 / 블록: 가로·세로 어느 쪽이든 4px
+      d.phase = 'drag';
+      d.ghost = document.createElement('div'); d.ghost.className = 'rsv-ghost' + (d.kind === 'month' ? ' float' : ''); d.ghost.setAttribute('aria-hidden', 'true');
+      if (d.ev) d.ev.classList.add('dragging');
+      document.body.classList.add('rsv-dragging');
+    }
+    rsvDragUpdate();
+  }
+  function rsvDragUp(e) {
+    var R = S.rsv, d = R && R.drag;
+    if (!d || e.pointerId !== d.pid) return;
+    if (d.phase === 'drag') { d.cx = e.clientX; d.cy = e.clientY; rsvDragUpdate(); }   // 놓은 자리 기준으로 마지막으로 한 번 더 계산
+    rsvDragEnd(true);
+  }
+  function rsvDragEnd(commit, quiet) {   // commit: 놓은 자리로 확정 / quiet: 화면을 벗어나는 중이라 그리기·확정 없이 정리만
+    var R = S.rsv, d = R && R.drag, was, hit;
+    if (!d) return;
+    R.drag = null;
+    if (d.off) d.off();
+    was = d.phase === 'drag';
+    hit = (commit && was && !quiet) ? d.drop : null;
+    if (was) R.swallow = Date.now();   // 이어서 오는 click 은 삼킴
+    if (d.late && !quiet && rsvShown()) rsvRender();   // 끄는 동안 미뤄 둔 그리기
+    if (hit) { if (d.kind === 'select') rsvItemSheet({ date: hit.date, th: hit.th, min: hit.start, len: hit.end - hit.start }); else rsvDragCommit(R, d, hit); }
+  }
+  function rsvDropMark(d, cell) { if (d.dropEl && d.dropEl !== cell) d.dropEl.classList.remove('drop'); if (cell) cell.classList.add('drop'); d.dropEl = cell || null; }
+  function rsvDragUpdate() {
+    var R = S.rsv, d = R && R.drag, sc, sr, hit = null;
+    if (!d || d.phase !== 'drag') return;
+    sc = $('.rsv-sc'); sr = sc ? sc.getBoundingClientRect() : null;
+    if (sr && d.cx >= sr.left && d.cx <= sr.right && d.cy >= sr.top && d.cy <= sr.bottom) {   // 스크롤 영역 안에서만 놓을 수 있음
+      hit = d.kind === 'month' ? rsvHitMonth(d) : d.kind === 'resize' ? rsvHitResize(d) : d.kind === 'select' ? rsvHitSelect(d) : rsvHitMove(d);
+    }
+    d.drop = hit;
+    rsvGhostPut(d, hit);
+    rsvDragScroll(d, sc, sr);
+  }
+  function rsvHitMove(d) {   // 마우스가 있는 열(날짜·치료사)과 15분 눈금에 맞춘 새 시작 → { date, th, col, res }
+    var cols = $$('#rsvbody .rsv-col'), col = null, i, r, th, tid, sm, res;
+    for (i = 0; i < cols.length; i++) { r = cols[i].getBoundingClientRect(); if (d.cx >= r.left && d.cx < r.right) { col = cols[i]; break; } }
+    if (!col) return null;
+    r = col.getBoundingClientRect(); th = col.getAttribute('data-th');   // 하루 보기만 열에 치료사가 있음
+    tid = (th === null || th === (d.item.therapist_id || '')) ? undefined : th;
+    if (tid !== undefined && !rsvCanTo(tid)) return null;   // 사용하지 않는 치료사 열에는 놓을 수 없음 (같은 치료사 안에서는 사용 중지여도 옮길 수 있음)
+    sm = d.vs + (d.cy - r.top) / RSV_PXM - d.grab;
+    if (sm < d.vs) sm = d.vs;
+    if (sm > Math.max(d.vs, d.ve - d.unit)) sm = Math.max(d.vs, d.ve - d.unit);
+    res = rsvMove(d.item, col.getAttribute('data-date'), sm, d.unit, tid);
+    return { date: col.getAttribute('data-date'), th: th, col: col, res: res };
+  }
+  function rsvHitResize(d) {   // 끝 시각만: 마우스 높이 → 이동 단위 눈금 (최소 한 칸 · 최대 12시간 · 보이는 범위 끝을 넘지 않음)
+    var r = d.col.getBoundingClientRect(), pm = d.vs + (d.cy - r.top) / RSV_PXM, res;
+    if (pm > d.ve) pm = d.ve;
+    res = rsvResize(d.item, pm, d.unit);
+    if (rsvMinOn(Date.parse(res.end_at), d.sp.ymd) > d.ve) res = rsvResize(d.item, rsvSnap(d.ve, d.unit, 'floor'), d.unit);   // 눈금에 맞추다 끝을 넘으면 한 칸 줄임
+    return { date: d.sp.ymd, th: d.col.getAttribute('data-th'), col: d.col, res: { start_at: res.start_at, end_at: res.end_at, therapist_id: d.item.therapist_id } };   // 시작·치료사는 그대로
+  }
+  function rsvHitMonth(d) {   // 월 보기: 마우스가 있는 날짜 칸. 시각·길이·치료사는 그대로
+    var cells = $$('#rsvbody .rsv-cell'), i, r, c = null, date;
+    for (i = 0; i < cells.length; i++) { r = cells[i].getBoundingClientRect(); if (d.cx >= r.left && d.cx < r.right && d.cy >= r.top && d.cy < r.bottom) { c = cells[i]; break; } }
+    if (!c) return null;
+    date = c.getAttribute('data-date');
+    return { date: date, th: null, cell: c, res: { start_at: rsvIso(date, d.sp.s), end_at: rsvIso(date, d.sp.e), therapist_id: d.item.therapist_id } };
+  }
+  function rsvHitSelect(d) {   // 빈 칸 끌기: 누른 칸과 지금 칸(둘 다 포함) → 시작·끝(분). 열은 처음 누른 열 그대로
+    var b = rsvCellAt(d, d.cy), lo = Math.min(d.a, b), hi = Math.max(d.a, b) + d.unit;
+    if (hi - lo > 720) { if (b >= d.a) hi = lo + 720; else lo = hi - 720; }
+    if (hi > 1440) hi = 1440;
+    return { date: d.date, th: d.th, col: d.col, start: lo, end: hi };
+  }
+  function rsvGhostPut(d, hit) {   // 미리보기: 주·하루 = 놓일 열 안에 반투명 블록 / 월 = 마우스 옆에 떠 있는 작은 글 + 놓일 칸 강조
+    var g = d.ghost, col, s, e, top, hh, H, name, tx, th, tn;
+    if (!g) return;
+    if (!hit) { if (g.parentNode) g.parentNode.removeChild(g); rsvDropMark(d, null); return; }
+    name = d.kind === 'select' ? '새 예약' : (rsvItemTitle(d.item) || '(이름 없음)');
+    if (d.kind === 'month') {
+      e = d.sp.e; tx = rsvMD(hit.date) + ' ' + rsvHm(d.sp.s) + '–' + rsvHm(e > 1440 ? e - 1440 : e);
+      g.innerHTML = '<b>' + esc(name) + '</b> <span>' + esc(tx) + '</span>';
+      if (g.parentNode !== document.body) document.body.appendChild(g);
+      g.style.left = Math.round(d.cx + 14) + 'px'; g.style.top = Math.round(d.cy + 14) + 'px';
+      rsvDropMark(d, hit.cell);
+      return;
+    }
+    col = hit.col;
+    if (d.kind === 'select') { s = hit.start; e = hit.end; }
+    else { s = rsvMinOn(Date.parse(hit.res.start_at), hit.date); e = s + Math.round((Date.parse(hit.res.end_at) - Date.parse(hit.res.start_at)) / 60000); }
+    th = col.getAttribute('data-th'); tn = '';
+    if (th !== null && d.kind !== 'select') tn = rsvTher(th) ? rsvTher(th).name : '(알 수 없음)';
+    tx = rsvHm(s) + '–' + rsvHm(e > 1440 ? e - 1440 : e) + (tn ? ' · ' + tn : '');
+    g.innerHTML = '<b>' + esc(name) + '</b> <span>' + esc(tx) + '</span>';
+    H = (d.ve - d.vs) * RSV_PXM; top = (s - d.vs) * RSV_PXM; hh = Math.max(RSV_MINH, (e - s) * RSV_PXM);
+    if (top + hh > H) hh = Math.max(1, H - top);
+    g.style.top = rsvPx(top); g.style.height = rsvPx(hh);
+    if (g.parentNode !== col) col.appendChild(g);
+  }
+  function rsvEdgeDelta(sr, x, y) {   // 가장자리에 가까울수록 빠르게 (위: 음수, 아래: 양수 · px/틱). 스크롤 영역의 가로 범위 밖이면 0
+    var hd = $('.rsv-hdrow'), top, z = RSV_EDGE, r;
+    if (x < sr.left || x > sr.right) return 0;
+    top = Math.max(sr.top, hd ? hd.getBoundingClientRect().bottom : 0);   // 고정 머리글 아래부터가 실제로 보이는 칸
+    if (y < top + z) { r = Math.min(1, (top + z - y) / z); return -Math.max(2, Math.round(20 * r)); }
+    if (y > sr.bottom - z) { r = Math.min(1, (y - (sr.bottom - z)) / z); return Math.max(2, Math.round(20 * r)); }
+    return 0;
+  }
+  function rsvDragScroll(d, sc, sr) {   // 가장자리 근처면 타이머를 켜고 벗어나면 끔
+    var dl = (sc && sr) ? rsvEdgeDelta(sr, d.cx, d.cy) : 0;
+    if (dl && !d.tick) d.tick = setInterval(rsvDragTick, RSV_TICK);
+    else if (!dl && d.tick) { clearInterval(d.tick); d.tick = 0; }
+  }
+  function rsvDragTick() {
+    var R = S.rsv, d = R && R.drag, sc, sr, dl;
+    if (!d || d.phase !== 'drag') return;
+    sc = $('.rsv-sc'); if (!sc) return;
+    sr = sc.getBoundingClientRect(); dl = rsvEdgeDelta(sr, d.cx, d.cy);
+    if (dl) sc.scrollTop = sc.scrollTop + dl;
+    rsvDragUpdate();   // 안 움직인 마우스 밑에서 내용이 흘렀으므로 다시 계산
+  }
+  function rsvSameSpot(it, res) { return Date.parse(it.start_at) === Date.parse(res.start_at) && Date.parse(it.end_at) === Date.parse(res.end_at) && (it.therapist_id || '') === (res.therapist_id || ''); }
+  function rsvDragCommit(R, d, hit) {   // 놓았다: 제자리면 아무것도 안 함 → 저장 전과 같은 경고 검사 → (경고 확인) → 서버에 보냄
+    var it = R.items[d.id], res = hit.res, rz = d.kind === 'resize', ver, cand;
+    if (!it || it.version !== d.ver || rsvSameSpot(it, res)) return;
+    ver = it.version;
+    cand = Object.assign({}, it, { start_at: res.start_at, end_at: res.end_at, therapist_id: res.therapist_id });
+    rsvWarnList(cand).then(function (list) {
+      if (S.rsv !== R) return;
+      if (!list.length) rsvDoMove(R, d.id, ver, res, rz);
+      else rsvConfirmWarn(null, list, function () { rsvDoMove(R, d.id, ver, res, rz); }, rz
+        ? { title: '시간 변경 전 확인', ok: '그래도 변경', note: '아래 내용을 확인해 주세요. 그래도 길이를 바꿀 수 있습니다.' }
+        : { title: '이동 전 확인', ok: '그래도 이동', note: '아래 내용을 확인해 주세요. 그래도 이동할 수 있습니다.' });
+    });
+  }
+  function rsvDoMove(R, id, ver, res, rz) {
+    var it, mine, before;
+    if (S.rsv !== R) return;
+    it = R.items[id];
+    if (!it || R.busy[id]) return;
+    if (it.version !== ver) { toast('그사이 다른 직원이 이 예약을 바꿨습니다. 최신 내용을 확인한 뒤 다시 해 주세요.'); return; }
+    before = rsvBefore(it);
+    mine = Object.assign({}, it, { start_at: res.start_at, end_at: res.end_at, therapist_id: res.therapist_id });
+    R.busy[id] = true; R.items[id] = mine;   // 서버 답을 기다리는 동안 이미 새 자리에 보여 줌
+    if (rsvShown()) rsvRender();
+    sb.rpc('rsv_item_move', { p_id: id, p_start: res.start_at, p_end: res.end_at, p_therapist: res.therapist_id, p_version: ver }).then(function (r) { return r; }, function (e) { return { data: null, error: e }; }).then(function (r) {
+      var row, sp, e;
+      delete R.busy[id];
+      if (S.rsv !== R) return;
+      if (r.error) {   // 거절·실패: 아직 내 임시 표시 그대로면 원위치 (그 사이 더 새 내용이 왔으면 그대로 둠) + 이유(충돌이면 다시 불러옴)
+        if (R.items[id] === mine) R.items[id] = it;
+        rsvFail(R, r.error);
+        if (rsvShown()) rsvRender();
+        return;
+      }
+      row = rsvOne(r.data);
+      if (!row || !row.id) { if (R.items[id] === mine) R.items[id] = it; rsvLoad(); if (rsvShown()) rsvRender(); return; }   // 결과를 못 받음 → 서버 기준으로 다시
+      if (row.version !== ver) rsvPushUndo(R, { op: 'move', id: id, ver: row.version, before: before, after: row, label: (row.patient_name || '') + (rz ? ' 시간 변경' : ' 예약 이동') });
+      rsvPut(row);
+      sp = rsvSpan(row);
+      if (sp) { e = sp.e > 1440 ? sp.e - 1440 : sp.e; toast(esc(row.patient_name) + (rz ? ' 예약 시간을 바꿨습니다 (' + rsvHm(sp.s) + '–' + rsvHm(e) + ')' : ' 예약을 옮겼습니다 (' + rsvMD(sp.ymd) + ' ' + rsvHm(sp.s) + ')')); }
+      else toast(esc(row.patient_name) + (rz ? ' 예약 시간을 바꿨습니다' : ' 예약을 옮겼습니다'));
+    });
   }
 
   /* ================= 실시간 ================= */
@@ -2772,6 +5301,11 @@
         else queueRefreshSoon();   // 지워졌거나 내용이 오지 않은 경우: 다시 불러옴
       })
       .subscribe();
+    /* 예약(업데이트 12)도 따로 만든 채널로 듣는다 — 12번 SQL 을 올리기 전에 앱이 먼저 올라가도(표가 아직 없어도) 기존 실시간에 영향이 없게 */
+    if (S.rChannel) sb.removeChannel(S.rChannel);
+    S.rChannel = ['rsv_items', 'rsv_blocks', 'rsv_therapists', 'rsv_settings'].reduce(function (ch, t) {
+      return ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, function (p) { rsvApply(t, p); });
+    }, sb.channel('noble-rsv-' + S.me.id)).subscribe();
   }
 
   /* ================= 시트(모달) ================= */
@@ -2817,6 +5351,7 @@
   /* ESC: 열린 창(시트) 닫기 → 답장 취소 → 방 검색 닫기 → 채팅방 나가기 (새 창이면 창 닫기) */
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape' || e.defaultPrevented || e.isComposing) return;
+    if (reactPopEl) { e.preventDefault(); hideReactPop(); return; }
     var ms = $$('.modal'); if (ms.length) { e.preventDefault(); ms[ms.length - 1].remove(); return; }
     var epk = $('#emojiPick'); if (epk && !epk.hidden) { e.preventDefault(); epk.hidden = true; return; }
     if (S.replyTo) { e.preventDefault(); setReply(null); return; }

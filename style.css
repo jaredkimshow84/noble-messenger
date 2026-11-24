@@ -802,3 +802,289 @@ html.fs-xl .q-dt{font-size:18px}
 .app.has-q[data-lay="q3"] .room-item .ri-top,.app.has-q[data-lay="q3"] .room-item .ri-bot p{display:none}
 .app.has-q[data-lay="q3"] .room-item.is-muted .avatar{opacity:.5}
 .app.has-q[data-lay="q3"] .room-item .badge{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 4px;font-size:11px;box-shadow:0 0 0 2px #fff}
+
+/* ===== v47: 공감 칩을 말풍선 아래 테두리에 걸쳐 작게 (카카오워크처럼) ===== */
+.reacts{gap:3px;margin:-15px 0 0;padding:0 8px;position:relative;z-index:1;align-self:flex-start}   /* 안쪽 칸의 gap 4px + -15px = 말풍선 위로 11px 걸침 */
+.msg.mine .reacts{align-self:flex-end}
+.msg.has-react{margin-bottom:4px}   /* 칩 줄 아래 여유 (글 사이 간격 4px + 4px = 8px) */
+.react{position:relative;min-height:22px;height:auto;padding:1px 7px;gap:2px;font-size:13px;line-height:1.25;box-shadow:0 1px 3px rgba(13,36,64,.18)}
+.react::after{content:"";position:absolute;inset:-6px -2px}   /* 눈에 안 보이는 클릭 영역 (손가락으로도 누를 수 있게) */
+.react b{font-size:11.5px}
+.msg.has-react .col > .bubble:first-child,
+.msg.has-react .col > .img-msg:first-child,
+.msg.has-react .col > .file-msg:first-child{align-self:flex-start}   /* 칩이 말풍선보다 넓어도 말풍선은 늘어나지 않음 (인용 글은 위아래 상자 폭을 맞추는 기존 규칙 유지) */
+.msg.mine.has-react .col > .bubble:first-child,
+.msg.mine.has-react .col > .img-msg:first-child,
+.msg.mine.has-react .col > .file-msg:first-child{align-self:flex-end}
+/* PC: 😊 에 마우스를 올리면 뜨는 공감 막대 */
+.react-pop{position:fixed;z-index:55;display:flex;gap:2px;padding:5px 6px;background:#fff;border:1px solid var(--line);border-radius:999px;box-shadow:0 6px 20px rgba(13,36,64,.22)}
+.react-pop button{min-width:34px;height:34px;padding:0 6px;border-radius:999px;font-size:19px;line-height:1}
+.react-pop button.txt{font-size:14px;font-weight:700;color:var(--navy)}
+.react-pop button:hover{background:var(--bg)}
+.react-pop button.on{background:var(--gold-soft);box-shadow:inset 0 0 0 1px var(--gold)}
+.msg.pop-on .msg-acts{opacity:1}
+
+/* ===== v47: 채팅 목록 위 "모두 읽음" 단추 ===== */
+.ra-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:0 0 auto;min-height:34px;padding:0 12px 0 10px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--navy);font-size:13px;font-weight:700;line-height:1;white-space:nowrap}
+.ra-btn svg{width:17px;height:17px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ra-btn:hover{background:var(--bg)}
+.ra-btn:disabled{opacity:.45;cursor:default}
+.ra-btn:disabled:hover{background:#fff}
+html.fs-l .ra-btn{font-size:14.5px}
+html.fs-xl .ra-btn{font-size:16px}
+/* 폰·태블릿 가로(60px 방 아이콘 띠): 두 단추를 세로로 쌓고 글자는 숨김 (title·aria-label 로 이름은 유지) */
+.app.has-q[data-lay="q3"] .list-pane .pane-hd{flex-direction:column;gap:4px}
+.app.has-q[data-lay="q3"] .list-pane .ra-btn{width:38px;height:38px;min-height:0;padding:0;border-radius:12px}
+.app.has-q[data-lay="q3"] .list-pane .ra-btn span{display:none}
+.app.has-q[data-lay="q3"] .list-pane .ra-btn svg{width:20px;height:20px}
+
+/* ---------- 예약 달력 (v48) ----------
+   위(.rsv-top)는 고정, 아래(.rsv-sc)만 스크롤. 시간 눈금은 1분 = 1.4px (app.js RSV_PXM 과 같은 값 — 한 시간 = 84px).
+   주·일 보기: 날짜(치료사) 머리글 줄이 위에, 시간 글자 줄이 왼쪽에 붙어 따라다님. 좁은 화면 주 보기는 가로로 밀어 봄 */
+.rsv-body{display:flex;flex-direction:column;min-height:0;overflow:hidden;background:#fff}
+.rsv-top{flex:none;background:#fff;border-bottom:1px solid var(--line)}
+.rsv-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:8px 12px}
+.rsv-nav{display:flex;gap:6px}
+.rsv-nav .btn{min-width:40px;padding:0 10px;font-size:16px}
+.rsv-title{flex:1 1 9em;min-width:0;font-size:17px;font-weight:800;color:var(--navy);letter-spacing:-.02em}
+.rsv-views{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.rsv-views button{min-width:44px;min-height:36px;padding:0 12px;font-size:14px;font-weight:700;color:var(--body);background:#fff}
+.rsv-views button+button{border-left:1px solid var(--line)}
+.rsv-views button[aria-pressed="true"]{background:var(--navy);color:#fff}
+.rsv-acts{display:flex;align-items:center;gap:4px;margin-left:auto}
+.rsv-acts .btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.rsv-acts .icon-btn:disabled{opacity:.35;cursor:default}
+.rsv-thers{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 8px}
+.rsv-ther{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:13.5px;font-weight:700;color:var(--ink)}
+.rsv-ther[aria-pressed="false"]{background:var(--bg);color:var(--muted)}
+.rsv-ther[aria-pressed="false"] .rsv-dot{opacity:.35}
+.rsv-ther.inactive{border-style:dashed}
+.rsv-dot{display:inline-block;flex:none;width:10px;height:10px;border-radius:50%}
+.rsv-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:0 8px 8px}
+.rsv-strip button{display:flex;flex-direction:column;align-items:center;gap:1px;min-height:52px;padding:6px 0;border:1px solid transparent;border-radius:12px;font-size:12px;color:var(--muted)}
+.rsv-strip button b{font-size:16px;color:var(--ink)}
+.rsv-strip button[aria-pressed="true"]{background:var(--navy);color:#fff}
+.rsv-strip button[aria-pressed="true"] b{color:#fff}
+.rsv-strip button[aria-current="date"]:not([aria-pressed="true"]){border-color:var(--gold)}
+.rsv-stale{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 12px;font-size:13px;background:#fff6e5;color:#8a5a00;border-bottom:1px solid #f1dfb5}
+.rsv-notice,.rsv-error,.rsv-gap,.rsv-empty,.rsv-loading{display:grid;gap:12px;justify-items:center;padding:32px 16px;text-align:center}
+.rsv-notice p,.rsv-error p,.rsv-gap p{color:var(--body)}
+.rsv-sc{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.rsv-view{min-width:100%}
+.rsv-grid{--gw:48px;min-width:100%}
+.rsv-hdrow,.rsv-cols{display:grid;grid-template-columns:var(--gw) repeat(var(--n),minmax(0,1fr))}
+.rsv-hdrow{position:sticky;top:0;z-index:6;background:#fff;border-bottom:1px solid var(--line)}
+.rsv-corner{position:sticky;left:0;z-index:7;background:#fff}
+.rsv-dh{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:44px;padding:4px 6px;border-left:1px solid var(--line);background:#fff;font-size:14px;font-weight:700;color:var(--body)}
+button.rsv-dh{width:100%}
+button.rsv-dh:hover{background:var(--bg)}
+.rsv-dh>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rsv-dh .rsv-dn{display:inline-grid;place-items:center;min-width:28px;height:28px;border-radius:999px;font-size:15px}
+.rsv-dh.today{color:var(--navy)}
+.rsv-dh.today .rsv-dn{background:var(--navy);color:#fff}
+.rsv-cols{margin-top:10px}
+.rsv-gutter{position:sticky;left:0;z-index:4;background:#fff;border-right:1px solid var(--line)}
+.rsv-hr{position:absolute;right:6px;transform:translateY(-50%);font-size:11px;line-height:1;color:var(--muted);font-variant-numeric:tabular-nums}
+.rsv-col{position:relative;min-width:0;border-left:1px solid var(--line);background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 83px,var(--line) 83px,var(--line) 84px)}
+.rsv-col.today{background-color:#fffdf4}
+.rsv-off{position:absolute;left:0;right:0;pointer-events:none;background:repeating-linear-gradient(135deg,rgba(13,36,64,.07) 0 5px,rgba(13,36,64,.025) 5px 10px)}
+.rsv-col.closed .rsv-off{background:rgba(13,36,64,.06)}
+.rsv-lunch{position:absolute;left:0;right:0;pointer-events:none;background:rgba(201,166,70,.15)}
+.rsv-blk{position:absolute;left:0;right:0;z-index:1;overflow:hidden;padding:2px 6px;border-top:2px solid rgba(192,57,43,.35);background:repeating-linear-gradient(45deg,rgba(192,57,43,.12) 0 6px,rgba(192,57,43,.05) 6px 12px);font-size:12px;font-weight:700;line-height:1.3;color:#8a2a1f}
+.rsv-blk-s{display:block;font-weight:500;opacity:.85}
+.rsv-now{position:absolute;left:0;right:0;z-index:3;height:0;border-top:2px solid #e5484d;pointer-events:none}
+.rsv-now::before{content:"";position:absolute;left:-5px;top:-6px;width:10px;height:10px;border-radius:50%;background:#e5484d}
+.rsv-ev{position:absolute;z-index:2;overflow:hidden;padding:2px 24px 2px 6px;border:1px solid rgba(13,36,64,.14);border-left:4px solid var(--c,#6b7280);border-radius:7px;background:#fff;background:color-mix(in srgb,var(--c,#6b7280) 13%,#fff);box-shadow:0 1px 2px rgba(13,36,64,.14);font-size:12.5px;line-height:1.25;color:var(--ink);cursor:pointer;touch-action:manipulation}
+.rsv-ev:hover{z-index:3;box-shadow:0 2px 6px rgba(13,36,64,.25)}
+.rsv-ev:focus-visible{z-index:4}
+.rsv-ev-t{display:block;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rsv-ev-s{display:block;font-size:11.5px;color:var(--body);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rsv-ev-st{position:absolute;right:3px;top:2px;padding:0 5px;border-radius:999px;background:#eceff4;font-size:11px;font-weight:800;color:var(--body)}
+.rsv-ev[data-status="킵"]{border-style:dashed;border-left-style:solid;background:color-mix(in srgb,var(--c,#6b7280) 6%,#fff)}
+.rsv-ev[data-status="취소"],.rsv-ev[data-status="노쇼"]{opacity:.62;background:#f3f4f6}
+.rsv-ev[data-status="취소"] .rsv-ev-t{text-decoration:line-through}
+.rsv-ev[data-status="노쇼"] .rsv-ev-st{background:#fde8e6;color:var(--danger)}
+.rsv-ok{position:absolute;right:3px;top:3px;display:grid;place-items:center;width:20px;height:20px;border:1.5px solid rgba(13,36,64,.25);border-radius:50%;background:#fff;color:transparent}
+.rsv-ok::after{content:"";position:absolute;inset:-9px}
+.rsv-ok svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.rsv-ok[aria-pressed="true"]{border-color:var(--ok);background:var(--ok);color:#fff}
+.rsv-days{position:sticky;top:0;z-index:6;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));background:#fff;border-bottom:1px solid var(--line)}
+.rsv-days .rsv-dh{min-height:32px;border-left:0;font-size:13px}
+.rsv-month{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:minmax(96px,1fr)}
+.rsv-cell{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:2px;min-width:0;min-height:96px;padding:4px 4px 3px;overflow:hidden;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:#fff;font-size:12px;text-align:left}
+.rsv-cell:hover{background:#fafbfd}
+.rsv-cell.out{background:#f8f9fb;color:var(--muted)}
+.rsv-cell .rsv-dn{display:inline-grid;place-items:center;align-self:flex-start;min-width:24px;height:24px;border-radius:999px;font-size:13px;font-weight:700}
+.rsv-cell.today .rsv-dn{background:var(--navy);color:#fff}
+.rsv-cnt{position:absolute;top:5px;right:5px;min-width:20px;padding:0 6px;border-radius:999px;background:var(--gold-soft);font-size:11px;font-weight:800;color:var(--gold-d);text-align:center}
+.rsv-mi{display:block;min-width:0;padding:0 4px;border-left:3px solid var(--c,#6b7280);border-radius:3px;background:rgba(13,36,64,.045);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rsv-mi b{font-weight:700;color:var(--body)}
+.rsv-mi[data-status="취소"],.rsv-mi[data-status="노쇼"]{opacity:.55;text-decoration:line-through}
+.rsv-more{padding-left:4px;font-weight:700;color:var(--muted)}
+.rsv-mb{display:block;padding:0 4px;overflow:hidden;border-radius:3px;background:rgba(192,57,43,.1);font-weight:700;color:#8a2a1f;white-space:nowrap;text-overflow:ellipsis}
+/* 좁은 화면(폰): 시간 글자 줄을 좁히고, 주 보기는 7일 열이 너무 가늘어지지 않게 가로로 밀어 보게 함 · 글자는 이름 위주 */
+.rsv-narrow .rsv-grid{--gw:38px}
+[data-view="week"] .rsv-narrow .rsv-grid{min-width:calc(38px + var(--n) * 96px)}
+.rsv-narrow .rsv-hr{right:4px;font-size:10px}
+.rsv-narrow .rsv-ev{padding-right:22px;font-size:12px}
+[data-view="week"] .rsv-narrow .rsv-ev-s{display:none}
+.rsv-narrow .rsv-head{gap:6px 8px;padding:6px 8px}
+.rsv-narrow .rsv-title{font-size:15px}
+.rsv-narrow .rsv-cell{min-height:78px;font-size:11px}
+.rsv-narrow .rsv-mi b{display:none}
+html.fs-l .rsv-ev,html.fs-l .rsv-mi{font-size:14px}
+html.fs-l .rsv-ev-s{font-size:13px}
+html.fs-l .rsv-hr{font-size:12.5px}
+html.fs-xl .rsv-ev,html.fs-xl .rsv-mi{font-size:15.5px}
+html.fs-xl .rsv-ev-s{font-size:14px}
+html.fs-xl .rsv-hr{font-size:14px}
+
+/* ---------- 예약 입력·상세 창 (v48 5단계) ---------- */
+.rsv-form .seg.sm{flex-wrap:wrap}
+.rsv-form .seg.sm button{min-width:56px;padding:0 8px;white-space:nowrap}
+.rsv-form #rsvTh button{display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.rsv-quick{display:flex;gap:8px}
+.rsv-quick .input{flex:1;min-width:0}
+.rsv-hint{min-height:1.4em;margin:2px 0 0}
+.rsv-lenrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.rsv-lenrow .seg{flex:1 1 230px;margin:0}
+.rsv-lenn{width:76px;flex:none;text-align:center}
+.rsv-end{font-size:13.5px;font-weight:700;white-space:nowrap}
+.rsv-sug{display:grid;gap:2px;max-height:220px;overflow-y:auto;padding:4px;border:1px solid var(--line);border-radius:11px;background:#fff;box-shadow:0 6px 18px rgba(13,36,64,.14)}
+.rsv-sug-i{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;min-height:44px;padding:6px 10px;border-radius:8px;text-align:left}
+.rsv-sug-i:hover,.rsv-sug-i:focus-visible{background:var(--bg)}
+.rsv-sug-n{font-weight:800;color:var(--ink)}
+.rsv-sug-c{font-size:12.5px;color:var(--muted)}
+.rsv-sug-l{flex-basis:100%;font-size:12.5px;color:var(--body)}
+.rsv-courses{display:flex;flex-wrap:wrap;gap:6px}
+.rsv-chip{min-height:34px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:13.5px;font-weight:700;color:var(--body)}
+.rsv-chip[aria-pressed="true"]{border-color:var(--navy);background:var(--navy);color:#fff}
+.rsv-memo{min-height:64px;resize:vertical}
+.rsv-changed{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px;padding:10px 12px;border:1px solid #f1dfb5;border-radius:11px;background:#fff6e5;font-size:13.5px;color:#8a5a00}
+.rsv-warns{display:grid;gap:8px;margin:8px 0 16px;padding:0;list-style:none}
+.rsv-warns li{padding:10px 12px;border:1px solid #f1dfb5;border-radius:11px;background:#fff6e5;font-size:14px;color:#6b4a00}
+.rsv-det{margin-bottom:14px}
+.rsv-det p{margin:4px 0}
+.rsv-det-n{font-size:20px;font-weight:800;color:var(--navy);letter-spacing:-.02em}
+.rsv-det-c{display:inline-block;margin-left:6px;padding:1px 9px;border-radius:999px;background:var(--gold-soft);font-size:13px;font-weight:800;color:var(--gold-d);vertical-align:2px}
+.rsv-det-t{font-weight:700;color:var(--ink)}
+.rsv-det-th{display:flex;align-items:center;gap:6px;color:var(--body)}
+.rsv-det-r{color:var(--body)}
+.rsv-det-m{margin-top:8px;padding:10px 12px;border-radius:11px;background:var(--bg);color:var(--ink);white-space:pre-wrap}
+
+/* ---------- 예약 끌기·길이 조절·범위 선택 (v48 6단계) ---------- */
+.rsv-ev,.rsv-mi,.rsv-cell{-webkit-user-select:none;user-select:none}
+.rsv-ev{cursor:grab}
+.rsv-rz{position:absolute;left:0;right:0;bottom:0;height:7px;cursor:ns-resize}
+.rsv-rz::after{content:"";position:absolute;left:50%;bottom:2px;width:22px;height:3px;margin-left:-11px;border-radius:2px;background:rgba(13,36,64,.32);opacity:0;transition:opacity .12s}
+.rsv-ev:hover .rsv-rz::after,.rsv-ev:focus-visible .rsv-rz::after,.rsv-ev.dragging .rsv-rz::after{opacity:1}
+.rsv-ev.pending{opacity:.72}
+.rsv-ev.dragging,.rsv-mi.dragging{opacity:.5;outline:2px dashed var(--c,#6b7280);outline-offset:-3px}
+.rsv-ghost{position:absolute;left:3px;right:3px;z-index:5;box-sizing:border-box;padding:2px 7px;border:2px solid var(--navy);border-radius:7px;background:rgba(255,255,255,.88);box-shadow:0 5px 16px rgba(13,36,64,.3);font-size:12.5px;line-height:1.25;color:var(--navy);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;pointer-events:none}
+.rsv-ghost b{font-weight:800}
+.rsv-ghost.float{position:fixed;left:0;top:0;right:auto;z-index:2000;max-width:min(70vw,360px)}
+.rsv-cell.drop{background:#eaf1ff;box-shadow:inset 0 0 0 2px var(--navy)}
+body.rsv-dragging,body.rsv-dragging *{cursor:grabbing !important;-webkit-user-select:none;user-select:none}
+html.fs-l .rsv-ghost{font-size:14px}
+html.fs-xl .rsv-ghost{font-size:15.5px}
+
+/* ===== v48 7단계: ⋯ 메뉴 · 휴무·마감 블록(눌러서 수정) ===== */
+.rsv-menu{display:flex;flex-direction:column;padding:2px 0 8px}
+.rsv-menu button{display:flex;align-items:center;min-height:48px;padding:0 20px;border-top:1px solid var(--line);font-size:15px;font-weight:600;color:var(--navy);text-align:left}
+.rsv-menu button:first-child{border-top:0}
+.rsv-menu button:hover,.rsv-menu button:focus-visible{background:var(--bg)}
+.rsv-blk{cursor:pointer}
+.rsv-blk:hover{filter:brightness(.97)}
+.rsv-blk:focus-visible{outline:2px solid var(--navy);outline-offset:-2px}
+
+/* ===== v48 7단계: 변경 기록 · 휴지통 ===== */
+.rsv-hf{margin-bottom:8px}
+.rsv-hf .input{min-height:40px;padding:6px 10px;font-size:14.5px}
+.rsv-log,.rsv-trash{list-style:none;margin:6px 0 0;padding:0;max-height:54dvh;overflow-y:auto;border:1px solid var(--line);border-radius:12px}
+.rsv-log:empty,.rsv-trash:empty{display:none}
+.rsv-log-i{display:grid;gap:2px;padding:10px 13px;border-top:1px solid var(--line);font-size:14px;line-height:1.4}
+.rsv-log-i:first-child{border-top:0}
+.rsv-log-h{font-weight:700;color:var(--navy);overflow-wrap:anywhere}
+.rsv-log-d{color:var(--body);overflow-wrap:anywhere}
+.rsv-log-m{color:var(--muted);font-size:12.5px}
+.rsv-more{width:100%;margin-top:10px}
+html.fs-l .rsv-log-i{font-size:16.5px}
+html.fs-xl .rsv-log-i{font-size:19px}
+html.fs-l .rsv-log-m{font-size:14.5px}
+html.fs-xl .rsv-log-m{font-size:16.5px}
+.rsv-tr-i{display:grid;grid-template-columns:1fr auto;grid-template-areas:"n b" "w b" "m b";gap:2px 10px;align-items:center;padding:10px 13px;border-top:1px solid var(--line);font-size:14px;line-height:1.4}
+.rsv-tr-i:first-child{border-top:0}
+.rsv-tr-n{grid-area:n;font-weight:700;color:var(--navy);overflow-wrap:anywhere}
+.rsv-tr-w{grid-area:w;color:var(--body);overflow-wrap:anywhere}
+.rsv-tr-m{grid-area:m;color:var(--muted);font-size:12.5px}
+.rsv-tr-i .btn{grid-area:b}
+html.fs-l .rsv-tr-i{font-size:16.5px}
+html.fs-xl .rsv-tr-i{font-size:19px}
+html.fs-l .rsv-tr-m{font-size:14.5px}
+html.fs-xl .rsv-tr-m{font-size:16.5px}
+
+/* ===== v48 7단계: 설정(치료사) ===== */
+.rsv-set h3{font-size:15px;color:var(--navy)}
+.rsv-set-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.rsv-set-list{list-style:none;margin:0 0 8px;padding:0;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.rsv-set-list:empty{display:none}
+.rsv-set-i{display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--line)}
+.rsv-set-i:first-child{border-top:0}
+.rsv-set-i.off{opacity:.55}
+.rsv-set-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.rsv-set-n{font-weight:700;color:var(--navy);overflow-wrap:anywhere}
+.rsv-set-m{font-size:12.5px;color:var(--muted)}
+.rsv-color{height:46px;padding:4px;cursor:pointer}
+html.fs-l .rsv-set-m{font-size:14.5px}
+html.fs-xl .rsv-set-m{font-size:16.5px}
+
+/* ===== v48 7단계 (2): 설정 창 탭 · 운영 시간 · 기본값·코스 ===== */
+.rsv-set .rsv-set-tabs{margin:0 0 12px}
+.rsv-set-sec{margin:0 0 18px}
+.rsv-set-sec h3{margin:0 0 8px}
+.rsv-set .chk-row{margin:0 0 8px}
+.rsv-set .chk-row input[type=checkbox]{width:19px;height:19px;accent-color:var(--navy)}
+.rsv-set .seg.sm{flex-wrap:wrap}
+.rsv-set .seg.sm button{min-width:56px;padding:0 10px;white-space:nowrap}
+.rsv-hr{display:grid;gap:8px;margin:8px 0}
+.rsv-hr-r{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:8px 10px;border:1px solid var(--line);border-radius:12px}
+.rsv-hr-d{flex:0 0 22px;text-align:center;font-weight:700;color:var(--navy)}
+.rsv-hr-k{flex:0 0 118px;width:auto;min-height:40px;padding:6px 10px}
+.rsv-hr-t{flex:1 1 190px;display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap}
+.rsv-hr-t .input{flex:1 1 88px;width:auto;min-width:0;min-height:40px;padding:6px 8px}
+.rsv-hr-n{flex:1 1 auto}
+.rsv-set textarea.input{line-height:1.5;font-family:inherit}
+html.fs-l .rsv-hr-d{flex-basis:26px}
+html.fs-xl .rsv-hr-d{flex-basis:30px}
+
+/* ---------- v48 마감: 하단 메뉴 8개가 좁은 폰에서도 한 줄·40px 이상, 모자라면 옆으로 밀어서 닿음 ---------- */
+@media (max-width:860px){
+  .rail{overflow-x:auto;overflow-y:hidden;justify-content:flex-start;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .rail::-webkit-scrollbar{display:none}
+  .tab{flex:1 0 auto;min-width:40px;padding-left:2px;padding-right:2px;white-space:nowrap}
+}
+@media (max-width:360px){
+  .tab{font-size:10.5px}
+}
+@media (max-width:860px) and (orientation:landscape){
+  .app[data-lay="q3"] .rail .tab{flex:0 0 auto}
+}
+
+/* ---------- v48 마감: 같은 시각 예약이 4건 이상 겹쳐 칸이 아주 좁을 때 — 여백을 줄이고 ✓·시간 줄은 숨김(눌러서 상세에서 처리) ---------- */
+.rsv-ev.tight{padding:2px 2px 2px 3px}
+.rsv-ev.tight .rsv-ok,.rsv-ev.tight .rsv-ev-s,.rsv-ev.tight .rsv-ev-st{display:none}
+
+/* ---------- v48 마감: 가로로 눕힌 폰처럼 화면 높이가 낮을 때 — 도구 줄이 달력을 다 먹지 않게 줄임 ---------- */
+@media (max-height:480px) and (max-width:1000px){
+  .rsv-head{gap:4px 8px;padding:4px 12px}
+  .rsv-thers{padding-bottom:4px}
+  .rsv-ther{min-height:30px}
+  .rsv-strip{padding-bottom:4px}
+  .rsv-strip button{flex-direction:row;justify-content:center;align-items:baseline;gap:4px;min-height:32px;padding:3px 0}
+}
+
+/* ---------- v48 마감: 창 높이가 낮은 PC 에서도 왼쪽 메뉴 8개가 잘리지 않고 밀어서 닿음 ---------- */
+@media (min-width:861px){
+  .rail{overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
+  .rail::-webkit-scrollbar{display:none}
+}
