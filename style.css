@@ -1130,3 +1130,15 @@ html.fs-xl .rsv-hr-d{flex-basis:30px}
   .rail{overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
   .rail::-webkit-scrollbar{display:none}
 }
+
+/* ---------- v49l: 메모 (개인용 할일·메모 — 본인 것만 보임) ---------- */
+.memo-add{display:flex;gap:8px;margin-top:10px}
+.memo-add .input{flex:1}
+.memo-todo-row{display:flex;align-items:center;gap:6px;padding:9px 2px;border-bottom:1px solid var(--line)}
+.memo-todo-row:last-of-type{border-bottom:0}
+.memo-todo-chk{display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer}
+.memo-todo-chk input[type=checkbox]{width:19px;height:19px;accent-color:var(--navy);flex:0 0 auto}
+.memo-todo-text{font-size:14.5px;word-break:break-word}
+.memo-todo-row.done .memo-todo-text{color:var(--muted);text-decoration:line-through}
+.memo-todo-row .icon-btn{width:30px;height:30px;color:var(--muted);flex:0 0 auto}
+.memo-note{min-height:260px}

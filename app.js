@@ -283,7 +283,7 @@
   }
 
   /* ---------------- 화면 틀 ---------------- */
-  var TABS = [['chats', '채팅', 'chat'], ['queue', '순서표', 'queue'], ['rsv', '예약', 'calendar'], ['notices', '공지', 'bell'], ['work', '근무신청', 'clock'], ['staff', '직원', 'users'], ['settings', '설정', 'gear']];
+  var TABS = [['chats', '채팅', 'chat'], ['queue', '순서표', 'queue'], ['rsv', '예약', 'calendar'], ['memo', '메모', 'pencil'], ['notices', '공지', 'bell'], ['work', '근무신청', 'clock'], ['staff', '직원', 'users'], ['settings', '설정', 'gear']];   // v49l: 메모(개인용 할일·메모) 탭 추가 — 예약과 공지 사이
   function renderShell() {
     var tabs = TABS.slice(); if (S.me.role === 'admin') tabs.splice(tabs.length - 1, 0, ['admin', '관리', 'shield']);
     root.innerHTML = '<div class="app" id="app"><nav class="rail" aria-label="메뉴"><img class="logo" src="logo.svg" alt="노블">' +
@@ -365,6 +365,7 @@
       case 'notices': renderNoticeList(); if (S.route.id) { app.classList.add('in-detail'); openNotice(+S.route.id); } else renderPlaceholder('공지를 선택해 주세요'); break;
       case 'queue': single(); renderQueue(); break;
       case 'rsv': single(); renderRsv(); break;
+      case 'memo': single(); renderMemo(); break;
       case 'work': single(); renderWork(); break;
       case 'staff': single(); renderStaff(); break;
       case 'admin': single(); if (S.me.role === 'admin') renderAdmin(); break;
@@ -549,22 +550,33 @@
   var searchTimer = null, smRefresh = null;   // smRefresh: 통합 검색 창이 열려 있을 때, 메시지 검색 결과가 늦게 도착하면 다시 그리는 함수 (닫혀 있으면 호출 안 됨)
   function searchAllMessages(q) {
     clearTimeout(searchTimer);
-    S.msgSearch = { q: q, rows: null };
+    S.msgSearch = { q: q, rows: null, err: false };
     searchTimer = setTimeout(function () {
-      sb.from('messages').select('id, room_id, sender_id, body, created_at').ilike('body', likePat(q)).eq('deleted', false)
-        .order('created_at', { ascending: false }).limit(60).then(function (r) {
-          if (!S.msgSearch || S.msgSearch.q !== q) return;
-          S.msgSearch.rows = (r.data || []).filter(visibleHit);
-          if (smRefresh) smRefresh();
-        });
+      /* v49k: "이름"을 치면 본문에 그 글자가 들어간 메시지만 찾던 문제 → 그 이름을 쓴 직원이 보낸 메시지도 같이 찾음
+         (예: 내 이름을 검색하면 내가 쓴 글도 나오게). 본문검색 + 발신자이름검색 두 번 조회해서 합침 */
+      var byName = Object.keys(S.profiles).filter(function (id) { return (S.profiles[id].name || '').indexOf(q) > -1; });
+      var qBody = sb.from('messages').select('id, room_id, sender_id, body, created_at').ilike('body', likePat(q)).eq('deleted', false)
+        .order('created_at', { ascending: false }).limit(60);
+      var qBy = byName.length ? sb.from('messages').select('id, room_id, sender_id, body, created_at').in('sender_id', byName).eq('deleted', false)
+        .order('created_at', { ascending: false }).limit(60) : null;
+      Promise.all([qBody, qBy || Promise.resolve({ data: [] })]).then(function (rs) {
+        if (!S.msgSearch || S.msgSearch.q !== q) return;
+        if (rs[0].error) { S.msgSearch.err = true; S.msgSearch.rows = []; if (smRefresh) smRefresh(); return; }
+        var seen = {}, rows = [];
+        rs.forEach(function (r) { (r.data || []).forEach(function (m) { if (!seen[m.id]) { seen[m.id] = 1; rows.push(m); } }); });
+        rows.sort(function (a, b) { return a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0; });
+        S.msgSearch.rows = rows.slice(0, 60).filter(visibleHit);
+        if (smRefresh) smRefresh();
+      });
     }, 300);
   }
   /* v49c: 메시지 결과 목록(날짜별로 묶음) — 통합 검색 창의 "메시지" 탭·"전체" 탭에서 같이 씀. full=false면 5건만(전체 탭 미리보기) */
   function msgHitsHtml(q, full) {
     if (q.length < 2) return '<p class="muted small" style="padding:12px 16px">메시지는 두 글자 이상 입력하면 검색됩니다.</p>';
     var ms = S.msgSearch && S.msgSearch.q === q ? S.msgSearch.rows : null;
+    if (S.msgSearch && S.msgSearch.q === q && S.msgSearch.err) return '<p class="muted small" style="padding:12px 16px">검색하지 못했습니다. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.</p>';
     if (!ms) return '<p class="muted small" style="padding:12px 16px">검색 중…</p>';
-    if (!ms.length) return '<p class="muted small" style="padding:12px 16px">"' + esc(q) + '"이(가) 들어간 메시지가 없습니다.</p>';
+    if (!ms.length) return '<p class="muted small" style="padding:12px 16px">"' + esc(q) + '"이(가) 들어간 메시지가 없거나, 그 이름으로 보낸 메시지가 없습니다.</p>';
     var show = full ? ms : ms.slice(0, 5), lastDay = '', items = '';
     show.forEach(function (m) {
       var r = S.rooms.find(function (x) { return x.id === m.room_id; }) || {}, p = S.profiles[m.sender_id] || { name: '(퇴사자)' };
@@ -2694,6 +2706,86 @@
           .catch(function (e) { $('#ue', m).textContent = errMsg(e); });
       };
     }
+  }
+
+  /* ================= 메모 (v49l: 개인용 할일·메모 — 본인 것만 보이고, 다른 직원은 볼 수 없음) ================= */
+  var memoSaveTimer = null;
+  function memoMissingHtml() { return '<p class="muted small">메모 기능 업데이트(SQL)가 아직 적용되지 않았습니다. 관리자에게 알려 주세요.</p>'; }
+  function renderMemo() {
+    var main = $('#main'); main.style.justifyContent = '';
+    main.innerHTML = header('메모') + '<div class="pane-body">' +
+      '<section class="card"><h3>할 일</h3><div id="memoTodos"><p class="muted small">불러오는 중…</p></div>' +
+      '<form id="memoAdd" class="memo-add"><input class="input" id="memoAddInput" placeholder="할 일 추가" maxlength="200" autocomplete="off"><button class="btn btn-navy sm" type="submit">추가</button></form></section>' +
+      '<section class="card"><h3>메모</h3><textarea class="input memo-note" id="memoNote" placeholder="자유롭게 메모하세요" maxlength="5000" disabled></textarea>' +
+      '<p class="muted small" id="memoNoteStat" style="margin-top:6px">불러오는 중…</p></section></div>';
+    $('#memoAdd').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var inp = $('#memoAddInput'); if (!inp) return;
+      var text = inp.value.trim(); if (!text) return;
+      inp.value = ''; inp.disabled = true;
+      sb.from('personal_todos').insert({ user_id: S.me.id, text: text }).then(function (r) {
+        inp.disabled = false; inp.focus();
+        if (r.error) { toast(qMissing(r.error.message) ? '메모 기능 업데이트(SQL)가 아직 적용되지 않았습니다. 관리자에게 알려 주세요.' : esc(errMsg(r.error))); return; }
+        loadMemoTodos();
+      });
+    });
+    loadMemoTodos();
+    sb.from('personal_notes').select('body').eq('user_id', S.me.id).maybeSingle().then(function (r) {
+      var ta = $('#memoNote'), st = $('#memoNoteStat'); if (!ta) return;
+      if (r.error && !qMissing(r.error.message)) { st.textContent = esc(errMsg(r.error)); return; }
+      if (r.error) { st.textContent = ''; ta.closest('section').innerHTML = '<h3>메모</h3>' + memoMissingHtml(); return; }
+      ta.value = (r.data && r.data.body) || ''; ta.disabled = false; st.textContent = '';
+      ta.addEventListener('input', memoNoteQueueSave);
+      ta.addEventListener('blur', function () { clearTimeout(memoSaveTimer); memoNoteSaveNow(ta.value); });
+    });
+  }
+  function memoNoteQueueSave() {
+    clearTimeout(memoSaveTimer);
+    var st = $('#memoNoteStat'); if (st) st.textContent = '';
+    var ta = $('#memoNote'); if (!ta) return;
+    var val = ta.value;
+    memoSaveTimer = setTimeout(function () { memoNoteSaveNow(val); }, 800);
+  }
+  function memoNoteSaveNow(val) {
+    sb.from('personal_notes').upsert({ user_id: S.me.id, body: val, updated_at: new Date().toISOString() }, { onConflict: 'user_id' }).then(function (r) {
+      var st = $('#memoNoteStat'); if (!st) return;
+      st.textContent = r.error ? (qMissing(r.error.message) ? '메모 기능 업데이트(SQL)가 아직 적용되지 않았습니다.' : '저장하지 못했습니다') : '저장됨 · ' + hm(new Date());
+    });
+  }
+  function loadMemoTodos() {
+    sb.from('personal_todos').select('*').eq('user_id', S.me.id).order('created_at').then(function (r) {
+      var box = $('#memoTodos'); if (!box) return;
+      if (r.error) { box.innerHTML = qMissing(r.error.message) ? memoMissingHtml() : '<p class="err">' + esc(errMsg(r.error)) + '</p>'; return; }
+      S.memoTodos = r.data || [];
+      box.innerHTML = memoTodosHtml(S.memoTodos);
+      wireMemoTodos();
+    });
+  }
+  function memoTodosHtml(list) {
+    if (!list.length) return '<p class="muted small">아직 할 일이 없습니다.</p>';
+    return list.map(function (t) {
+      return '<div class="memo-todo-row' + (t.done ? ' done' : '') + '"><label class="memo-todo-chk"><input type="checkbox" data-todo="' + t.id + '"' + (t.done ? ' checked' : '') +
+        '><span class="memo-todo-text">' + esc(t.text) + '</span></label><button type="button" class="icon-btn" data-todo-del="' + t.id + '" aria-label="삭제">' + svg('x') + '</button></div>';
+    }).join('');
+  }
+  function wireMemoTodos() {
+    $$('[data-todo]').forEach(function (cb) {
+      cb.onchange = function () {
+        var id = cb.getAttribute('data-todo'), row = cb.closest('.memo-todo-row'); if (row) row.classList.toggle('done', cb.checked);
+        sb.from('personal_todos').update({ done: cb.checked }).eq('id', id).then(function (r) { if (r.error) toast(esc(errMsg(r.error))); });
+      };
+    });
+    $$('[data-todo-del]').forEach(function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute('data-todo-del'), row = b.closest('.memo-todo-row');
+        sb.from('personal_todos').delete().eq('id', id).then(function (r) {
+          if (r.error) { toast(esc(errMsg(r.error))); return; }
+          S.memoTodos = (S.memoTodos || []).filter(function (t) { return String(t.id) !== id; });
+          if (row) row.remove();
+          var box = $('#memoTodos'); if (box && !S.memoTodos.length) box.innerHTML = memoTodosHtml([]);
+        });
+      };
+    });
   }
 
   /* ================= 설정 ================= */
