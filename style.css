@@ -1141,4 +1141,3 @@ html.fs-xl .rsv-hr-d{flex-basis:30px}
 .memo-todo-text{font-size:14.5px;word-break:break-word}
 .memo-todo-row.done .memo-todo-text{color:var(--muted);text-decoration:line-through}
 .memo-todo-row .icon-btn{width:30px;height:30px;color:var(--muted);flex:0 0 auto}
-.memo-note{min-height:260px}

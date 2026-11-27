@@ -2708,19 +2708,19 @@
     }
   }
 
-  /* ================= 메모 (v49l: 개인용 할일·메모 — 본인 것만 보이고, 다른 직원은 볼 수 없음) ================= */
-  var memoSaveTimer = null;
+  /* ================= 메모 (v49m: 개인용 할일·메모 — 본인 것만 보이고, 다른 직원은 볼 수 없음)
+     v49m: 메모도 할 일처럼 "추가" 단추로 한 줄씩 따로 저장(긴 글 하나에 다 쓰면 잘려 보인다는 의견 반영) ================= */
   function memoMissingHtml() { return '<p class="muted small">메모 기능 업데이트(SQL)가 아직 적용되지 않았습니다. 관리자에게 알려 주세요.</p>'; }
   function renderMemo() {
     var main = $('#main'); main.style.justifyContent = '';
     main.innerHTML = header('메모') + '<div class="pane-body">' +
       '<section class="card"><h3>할 일</h3><div id="memoTodos"><p class="muted small">불러오는 중…</p></div>' +
-      '<form id="memoAdd" class="memo-add"><input class="input" id="memoAddInput" placeholder="할 일 추가" maxlength="200" autocomplete="off"><button class="btn btn-navy sm" type="submit">추가</button></form></section>' +
-      '<section class="card"><h3>메모</h3><textarea class="input memo-note" id="memoNote" placeholder="자유롭게 메모하세요" maxlength="5000" disabled></textarea>' +
-      '<p class="muted small" id="memoNoteStat" style="margin-top:6px">불러오는 중…</p></section></div>';
-    $('#memoAdd').addEventListener('submit', function (e) {
+      '<form id="memoTodoAdd" class="memo-add"><input class="input" id="memoTodoInput" placeholder="할 일 추가" maxlength="200" autocomplete="off"><button class="btn btn-navy sm" type="submit">추가</button></form></section>' +
+      '<section class="card"><h3>메모</h3><div id="memoNotes"><p class="muted small">불러오는 중…</p></div>' +
+      '<form id="memoNoteAdd" class="memo-add"><input class="input" id="memoNoteInput" placeholder="메모 추가" maxlength="2000" autocomplete="off"><button class="btn btn-navy sm" type="submit">추가</button></form></section></div>';
+    $('#memoTodoAdd').addEventListener('submit', function (e) {
       e.preventDefault();
-      var inp = $('#memoAddInput'); if (!inp) return;
+      var inp = $('#memoTodoInput'); if (!inp) return;
       var text = inp.value.trim(); if (!text) return;
       inp.value = ''; inp.disabled = true;
       sb.from('personal_todos').insert({ user_id: S.me.id, text: text }).then(function (r) {
@@ -2729,28 +2729,19 @@
         loadMemoTodos();
       });
     });
+    $('#memoNoteAdd').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var inp = $('#memoNoteInput'); if (!inp) return;
+      var text = inp.value.trim(); if (!text) return;
+      inp.value = ''; inp.disabled = true;
+      sb.from('personal_notes').insert({ user_id: S.me.id, text: text }).then(function (r) {
+        inp.disabled = false; inp.focus();
+        if (r.error) { toast(qMissing(r.error.message) ? '메모 기능 업데이트(SQL)가 아직 적용되지 않았습니다. 관리자에게 알려 주세요.' : esc(errMsg(r.error))); return; }
+        loadMemoNotes();
+      });
+    });
     loadMemoTodos();
-    sb.from('personal_notes').select('body').eq('user_id', S.me.id).maybeSingle().then(function (r) {
-      var ta = $('#memoNote'), st = $('#memoNoteStat'); if (!ta) return;
-      if (r.error && !qMissing(r.error.message)) { st.textContent = esc(errMsg(r.error)); return; }
-      if (r.error) { st.textContent = ''; ta.closest('section').innerHTML = '<h3>메모</h3>' + memoMissingHtml(); return; }
-      ta.value = (r.data && r.data.body) || ''; ta.disabled = false; st.textContent = '';
-      ta.addEventListener('input', memoNoteQueueSave);
-      ta.addEventListener('blur', function () { clearTimeout(memoSaveTimer); memoNoteSaveNow(ta.value); });
-    });
-  }
-  function memoNoteQueueSave() {
-    clearTimeout(memoSaveTimer);
-    var st = $('#memoNoteStat'); if (st) st.textContent = '';
-    var ta = $('#memoNote'); if (!ta) return;
-    var val = ta.value;
-    memoSaveTimer = setTimeout(function () { memoNoteSaveNow(val); }, 800);
-  }
-  function memoNoteSaveNow(val) {
-    sb.from('personal_notes').upsert({ user_id: S.me.id, body: val, updated_at: new Date().toISOString() }, { onConflict: 'user_id' }).then(function (r) {
-      var st = $('#memoNoteStat'); if (!st) return;
-      st.textContent = r.error ? (qMissing(r.error.message) ? '메모 기능 업데이트(SQL)가 아직 적용되지 않았습니다.' : '저장하지 못했습니다') : '저장됨 · ' + hm(new Date());
-    });
+    loadMemoNotes();
   }
   function loadMemoTodos() {
     sb.from('personal_todos').select('*').eq('user_id', S.me.id).order('created_at').then(function (r) {
@@ -2783,6 +2774,35 @@
           S.memoTodos = (S.memoTodos || []).filter(function (t) { return String(t.id) !== id; });
           if (row) row.remove();
           var box = $('#memoTodos'); if (box && !S.memoTodos.length) box.innerHTML = memoTodosHtml([]);
+        });
+      };
+    });
+  }
+  /* v49m: 메모 목록 — 체크박스 없이 글·삭제만 (할일과 같은 표 모양, personal_notes) */
+  function loadMemoNotes() {
+    sb.from('personal_notes').select('*').eq('user_id', S.me.id).order('created_at').then(function (r) {
+      var box = $('#memoNotes'); if (!box) return;
+      if (r.error) { box.innerHTML = qMissing(r.error.message) ? memoMissingHtml() : '<p class="err">' + esc(errMsg(r.error)) + '</p>'; return; }
+      S.memoNotes = r.data || [];
+      box.innerHTML = memoNotesHtml(S.memoNotes);
+      wireMemoNotes();
+    });
+  }
+  function memoNotesHtml(list) {
+    if (!list.length) return '<p class="muted small">아직 메모가 없습니다.</p>';
+    return list.map(function (n) {
+      return '<div class="memo-todo-row"><span class="memo-todo-text" style="flex:1">' + esc(n.text) + '</span><button type="button" class="icon-btn" data-note-del="' + n.id + '" aria-label="삭제">' + svg('x') + '</button></div>';
+    }).join('');
+  }
+  function wireMemoNotes() {
+    $$('[data-note-del]').forEach(function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute('data-note-del'), row = b.closest('.memo-todo-row');
+        sb.from('personal_notes').delete().eq('id', id).then(function (r) {
+          if (r.error) { toast(esc(errMsg(r.error))); return; }
+          S.memoNotes = (S.memoNotes || []).filter(function (n) { return String(n.id) !== id; });
+          if (row) row.remove();
+          var box = $('#memoNotes'); if (box && !S.memoNotes.length) box.innerHTML = memoNotesHtml([]);
         });
       };
     });
