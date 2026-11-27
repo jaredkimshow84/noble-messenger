@@ -839,11 +839,16 @@
     ['touchend', 'touchmove', 'touchcancel'].forEach(function (ev) { el.addEventListener(ev, function (e) { if (t) { clearTimeout(t); t = null; } else if (ev === 'touchend') e.preventDefault(); }, { passive: ev !== 'touchend' }); });
   }
   /* v49n: 순서표·예약 팝업창 크기·위치 기억 — 사용자가 손으로 옮기거나 크기를 바꾸면 닫을 때 저장해 뒀다가 다음에 열 때 그대로 복원 */
+  function roomPopupKey() {   // 대화방 팝업이면 그 창의 고유 이름 (창 이름 또는 주소로 판단 — PC 프로그램이 직접 연 창은 이름이 없을 수 있어 주소도 봄)
+    var n = window.name || '', m = /^#room\/([^/]+)\/solo/.exec(location.hash);
+    if (n.indexOf('noble-room-') === 0) return n;
+    return m ? 'noble-room-' + m[1] : null;
+  }
   function popupKind() {
-    var n = window.name || '';
-    if (n.indexOf('noble-room-') === 0) return 'room';
-    if (n === 'noble-queue') return 'queue';
-    if (n === 'noble-rsv') return 'rsv';
+    if (roomPopupKey()) return 'room';
+    var n = window.name || '', h = location.hash;
+    if (n === 'noble-queue' || /^#queue\/solo/.test(h)) return 'queue';
+    if (n === 'noble-rsv' || /^#rsv\/solo/.test(h)) return 'rsv';
     return null;
   }
   function winGeom(kind, defW, defH, defLeft, defTop) {
@@ -882,17 +887,41 @@
   }
   function roomSlotFree(name) { var reg = roomSlotRegistry(); if (reg[name]) { delete reg[name]; roomSlotSave(reg); } }
   function roomSlotTouch(name) { var reg = roomSlotRegistry(); if (reg[name]) { reg[name].ts = Date.now(); roomSlotSave(reg); } }
+  var ROOM_W = 380;
+  function roomH() { return Math.min(screen.availHeight - 40, 760); }
+  function availLeft() { return typeof screen.availLeft === 'number' ? screen.availLeft : 0; }
+  function availTop() { return typeof screen.availTop === 'number' ? screen.availTop : 0; }
+  /* v49q: PC 프로그램은 메신저 메인 창이 화면 오른쪽 위에 붙어 있어서, 대화방 창은 그 창의 '왼쪽 가장자리'부터 왼쪽으로 나란히 붙입니다.
+     (화면 오른쪽 끝부터 놓으면 첫 창이 메인 창을 덮어 버림) 메인 창 위치는 메인 창이 주기적으로 저장해 두고 팝업이 읽어 씁니다. */
+  function saveMainGeom() {
+    try {
+      var l = (typeof window.screenX === 'number' ? window.screenX : window.screenLeft), w = window.outerWidth;
+      if (!isFinite(l) || l < -10000 || !(w >= 200)) return;   // 최소화 등으로 위치를 알 수 없을 때(-32000)는 저장하지 않음
+      localStorage.setItem('noble-main-geom', JSON.stringify({ left: l, w: w }));
+    } catch (e) {}
+  }
+  function roomAnchorRight() {   // 대화방 창이 놓일 줄의 오른쪽 끝(화면 좌표)
+    var aR = availLeft() + screen.availWidth - 20;
+    if (!ND) return aR;
+    var right = availLeft() + screen.availWidth - ROOM_W - 20 - 10;   // 저장된 위치가 없으면 메인 창이 처음 자리(오른쪽 위)에 있다고 봄
+    try {
+      var g = JSON.parse(localStorage.getItem('noble-main-geom') || 'null');
+      if (g && isFinite(g.left)) { var r = Math.min(g.left - 10, aR); right = (r - availLeft() >= ROOM_W) ? r : aR; }   // 메인 창 왼쪽에 자리가 없으면 화면 오른쪽 끝부터
+    } catch (e) {}
+    return right;
+  }
   function roomSlotRect(slot, w, h) {
-    var cols = Math.max(1, Math.floor(screen.availWidth / w));
+    var aL = availLeft(), aT = availTop(), right = roomAnchorRight();
+    var cols = Math.max(1, Math.floor((right - aL) / w));
     var col = slot % cols, row = Math.floor(slot / cols);
     return {
-      left: Math.max(0, screen.availWidth - 20 - w - col * w),
-      top: Math.min(20 + row * h, Math.max(0, screen.availHeight - h))
+      left: Math.max(aL, right - w - col * w),
+      top: Math.min(aT + 20 + row * h, aT + Math.max(0, screen.availHeight - h))
     };
   }
   window.addEventListener('beforeunload', function () {
     var kind = popupKind(); if (!kind) return;
-    if (kind === 'room') { roomSlotFree(window.name); return; }
+    if (kind === 'room') { roomSlotFree(roomPopupKey()); return; }
     try {
       localStorage.setItem('noble-winpos-' + kind, JSON.stringify({
         w: window.outerWidth, h: window.outerHeight,
@@ -901,10 +930,21 @@
       }));
     } catch (e) {}
   });
-  if (popupKind() === 'room') setInterval(function () { roomSlotTouch(window.name); }, 4000);   // 생존 신호
+  if (popupKind() === 'room') setInterval(function () { roomSlotTouch(roomPopupKey()); }, 4000);   // 생존 신호
+  /* v49p/q: PC 프로그램(.exe)은 팝업창을 프로그램이 직접 열어서 웹에서 보낸 위치·크기를 무시함 → 열린 창이 스스로 제 자리로 옮겨 감
+     (대화방: 자동 정렬 자리 · 순서표/예약: 마지막에 저장한 크기·위치). 일반 브라우저는 열 때 이미 맞게 열리므로 건드리지 않음 */
+  function applyPopupGeom() {
+    try {
+      var kind = popupKind();
+      if (kind === 'room') { var pos = roomSlotRect(roomSlotTake(roomPopupKey()), ROOM_W, roomH()); window.moveTo(pos.left, pos.top); }
+      else if (localStorage.getItem('noble-winpos-' + kind)) { var g = winGeom(kind, window.outerWidth, window.outerHeight, window.screenX, window.screenY); window.resizeTo(g.w, g.h); window.moveTo(g.left, g.top); }
+    } catch (e) {}
+  }
+  if (ND && popupKind()) { applyPopupGeom(); setTimeout(applyPopupGeom, 300); }   // 창이 화면에 보이기 전에 먼저 옮기고(깜빡임 방지), 한 번 더 확인
+  if (ND && !popupKind()) { saveMainGeom(); setInterval(saveMainGeom, 1500); window.addEventListener('resize', saveMainGeom); }   // 메인 창 위치 기록
   /* 대화방을 좁은 새 창으로 열기 (카카오워크처럼) — 여러 개를 열면 화면에 자동으로 차례로 정렬됨 */
   function openRoomWindow(id) {
-    var name = 'noble-room-' + id, w = 380, h = Math.min(screen.availHeight - 40, 760);
+    var name = 'noble-room-' + id, w = ROOM_W, h = roomH();
     var slot = roomSlotTake(name), pos = roomSlotRect(slot, w, h);
     var win = window.open(location.href.split('#')[0] + '#room/' + id + '/solo', name,
       'popup,width=' + w + ',height=' + h + ',left=' + pos.left + ',top=' + pos.top);
