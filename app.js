@@ -533,13 +533,29 @@
 
   /* ---------- 메시지 검색 ---------- */
   function likePat(q) { return '%' + q.replace(/[\\%_]/g, function (c) { return '\\' + c; }) + '%'; }
+  /* 'YYYY-MM-DD'(기기 시간대 기준 = 사실상 한국 시간) → 그 날짜 00:00 을 UTC ISO 문자열로. addDays 로 다음 날 경계도 구함 */
+  function dayBoundsISO(ds, addDays) {
+    var p = ds.split('-'); var y = +p[0], m = +p[1] - 1, d = +p[2] + (addDays || 0);
+    return new Date(y, m, d, 0, 0, 0, 0).toISOString();
+  }
   function hl(text, q) {
     var h = esc(text); if (!q) return h;
-    return h.replace(new RegExp(reRx(esc(q)), 'gi'), function (x) { return '<mark>' + x + '</mark>'; });
+    var terms = Array.isArray(q) ? q : [q];
+    terms.forEach(function (t) {
+      if (!t) return;
+      h = h.replace(new RegExp(reRx(esc(t)), 'gi'), function (x) { return '<mark>' + x + '</mark>'; });
+    });
+    return h;
   }
   function around(body, q) {
     body = (body || '').replace(/\s+/g, ' ');
-    var i = body.toLowerCase().indexOf(q.toLowerCase());
+    var terms = Array.isArray(q) ? q : [q];
+    var i = -1;
+    terms.forEach(function (t) {
+      if (!t) return;
+      var idx = body.toLowerCase().indexOf(String(t).toLowerCase());
+      if (idx >= 0 && (i < 0 || idx < i)) i = idx;
+    });
     if (i < 0 || body.length <= 70) return body.slice(0, 90);
     var st = Math.max(0, i - 24); return (st ? '…' : '') + body.slice(st, st + 90);
   }
@@ -682,11 +698,19 @@
       bar.hidden = true; S.searchQ = ''; renderMessages(false); return;
     }
     bar.hidden = false;
-    bar.innerHTML = '<div class="rs-in">' + svg('search') + '<input id="rsQ" placeholder="이 대화방에서 검색 (두 글자 이상)" aria-label="대화방 안에서 검색"><span class="rs-n" id="rsN" aria-live="polite"></span><button type="button" id="rsX" aria-label="검색 닫기">' + svg('x') + '</button></div><div class="rs-list" id="rsList" hidden></div>';
+    bar.innerHTML = '<div class="rs-in">' + svg('search') + '<input id="rsQ" placeholder="이 대화방에서 검색 (단어 여러 개, 띄어쓰기로 구분)" aria-label="대화방 안에서 검색"><span class="rs-n" id="rsN" aria-live="polite"></span><button type="button" id="rsCal" aria-label="날짜로 검색">' + svg('calendar') + '</button><button type="button" id="rsX" aria-label="검색 닫기">' + svg('x') + '</button></div>' +
+      '<div class="rs-dates" id="rsDates" hidden><input type="date" id="rsFrom" aria-label="시작 날짜"><span>~</span><input type="date" id="rsTo" aria-label="끝 날짜"><button type="button" id="rsDateX" aria-label="날짜 지우기">' + svg('x') + '</button></div>' +
+      '<div class="rs-list" id="rsList" hidden></div>';
     var inp = $('#rsQ'), list = $('#rsList'), cnt = $('#rsN'), t = null;
+    var dates = $('#rsDates'), fromInp = $('#rsFrom'), toInp = $('#rsTo'), calBtn = $('#rsCal'), dateX = $('#rsDateX');
     var hits = [], cur = -1, doneQ = null, runQ = null, want = 0;   // hits: 화면에 보이는 결과 목록(최근 → 과거 순) · cur: 지금 보고 있는 결과 · doneQ: 그 결과가 나온 검색어 · runQ: 마지막으로 검색을 시작한 검색어 · want: 검색이 끝나면 이동할 방향(Enter 1 · Shift+Enter -1)
     inp.focus();
     $('#rsX').onclick = function () { bar.hidden = true; S.searchQ = ''; renderMessages(false); };
+    calBtn.onclick = function () { dates.hidden = !dates.hidden; if (!dates.hidden) fromInp.focus(); };
+    function onDateChange() { calBtn.classList.toggle('on', !!(fromInp.value || toInp.value)); clearTimeout(t); run(); }
+    fromInp.addEventListener('change', onDateChange);
+    toInp.addEventListener('change', onDateChange);
+    dateX.onclick = function () { fromInp.value = ''; toInp.value = ''; onDateChange(); };
     function go(i) {   // i번째 결과로 이동 (목록은 닫고 "3/12" 처럼 몇 번째인지 표시)
       cur = i; list.hidden = true; cnt.textContent = (i + 1) + '/' + hits.length + (hits.length >= 100 ? '+' : '');
       jumpToMsg(hits[i]);
@@ -704,10 +728,15 @@
     inp.addEventListener('input', function () { clearTimeout(t); cnt.textContent = ''; want = 0; t = setTimeout(run, 350); });   // 글자를 고치면 번호는 지우고 기다리던 이동은 취소 (화면에 남은 이전 결과 목록은 새 결과가 나올 때까지 그대로 눌러 쓸 수 있음)
     function run() {
       var q = inp.value.trim(); S.searchQ = q; runQ = q;
-      if (q.length < 2) { list.hidden = true; renderMessages(false); return; }
+      var terms = q ? q.split(/\s+/).filter(function (s) { return s.length > 0; }) : [];
+      var from = fromInp.value, to = toInp.value, hasDate = !!(from || to);
+      if (!hasDate && q.length < 2) { list.hidden = true; renderMessages(false); return; }   // 날짜 지정이 없고 한 글자 이하면 검색하지 않음 (예전 동작 그대로)
       var rid = S.room.id, cl = S.room.info && S.room.info.cleared_at;
-      var qq = sb.from('messages').select('id, room_id, sender_id, body, created_at').eq('room_id', rid).eq('deleted', false).ilike('body', likePat(q));
+      var qq = sb.from('messages').select('id, room_id, sender_id, body, created_at').eq('room_id', rid).eq('deleted', false);
+      terms.forEach(function (t) { qq = qq.ilike('body', likePat(t)); });   // 띄어쓰기로 구분한 단어가 모두 포함된 메시지만 (순서·인접 여부 상관없이 AND 검색)
       if (cl) qq = qq.gt('created_at', cl);
+      if (from) qq = qq.gte('created_at', dayBoundsISO(from));
+      if (to) qq = qq.lt('created_at', dayBoundsISO(to, 1));
       qq.order('created_at', { ascending: false }).limit(100).then(function (r) {
         if (!S.room || S.room.id !== rid || S.searchQ !== q) return;
         var rows = r.data || [];
@@ -723,7 +752,7 @@
               lastDay = day;
             }
             var p = S.profiles[m.sender_id] || { name: '(퇴사자)' };
-            items += '<button data-rs="' + m.id + '"><b>' + esc(nameTag(p)) + '</b><time>' + hm(m.created_at) + '</time><span>' + hl(around(m.body, q), q) + '</span></button>';
+            items += '<button data-rs="' + m.id + '"><b>' + esc(nameTag(p)) + '</b><time>' + hm(m.created_at) + '</time><span>' + hl(around(m.body, terms), terms) + '</span></button>';
           });
           list.innerHTML = '<p class="rs-count">' + rows.length + (rows.length >= 100 ? '+' : '') + '건</p>' + items;
         } else {
@@ -809,11 +838,42 @@
     el.addEventListener('touchstart', function () { t = setTimeout(function () { t = null; fn(); }, 550); }, { passive: true });
     ['touchend', 'touchmove', 'touchcancel'].forEach(function (ev) { el.addEventListener(ev, function (e) { if (t) { clearTimeout(t); t = null; } else if (ev === 'touchend') e.preventDefault(); }, { passive: ev !== 'touchend' }); });
   }
+  /* v49n: 팝업(대화방·순서표·예약) 창 크기·위치 기억 — 사용자가 손으로 옮기거나 크기를 바꾸면 닫을 때 저장해 뒀다가 다음에 열 때 그대로 복원 */
+  function popupKind() {
+    var n = window.name || '';
+    if (n.indexOf('noble-room-') === 0) return 'room';
+    if (n === 'noble-queue') return 'queue';
+    if (n === 'noble-rsv') return 'rsv';
+    return null;
+  }
+  function winGeom(kind, defW, defH, defLeft, defTop) {
+    try {
+      var raw = localStorage.getItem('noble-winpos-' + kind);
+      if (!raw) return { w: defW, h: defH, left: defLeft, top: defTop };
+      var g = JSON.parse(raw), w = +g.w, h = +g.h, left = +g.left, top = +g.top;
+      if (!isFinite(w) || !isFinite(h) || !isFinite(left) || !isFinite(top)) return { w: defW, h: defH, left: defLeft, top: defTop };
+      w = Math.max(200, Math.min(w, screen.availWidth));
+      h = Math.max(200, Math.min(h, screen.availHeight));
+      left = Math.max(0, Math.min(left, screen.availWidth - 80));
+      top = Math.max(0, Math.min(top, screen.availHeight - 80));
+      return { w: Math.round(w), h: Math.round(h), left: Math.round(left), top: Math.round(top) };
+    } catch (e) { return { w: defW, h: defH, left: defLeft, top: defTop }; }
+  }
+  window.addEventListener('beforeunload', function () {
+    var kind = popupKind(); if (!kind) return;
+    try {
+      localStorage.setItem('noble-winpos-' + kind, JSON.stringify({
+        w: window.outerWidth, h: window.outerHeight,
+        left: (typeof window.screenX === 'number' ? window.screenX : window.screenLeft),
+        top: (typeof window.screenY === 'number' ? window.screenY : window.screenTop)
+      }));
+    } catch (e) {}
+  });
   /* 대화방을 좁은 새 창으로 열기 (카카오워크처럼) */
   function openRoomWindow(id) {
-    var w = 380, h = Math.min(screen.availHeight - 40, 760);
+    var g = winGeom('room', 380, Math.min(screen.availHeight - 40, 760), Math.max(0, screen.availWidth - 380 - 420), 40);
     var win = window.open(location.href.split('#')[0] + '#room/' + id + '/solo', 'noble-room-' + id,
-      'popup,width=' + w + ',height=' + h + ',left=' + Math.max(0, screen.availWidth - w - 420) + ',top=40');
+      'popup,width=' + g.w + ',height=' + g.h + ',left=' + g.left + ',top=' + g.top);
     if (!win && ND) return;   // PC 프로그램은 프로그램이 직접 창을 열어 줌 (차단 아님)
     if (!win) toast('팝업이 차단되었습니다. 주소창 오른쪽 팝업 차단 아이콘에서 "항상 허용"을 눌러 주세요.');
     else try { win.focus(); } catch (e) {}
@@ -1111,7 +1171,11 @@
   function roomPeople() { return Object.keys(S.members).map(function (u) { return S.profiles[u]; }).filter(Boolean); }
   function fmtBody(body) {
     var h = linkify(body);
-    if (S.searchQ && S.searchQ.length >= 2) h = h.replace(new RegExp('(' + reRx(esc(S.searchQ)) + ')(?![^<]*>)', 'gi'), '<mark>$1</mark>');
+    if (S.searchQ && S.searchQ.length >= 2) {
+      S.searchQ.split(/\s+/).filter(function (s) { return s.length > 0; }).forEach(function (t) {
+        h = h.replace(new RegExp('(' + reRx(esc(t)) + ')(?![^<]*>)', 'gi'), '<mark>$1</mark>');
+      });
+    }
     var names = roomPeople().map(function (p) { return esc(p.name); }).filter(Boolean);
     names.push('모두');
     names.sort(function (a, b) { return b.length - a.length; });
@@ -2274,18 +2338,19 @@
   }
   /* 진료순서표만 따로 띄워 두기 (의사 PC 옆 화면용) */
   function openQueueWindow() {
-    var w = 460, h = Math.min(screen.availHeight - 40, 820);
+    var g = winGeom('queue', 460, Math.min(screen.availHeight - 40, 820), Math.max(0, screen.availWidth - 460 - 20), 20);
     var win = window.open(location.href.split('#')[0] + '#queue/solo', 'noble-queue',
-      'popup,width=' + w + ',height=' + h + ',left=' + Math.max(0, screen.availWidth - w - 20) + ',top=20');
+      'popup,width=' + g.w + ',height=' + g.h + ',left=' + g.left + ',top=' + g.top);
     if (!win && ND) return;   // PC 프로그램은 프로그램이 직접 창을 열어 줌 (차단 아님)
     if (!win) toast('팝업이 차단되었습니다. 주소창 오른쪽 팝업 차단 아이콘에서 "항상 허용"을 눌러 주세요.');
     else try { win.focus(); } catch (e) {}
   }
   /* v49: 예약 달력만 따로 띄워 두기 (데스크 PC 옆 화면용) — 순서표 새 창과 같은 방식, 달력이라 폭을 더 넓게 */
   function openRsvWindow() {
-    var w = Math.min(1040, screen.availWidth - 40), h = Math.min(screen.availHeight - 40, 860);
+    var defW = Math.min(1040, screen.availWidth - 40), defH = Math.min(screen.availHeight - 40, 860);
+    var g = winGeom('rsv', defW, defH, Math.max(0, screen.availWidth - defW - 20), 20);
     var win = window.open(location.href.split('#')[0] + '#rsv/solo', 'noble-rsv',
-      'popup,width=' + w + ',height=' + h + ',left=' + Math.max(0, screen.availWidth - w - 20) + ',top=20');
+      'popup,width=' + g.w + ',height=' + g.h + ',left=' + g.left + ',top=' + g.top);
     if (!win && ND) return;   // PC 프로그램은 프로그램이 직접 창을 열어 줌 (차단 아님)
     if (!win) toast('팝업이 차단되었습니다. 주소창 오른쪽 팝업 차단 아이콘에서 "항상 허용"을 눌러 주세요.');
     else try { win.focus(); } catch (e) {}
