@@ -838,7 +838,7 @@
     el.addEventListener('touchstart', function () { t = setTimeout(function () { t = null; fn(); }, 550); }, { passive: true });
     ['touchend', 'touchmove', 'touchcancel'].forEach(function (ev) { el.addEventListener(ev, function (e) { if (t) { clearTimeout(t); t = null; } else if (ev === 'touchend') e.preventDefault(); }, { passive: ev !== 'touchend' }); });
   }
-  /* v49n: 팝업(대화방·순서표·예약) 창 크기·위치 기억 — 사용자가 손으로 옮기거나 크기를 바꾸면 닫을 때 저장해 뒀다가 다음에 열 때 그대로 복원 */
+  /* v49n: 순서표·예약 팝업창 크기·위치 기억 — 사용자가 손으로 옮기거나 크기를 바꾸면 닫을 때 저장해 뒀다가 다음에 열 때 그대로 복원 */
   function popupKind() {
     var n = window.name || '';
     if (n.indexOf('noble-room-') === 0) return 'room';
@@ -859,8 +859,40 @@
       return { w: Math.round(w), h: Math.round(h), left: Math.round(left), top: Math.round(top) };
     } catch (e) { return { w: defW, h: defH, left: defLeft, top: defTop }; }
   }
+  /* v49o: 대화방 팝업창 자동 정렬 — 열 때마다 화면 오른쪽 위부터 차례로 나란히 붙고, 줄이 다 차면 아래 줄로 내려가고,
+     하나를 닫으면 그 자리가 비어서 다음 창이 그 자리를 채웁니다. 모든 대화방 창은 같은 크기로 고정됩니다.
+     여러 창(탭)이 공유하는 자리표를 localStorage 에 두고, 각 팝업창이 살아있는 동안 주기적으로 '생존 신호'를 남겨서
+     비정상 종료(강제 종료 등)로 자리가 영영 안 비워지는 문제를 막습니다. */
+  var ROOM_SLOT_KEY = 'noble-roomwin-slots', ROOM_SLOT_STALE_MS = 10000;
+  function roomSlotRegistry() {
+    try {
+      var raw = localStorage.getItem(ROOM_SLOT_KEY), reg = raw ? JSON.parse(raw) : {}, now = Date.now(), live = {};
+      Object.keys(reg).forEach(function (k) { if (reg[k] && isFinite(reg[k].slot) && (now - reg[k].ts) < ROOM_SLOT_STALE_MS) live[k] = reg[k]; });
+      return live;
+    } catch (e) { return {}; }
+  }
+  function roomSlotSave(reg) { try { localStorage.setItem(ROOM_SLOT_KEY, JSON.stringify(reg)); } catch (e) {} }
+  function roomSlotTake(name) {   // 이미 열려 있던 창이면 쓰던 자리를 그대로, 새 창이면 비어 있는 가장 앞 번호를 받음
+    var reg = roomSlotRegistry();
+    if (reg[name]) { reg[name].ts = Date.now(); roomSlotSave(reg); return reg[name].slot; }
+    var used = {}; Object.keys(reg).forEach(function (k) { used[reg[k].slot] = true; });
+    var slot = 0; while (used[slot]) slot++;
+    reg[name] = { slot: slot, ts: Date.now() }; roomSlotSave(reg);
+    return slot;
+  }
+  function roomSlotFree(name) { var reg = roomSlotRegistry(); if (reg[name]) { delete reg[name]; roomSlotSave(reg); } }
+  function roomSlotTouch(name) { var reg = roomSlotRegistry(); if (reg[name]) { reg[name].ts = Date.now(); roomSlotSave(reg); } }
+  function roomSlotRect(slot, w, h) {
+    var cols = Math.max(1, Math.floor(screen.availWidth / w));
+    var col = slot % cols, row = Math.floor(slot / cols);
+    return {
+      left: Math.max(0, screen.availWidth - 20 - w - col * w),
+      top: Math.min(20 + row * h, Math.max(0, screen.availHeight - h))
+    };
+  }
   window.addEventListener('beforeunload', function () {
     var kind = popupKind(); if (!kind) return;
+    if (kind === 'room') { roomSlotFree(window.name); return; }
     try {
       localStorage.setItem('noble-winpos-' + kind, JSON.stringify({
         w: window.outerWidth, h: window.outerHeight,
@@ -869,13 +901,15 @@
       }));
     } catch (e) {}
   });
-  /* 대화방을 좁은 새 창으로 열기 (카카오워크처럼) */
+  if (popupKind() === 'room') setInterval(function () { roomSlotTouch(window.name); }, 4000);   // 생존 신호
+  /* 대화방을 좁은 새 창으로 열기 (카카오워크처럼) — 여러 개를 열면 화면에 자동으로 차례로 정렬됨 */
   function openRoomWindow(id) {
-    var g = winGeom('room', 380, Math.min(screen.availHeight - 40, 760), Math.max(0, screen.availWidth - 380 - 420), 40);
-    var win = window.open(location.href.split('#')[0] + '#room/' + id + '/solo', 'noble-room-' + id,
-      'popup,width=' + g.w + ',height=' + g.h + ',left=' + g.left + ',top=' + g.top);
+    var name = 'noble-room-' + id, w = 380, h = Math.min(screen.availHeight - 40, 760);
+    var slot = roomSlotTake(name), pos = roomSlotRect(slot, w, h);
+    var win = window.open(location.href.split('#')[0] + '#room/' + id + '/solo', name,
+      'popup,width=' + w + ',height=' + h + ',left=' + pos.left + ',top=' + pos.top);
     if (!win && ND) return;   // PC 프로그램은 프로그램이 직접 창을 열어 줌 (차단 아님)
-    if (!win) toast('팝업이 차단되었습니다. 주소창 오른쪽 팝업 차단 아이콘에서 "항상 허용"을 눌러 주세요.');
+    if (!win) { toast('팝업이 차단되었습니다. 주소창 오른쪽 팝업 차단 아이콘에서 "항상 허용"을 눌러 주세요.'); roomSlotFree(name); }
     else try { win.focus(); } catch (e) {}
   }
   /* 설치한 앱 창을 폭 380으로 맞추기 (설정에서 켰을 때) */
