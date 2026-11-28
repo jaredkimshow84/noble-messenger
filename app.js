@@ -36,7 +36,7 @@
     calendar: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
     pencil: '<path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 7.5l3 3"/>', tobottom: '<path d="M12 5v14M6 13l6 6 6-6"/>', plus: '<path d="M12 5v14M5 12h14"/>', back: '<path d="M15 18l-6-6 6-6"/>', clip: '<path d="M21 11l-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7"/>',
     more: '<circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/>', search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
-    file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>', mute: '<path d="M11 5L6 9H3v6h3l5 4zM22 9l-6 6M16 9l6 6"/>',
+    file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>', save: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>', mute: '<path d="M11 5L6 9H3v6h3l5 4zM22 9l-6 6M16 9l6 6"/>',
     x: '<path d="M6 6l12 12M18 6L6 18"/>', down: '<path d="M12 4v12M6 11l6 6 6-6M5 20h14"/>',
     pop: '<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
     pin: '<path d="M9 3h6l-1 7 3 3H7l3-3z"/><path d="M12 13v8"/>',
@@ -1152,7 +1152,7 @@
       else if (m.file_path) {
         needUrls.push(m.file_path);
         var u = cachedUrl(m.file_path);
-        if ((m.file_type || '').indexOf('image/') === 0) content = '<a class="img-msg" data-path="' + esc(m.file_path) + '" href="' + (u || '#') + '" target="_blank" rel="noopener"><img alt="' + esc(m.file_name || '사진') + '" ' + (u ? 'src="' + u + '"' : '') + (S.imgSize[m.file_path] ? ' width="' + S.imgSize[m.file_path][0] + '" height="' + S.imgSize[m.file_path][1] + '"' : '') + ' decoding="async"></a>';
+        if ((m.file_type || '').indexOf('image/') === 0) content = '<a class="img-msg" data-path="' + esc(m.file_path) + '" href="' + (u || '#') + '" target="_blank" rel="noopener"><img alt="' + esc(m.file_name || '사진') + '" ' + (u ? 'src="' + u + '"' : '') + (S.imgSize[m.file_path] ? ' width="' + S.imgSize[m.file_path][0] + '" height="' + S.imgSize[m.file_path][1] + '"' : '') + ' decoding="async"><span class="img-save" role="button" data-act="saveimg" title="사진 저장" aria-label="사진 저장">' + svg('save') + '</span></a>';
         else content = '<a class="file-msg" data-path="' + esc(m.file_path) + '" data-dl="' + esc(m.file_name || 'file') + '" href="' + (u || '#') + '" target="_blank" rel="noopener">' + svg('file') + '<span style="min-width:0"><b>' + esc(m.file_name || '파일') + '</b><span>' + size(m.file_size) + ' · 열기</span></span></a>';
         if (m.body) content += '<div class="bubble' + (toMe ? ' to-me' : '') + '">' + fmtBody(m.body) + '</div>';
       } else content = '<div class="bubble' + (toMe ? ' to-me' : '') + '">' + fmtBody(m.body) + '</div>';
@@ -1200,6 +1200,7 @@
         if (e.target.closest('[data-qgo]')) { goQueue(); return; }
         var b = e.target.closest('[data-act],[data-tog],[data-jump]'); if (!b) return;
         if (reactPopEl) hideReactPop();
+        if (b.getAttribute('data-act') === 'saveimg') { e.preventDefault(); e.stopPropagation(); var im = b.closest('.img-msg'); saveImage(im.getAttribute('data-path'), ($('img', im) || {}).alt || '사진'); return; }
         if (b.hasAttribute('data-jump')) { jumpTo(+b.getAttribute('data-jump')); return; }
         if (b.hasAttribute('data-tog')) { var t = b.getAttribute('data-tog').split('|'); toggleReact(+t[0], t[1]); return; }
         var mid = +b.closest('.msg').getAttribute('data-id'), msg = S.messages.find(function (x) { return x.id === mid; }); if (!msg) return;
@@ -1609,6 +1610,26 @@
     });
   }
 
+  /* v49r: 사진 바로 저장 — 사진을 받아서 원래 파일 이름으로 저장 (크롬·엣지: 다운로드 폴더 / PC 프로그램: 저장 위치를 묻는 창)
+     받아 오기가 막히면(인터넷 문제 등) '내려받기용 주소'로 열어서 브라우저가 저장하게 함 */
+  function saveName(name, type) {
+    var n = String(name || '사진').replace(/[\\\/:*?"<>|]+/g, '_').trim() || '사진';
+    if (!/\.[a-z0-9]{2,5}$/i.test(n)) n += '.' + (((type || '').split('/')[1] || 'jpg').replace('jpeg', 'jpg').replace(/[^a-z0-9]/gi, '') || 'jpg');
+    return n;
+  }
+  function saveImage(path, name) {
+    if (!path) return;
+    sb.storage.from('files').createSignedUrl(path, 600, { download: saveName(name) }).then(function (r) {
+      if (r.error || !r.data || !r.data.signedUrl) throw r.error || new Error('no url');
+      var dlUrl = r.data.signedUrl;
+      return fetch(dlUrl).then(function (res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.blob(); }).then(function (blob) {
+        var a = document.createElement('a'), ou = URL.createObjectURL(blob);
+        a.href = ou; a.download = saveName(name, blob.type); document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(ou); }, 60000);
+        toast('사진을 저장했습니다');
+      }).catch(function () { window.open(dlUrl, '_blank', 'noopener'); });
+    }).catch(function () { toast('사진을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.'); });
+  }
   function postMessage(row) {   // 결과: 서버에 저장됐으면 true · 저장하지 못했으면 false (글을 되돌려 놓을 때 씀)
     var roomId = S.room.id, sent = false;
     row.room_id = roomId; row.sender_id = S.me.id;
