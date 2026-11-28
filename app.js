@@ -2473,7 +2473,7 @@
     });
   }
   /* ----- 순서표 맨 위 공지 (직원 누구나 고침 · 병원 전체에 하나) ----- */
-  var NOTICE_DEFAULT = '* C-Arm 순서 :\n* 초음파 순서 :';
+  var NOTICE_DEFAULT = '양방진료순서 :\n한방진료순서 :\nC-Arm 순서 :\n초음파 순서 :';
   function loadNotice() {   // 순서표 목록과 따로 불러옴 — 공지를 못 불러와도 목록은 그대로 (끊기면 오류로 돌려줌)
     return Promise.resolve(sb.from('care_queue_notice').select('*').eq('id', 1).maybeSingle()).then(null, function (e) { return { data: null, error: e || { message: 'Failed to fetch' } }; });
   }
